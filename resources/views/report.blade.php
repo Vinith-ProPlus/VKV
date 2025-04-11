@@ -56,7 +56,11 @@
         }
 
         .wizard-head a {
-            text-decoration: none;
+          text-decoration: none;
+        }
+
+        .wizard-head > .nav-link {
+          z-index: auto;
         }
 
         .wizard-head a .nav-contents {
@@ -479,28 +483,8 @@
                                   </div>
                                       <!-- Modal -->
                                       <div id="myContractsModal" class="fixed inset-0 flex items-center justify-center hidden z-50">
-                                        <div class="bg-white p-6 rounded-lg shadow-lg w-96 relative">
-                                          <h2 class="text-xl font-bold mb-4">Task Details</h2>
-                                          <img id="taskImage" src="" alt="task image" style="border-radius: 5px;">
-                                          <div class="mt-10 flex flex-wrap gap-1 items-center">
-                                            <p class="text-sm text-gray-500">Name :&nbsp;</p>
-                                            <p class="font-medium break-words" id="taskName"></p>
-                                          </div>
-                                          <div class="flex flex-wrap gap-1 items-center mt-4">
-                                            <p class="text-sm text-gray-500">Date :&nbsp;</p>
-                                            <p class="font-medium break-words" id="taskDate"></p>
-                                          </div>
-                                          <div class="flex flex-wrap gap-1 items-center mt-4">
-                                            <p class="text-sm text-gray-500">Description:&nbsp;</p>
-                                            <p class="font-medium break-words" id="taskDescription"></p>
-                                          </div>                                      
-                                          <div class="flex flex-wrap gap-1 items-center mt-4">
-                                            <p class="text-sm text-gray-500">Status :&nbsp;</p>
-                                            <p class="font-medium break-words" id="taskStatus"></p>
-                                          </div>
-                                          <button id="closeModal" class="px-4 py-2 mt-15 bg-red-600 text-white rounded hover:bg-red-700">
-                                            Close
-                                          </button>
+                                        <div id="contractModalContents" class="bg-white p-6 rounded-lg shadow-lg w-96 relative">
+
                                         </div>
                                       </div>
                                 </div>
@@ -606,7 +590,88 @@
 
           $(document).on('click','#openContractsModal',function(){
             let data = $(this).data('tdata');
+            let html = '<h2 class="text-xl font-bold mb-4">User Details</h2>';
+
             console.log(data);
+
+            if(data.profile_image){
+              html += `<img id="taskImage" src="${data.profile_image}" alt="task image" style="border-radius: 5px;">`;
+            }
+
+            if(data.name){
+              html+=`
+                <div class="mt-10 flex flex-wrap gap-1 items-center">
+                  <p class="text-sm text-gray-500">Name :&nbsp;</p>
+                  <p class="font-medium break-words" id="userName">${data.name}</p>
+                </div>
+              `;
+            }
+
+            if(data.role){
+              html+=`
+                <div class="mt-10 flex flex-wrap gap-1 items-center">
+                  <p class="text-sm text-gray-500">Role :&nbsp;</p>
+                  <p class="font-medium break-words" id="userRole">${data.role.name}</p>
+                </div>
+              `;
+            }
+
+            if(data.email){
+              html+=`
+                <div class="mt-10 flex flex-wrap gap-1 items-center">
+                  <p class="text-sm text-gray-500">Email :&nbsp;</p>
+                  <p class="font-medium break-words" id="userEmail">${data.email}</p>
+                </div>
+              `;
+            }
+
+            if(data.mobile){
+              html+=`
+                <div class="mt-10 flex flex-wrap gap-1 items-center">
+                  <p class="text-sm text-gray-500">Mobile :&nbsp;</p>
+                  <p class="font-medium break-words" id="userMobile">${data.mobile}</p>
+                </div>
+              `;
+            }
+
+            if(data.alternate_mobile){
+              html+=`
+                <div class="mt-10 flex flex-wrap gap-1 items-center">
+                  <p class="text-sm text-gray-500">Alternative Mobile :&nbsp;</p>
+                  <p class="font-medium break-words" id="userAltMobile">${data.alternate_mobile}</p>
+                </div>
+              `;
+            }
+
+            if(data.dob){
+              html+=`
+                <div class="mt-10 flex flex-wrap gap-1 items-center">
+                  <p class="text-sm text-gray-500">D.O.B :&nbsp;</p>
+                  <p class="font-medium break-words" id="userDob">${data.dob}</p>
+                </div>
+              `;
+            }
+
+            if(data.doj){
+              html+=`
+                <div class="mt-10 flex flex-wrap gap-1 items-center">
+                  <p class="text-sm text-gray-500">D.O.J :&nbsp;</p>
+                  <p class="font-medium break-words" id="userDoj">${data.doj}</p>
+                </div>
+              `;
+            }
+
+            html += `
+              <button id="closeContractModal" class="px-4 py-2 mt-15 bg-red-600 text-white rounded hover:bg-red-700">
+                Close
+              </button>`;
+        
+            $('#contractModalContents').html(html);
+            $('#myContractsModal').removeClass('hidden');
+          });
+
+          $(document).on('click','#closeContractModal',function(){
+            $('#myContractsModal').addClass('hidden');
           });
           
           // Initialize DataTable

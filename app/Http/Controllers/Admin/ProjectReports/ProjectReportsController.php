@@ -91,7 +91,7 @@ class ProjectReportsController extends Controller
     { 
 
         if ($request->ajax()) {
-            $query = ProjectContract::with('project', 'user', 'contract_type')->withTrashed()
+            $query = ProjectContract::with('project', 'user', 'contract_type','user.city', 'user.state', 'user.role')->withTrashed()
             
                 ->when($request->get('project_id'), static function ($q) use ($request) {
                     $q->where('project_id', $request->project_id);
@@ -109,8 +109,8 @@ class ProjectReportsController extends Controller
                     return $data->amount;
                 }) 
                 ->addColumn('action', static function ($data) {
-                    $jsonData = htmlspecialchars(json_encode($data->user), ENT_QUOTES, 'UTF-8');
-    
+                    $jsonData = htmlspecialchars(json_encode($data->user->load('city', 'state', 'roles')), ENT_QUOTES, 'UTF-8');
+
                     $button  = '<div class="d-flex justify-content-center">';
                     $button .= '<a class="btn btn-outline-warning btnTaskView" data-tdata="' . $jsonData . '" id="openContractsModal"><i class="fa fa-eye"></i></a>';
                   
