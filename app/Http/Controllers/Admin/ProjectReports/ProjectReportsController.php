@@ -10,6 +10,7 @@ use App\Models\ProjectContract;
 use App\Http\Controllers\Controller;
 use Yajra\DataTables\Facades\DataTables;
 use Carbon\Carbon;
+use App\Models\Admin\Labor\ProjectLaborDate;
 
 class ProjectReportsController extends Controller
 {
@@ -123,4 +124,46 @@ class ProjectReportsController extends Controller
 
     }
 
+
+    public function laborTableList(Request $request)
+    { 
+        if ($request->ajax()) {
+            $query = ProjectLaborDate::with(['project', 'labors', 'contractLabors'])->withTrashed();
+    
+            // Project
+            if ($request->filled('project_id')) {
+                $query->whereIn('project_id', $request->project_id);
+            }
+    
+            // From and To Date
+            if ($request->filled('from_date')) {
+                $query->whereDate('date', '>=', $request->from_date);
+            }
+    
+            if ($request->filled('to_date')) {
+                $query->whereDate('date', '<=', $request->to_date);
+            }
+    
+            // paid_status on related labors
+            if ($request->filled('paid_status')) {
+                $query->whereHas('labors', function ($q) use ($request) {
+                    $q->where('paid_status', $request->paid_status);
+                });
+            }
+            
+            return DataTables::eloquent($query)
+                ->addIndexColumn()
+                ->addColumn('project_name', fn($data) => $data->project->name ?? 'N/A')
+                ->addColumn('labor_count', fn($data) => $data->labors->count())
+                ->addColumn('contract_labor_count', fn($data) => $data->contractLabors->sum('count'))
+                ->addColumn('action', function ($data) {
+                    $button = '<div class="d-flex justify-content-center">';
+                    $button .= '<a href="' . route('labors.create', ['project_id' => $data->project_id, 'date' => $data->date]) . '" class="btn btn-outline-warning btn-sm m-1"><i class="fa fa-eye" aria-hidden="true"></i></a>';
+                    $button .= '</div>';
+                    return $button;
+                })
+                ->rawColumns(['action'])
+                ->make(true);
+        }
+    }
 }
