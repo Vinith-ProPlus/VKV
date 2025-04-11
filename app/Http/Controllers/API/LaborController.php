@@ -24,55 +24,6 @@ use function Laravel\Prompts\warning;
 class LaborController extends Controller
 {
     use ApiResponse;
-    public function createBlog(Request $request): JsonResponse
-    {
-        DB::beginTransaction();
-        try {
-            $request->validate([
-                'remarks'      => 'required|string|max:500',
-                'project_id' => 'required|exists:projects,id',
-                'stage_ids' => 'required',
-            ]);
-
-            $attachments = [];
-            if ($request->hasFile('attachments')) {
-                $files = is_array($request->file('attachments')) ? $request->file('attachments') : [$request->file('attachments')];
-                foreach ($files as $file) {
-                    $filename = generateUniqueFileName($file);
-                    $path = $file->storeAs('documents', $filename, 'public');
-                    $attachments[] = [
-                        'title'       => 'Blog Attachment',
-                        'description' => '',
-                        'module_name' => 'Blog',
-                        'file_path'   => $path,
-                        'file_name'   => $filename,
-                        'uploaded_by' => Auth::id(),
-                    ];
-                }
-            }
-
-            foreach ($request->stage_ids as $stage_id) {
-                $blog = Blog::create([
-                    'user_id'          => Auth::id(),
-                    'project_id'       => $request->project_id,
-                    'project_stage_id' => $stage_id,
-                    'remarks'          => $request->remarks,
-                    'is_damaged'        => $request->is_damaged ?? 0,
-                ]);
-
-                foreach ($attachments as $attachment) {
-                    Document::create(array_merge($attachment, ['module_id' => $blog->id]));
-                }
-            }
-            DB::commit();
-            return $this->successResponse($blog, "Blog created successfully!");
-        } catch (Exception $exception) {
-            DB::rollBack();
-            $ErrMsg = $exception->getMessage();
-            warning('Error::Place@Api\BlogController@store - ' . $ErrMsg);
-            return $this->errorResponse($exception->getMessage(), "Failed to create blog!", 500);
-        }
-    }
 
     /**
      * @param Request $request
@@ -218,7 +169,7 @@ class LaborController extends Controller
         }
     }
 
-    public function getLaborsByProject(Request $request)
+    public function getLaborsByProject(Request $request): JsonResponse
     {
         $request->validate(['project_id' => 'required|integer|exists:projects,id']);
 
