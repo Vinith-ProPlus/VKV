@@ -1,0 +1,17 @@
+/*!
+ * =============================================================
+ *
+ * Name: Dynamic Form 
+ * 
+ * Version : 3.0
+ * 
+ * author: Anandhan AS
+ * 
+ * Company: ProPlus Logics
+ * 
+ * Description : Add Dynamic form fields
+ * 
+ * (c) 2023 - ProPlus Logics<info@propluslogics.com> (https://propluslogics.com)
+ * 
+ * =============================================================
+ */.form-check,.form-check label,.input-remove{cursor:pointer}.dynamic-Form{text-align:center;width:100%;padding:0!important;margin:0!important}.addMoreFields{margin:0 auto}.bt{margin:10px}.text-right{text-align:right!important}.text-left{text-align:left!important}.text-center{text-align:center!important}.errors,.required{color:#ce0303;font-weight:700}.input-remove{position:absolute;top:0;right:0;background:#ca0505;padding:3px 7px;border-radius:3px;margin-top:-3px;margin-right:15px;color:#fff;font-weight:800;font-size:75%;display:none}.inputRow{margin-top:20px}.inputRow:hover .input-remove{display:block}.btn-default,.btn-default.disabled,.btn-default:disabled,.btn-default:hover,.btn-default:not(:disabled):not(.disabled).active,.btn-default:not(:disabled):not(.disabled):active,.btn-light,.btn-light.disabled,.btn-light:disabled,.btn-light:hover,.btn-light:not(:disabled):not(.disabled).active,.btn-light:not(:disabled):not(.disabled):active,.show>.btn-default.dropdown-toggle,.show>.btn-light.dropdown-toggle{color:#212529;background-color:#e8ebf2;border-color:#e8ebf2}.btn-default.focus,.btn-default:focus,.btn-default:not(:disabled):not(.disabled).active:focus,.btn-light.focus,.btn-light:focus,.btn-light:not(:disabled):not(.disabled).active:focus,.btn-light:not(:disabled):not(.disabled):active:focus,.show>.btn-default.dropdown-toggle:focus,.show>.btn-light.dropdown-toggle:focus .btn-default:not(:disabled):not(.disabled):active:focus{box-shadow:0 0 0 .2rem rgba(248,249,250,.5)}

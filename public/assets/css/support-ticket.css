@@ -1,0 +1,143 @@
+.SupportTicket table {
+  border-collapse:separate !important; 
+  border-spacing: 0px 20px !important;
+  border: none !important;
+}
+.SupportTicket #tblrequests_filter.dataTables_filter{
+  float: left;
+}
+.SupportTicket .table thead td,.SupportTicket .table thead th {
+  /*color:#9E9E9E;*/
+  font-size: 17px !important;
+}
+.SupportTicket .table tbody td {
+  margin: 10px;
+  padding: 1.5rem 2rem;
+  background-color: #fff;
+  font-weight: 600;
+  font-size: 16px !important;
+}
+.SupportTicket .dataTables_wrapper table.dataTable thead th,.SupportTicket  .dataTables_wrapper table.dataTable thead td{
+    border:none !important;
+}
+.SupportTicket .table td,.SupportTicket .table th {
+  border: none;
+  vertical-align: middle;
+}
+.SupportTicket .table tbody tr{
+  cursor: pointer;
+  border-radius: 10px;
+}
+.SupportTicket .table tbody td img{
+  width: 50px;
+  border-radius: 50%;
+  padding: 3px;
+  margin-right: 10px;
+}
+.SupportTicket .table tbody tr:hover{
+  box-shadow: 0 4px 10px 4px rgba(19, 35, 47, 0.3)
+}
+.SupportTicket .table td:first-child {
+  border-radius: 3px 0 0px 3px;
+  -moz-border-radius: 3px 0 0 3px;
+  -webkit-border-radius: 3px 0 0 3px;
+}
+
+.SupportTicket .table td:last-child {
+  border-radius: 0 3px 3px 0;
+  -moz-border-radius: 0 3px 3px 0;
+  -webkit-border-radius: 0 3px 3px 0;
+}
+
+.SupportTicket .table tbody td .badge{    
+  padding-top: 8px;
+  padding-bottom: 8px;
+  font-size: 17px;
+  background-color: transparent;
+  color:#000;
+  font-weight: 900;
+}
+.SupportTicket .table tbody td.over{
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+  max-width: 100px;
+}
+.SupportTicket .table tbody td .badge.badge-success{    
+  color:#37BC9B;  
+}
+.SupportTicket .table tbody td .badge.badge-info{    
+  color:#3BAFDA;  
+}
+.SupportTicket .table tbody td .badge.badge-secondary{    
+  color:#55595C;  
+}
+.SupportTicket .table tbody td .badge.badge-primary{    
+  color:#967ADC;  
+}
+.SupportTicket .table tbody td .badge.badge-danger{    
+  color:#DA4453;  
+}
+.SupportTicket .table tbody td .badge.badge-warning{    
+  color:#F6BB42;  
+}
+
+
+.SupportTicket .card:hover{
+  box-shadow: 0 4px 10px 4px rgba(19, 35, 47, 0.3)
+}
+.SupportTicket .card .card-header{
+  background: #fafcfb !important;
+  display: flex;
+}
+.SupportTicket .card .card-header img{
+    width:30px;
+    border-radius: 50%;
+    margin-right:10px;
+}
+.SupportTicket .card .card-header .card-title{
+  font-size: 18px;
+}
+.SupportTicket .card .card-header .card-title span{
+  font-size: 14px;
+  color:#ccc;
+}
+.SupportTicket .dropbtn {
+    cursor: pointer;
+}
+.SupportTicket .attachments img{
+  width: 100%;
+  height: 175px;
+}
+  /* The container <div> - needed to position the dropdown content */
+  .SupportTicket .dropdown {
+    position: relative;
+    display: inline-block;
+  }
+  
+  /* Dropdown Content (Hidden by Default) */
+  .SupportTicket .dropdown-content {
+    display: none;
+    position: absolute;
+    background-color: #fff;
+    min-width: 160px;
+    border-radius: 5px;
+    box-shadow: 0 4px 10px 4px rgba(19, 35, 47, 0.3);
+    z-index: 1;margin-right: 34px;
+  }
+  
+  /* Links inside the dropdown */
+  .SupportTicket .dropdown-content a {
+    color: black;
+    padding: 12px 16px;
+    text-decoration: none;
+    border-radius: 5px;
+    display: block;
+  }
+  
+  /* Change color of dropdown links on hover */
+  .SupportTicket  .dropdown-content a:hover {background-color: #9C27B0;font-weight: 700;color: #fff;}
+  
+  /* Show the dropdown menu (use JS to add this class to the .dropdown-content container when the user clicks on the dropdown button) */
+  .show {display:block !important;}
+  .SupportTicket .dropdown-hover:hover .dropdown-content{display:block}

@@ -1,0 +1,17 @@
+INSERT INTO `tbl_formats` (`SLNO`, `Format`, `FType`, `ActiveStatus`, `DFlag`) VALUES
+(1, 'd-M-Y', 'date', 1, 0),
+(2, 'd/M/Y', 'date', 1, 0),
+(3, 'd-m-Y', 'date', 1, 0),
+(4, 'd/m/Y', 'date', 1, 0),
+(5, 'd-m-y', 'date', 1, 0),
+(6, 'd/m/y', 'date', 1, 0),
+(7, 'Y-M-d', 'date', 1, 0),
+(8, 'Y/M/d', 'date', 1, 0),
+(9, 'Y-m-d', 'date', 1, 0),
+(10, 'Y/m/d', 'date', 1, 0),
+(11, 'y-m-d', 'date', 1, 0),
+(12, 'y/m/d', 'date', 1, 0),
+(13, 'M d,Y', 'date', 1, 0),
+(14, 'h:i:s A', 'time', 1, 0),
+(15, 'h:i:s a', 'time', 1, 0),
+(16, 'H:i:s', 'time', 1, 0);
