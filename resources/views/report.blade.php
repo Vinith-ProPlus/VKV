@@ -6,12 +6,19 @@
         <title>Project Report</title>
 
         {{-- <link href="{{ asset('css/style.css') }}" rel="stylesheet"> --}}
-		<link rel="stylesheet" type="text/css" href="{{url('/')}}/assets/css/style.css?r={{date('YmdHis')}}">
+        <link rel="stylesheet" type="text/css" href="{{url('/')}}/assets/css/style.css?r={{date('YmdHis')}}">
 
-		<link rel="stylesheet" type="text/css" href="{{url('/')}}/assets/css/flag-icon.css?r={{date('YmdHis')}}">
-		<link rel="stylesheet" type="text/css" href="{{url('/')}}/assets/css/fontawesome.css?r={{date('YmdHis')}}">
-		<link rel="stylesheet" type="text/css" href="{{url('/')}}/assets/css/support/margin.css">
-		<link rel="stylesheet" type="text/css" href="{{url('/')}}/assets/css/bootstrap.css"> 
+        <link rel="stylesheet" type="text/css" href="{{url('/')}}/assets/css/flag-icon.css?r={{date('YmdHis')}}">
+        <link rel="stylesheet" type="text/css" href="{{url('/')}}/assets/css/fontawesome.css?r={{date('YmdHis')}}">
+        <link rel="stylesheet" type="text/css" href="{{url('/')}}/assets/css/support/margin.css">
+        <link rel="stylesheet" type="text/css" href="{{url('/')}}/assets/css/bootstrap.css"> 
+
+        <link rel="stylesheet" type="text/css" href="{{url('/')}}/assets/plugins/bootstrap-multiselect/bootstrap-multiselect.css?r={{date('YmdHis')}}">
+        <link rel="stylesheet" type="text/css" href="{{url('/')}}/assets/css/select2.css?r={{date('YmdHis')}}">
+        <link rel="stylesheet" type="text/css" href="{{url('/')}}/assets/css/loader.css?r={{date('YmdHis')}}">
+       
+        <link rel="stylesheet" type="text/css" href="{{url('/assets/plugins/pplDataTable/pplDataTable.min.css')}}">
+
 
         {{-- bootstrap cdn--}}
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.1/dist/css/bootstrap.min.css">
@@ -19,9 +26,7 @@
 	   
         <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-        
-        <link rel="stylesheet" type="text/css" href="{{url('/assets/plugins/pplDataTable/pplDataTable.min.css')}}">
-        <link rel="stylesheet" type="text/css" href="{{url('/assets/plugins/pplDataTable/pplDataTable.min.css')}}">
+         
         
         <link rel="stylesheet" type="text/css" href="{{url('/')}}/assets/css/datatables.css?r={{date('YmdHis')}}">
         <!-- Leaflet CSS -->
@@ -488,7 +493,68 @@
                                         </div>
                                       </div>
                                 </div>
-                                <div class="tab-pane fade" id="project-labors">4</div>
+                                <div class="tab-pane fade" id="project-labors">
+                                  {{-- --------------------------------------- --}}
+                                  <div class="card"> 
+                                    <div class="card-header text-center">
+                                      <div class="row align-items-center justify-content-center">
+                                          <div class="col-sm-2">
+                                              <div class="form-group text-center mh-60">
+                                                  <label style="margin-bottom: 0px;">Status</label>
+                                                  <div id="divStatus">
+                                                      <select class="form-control form-control-sm text-center" id="status">
+                                                          <option value="">Select a Status</option>
+                                                          <option value="0">Paid</option>
+                                                          <option value="1">Un Paid</option>
+                                                      </select>
+                                                  </div>
+                                              </div>
+                                          </div>
+                                          <div class="col-sm-2">
+                                              <div class="form-group text-center mh-60">
+                                                  <label class="mb-0">From Date</label>
+                                                  <div id="divFromDate">
+                                                      <input type="date" class="form-control form-control-sm text-center" id="from_date_filter" value="">
+                                                  </div>
+                                              </div>
+                                          </div>
+                                          <div class="col-sm-2">
+                                              <div class="form-group text-center mh-60">
+                                                  <label class="mb-0">To Date</label>
+                                                  <div id="divToDate">
+                                                      <input type="date" class="form-control form-control-sm text-center" id="to_date_filter" value="">
+                                                  </div>
+                                              </div>
+                                          </div>
+                                          <div class="col-sm-2 d-flex align-items-center justify-content-center">
+                                              <button class="btn btn-sm btn-danger mt-3" id="clearFilters">Clear Filters</button>
+                                          </div>
+                                      </div>
+                                    </div>
+                                  <div class="card-body">
+                                      <div class="row">
+                                          <div class="col-12 col-sm-12 col-lg-12">
+                                              <div class="table-responsive">
+                                                  <table class="table text-center border rounded" id="list_table">
+                                                      <thead class="thead-light">
+                                                      <tr>
+                                                          <th>S.No</th>
+                                                          <th>Project Name</th>
+                                                          <th>Date</th>
+                                                          <th>Labor Count</th>
+                                                          <th>Contract Labor Count</th>
+                                                          <th>Actions</th>
+                                                      </tr>
+                                                      </thead>
+                                                      <tbody class="small">
+                                                      </tbody>
+                                                  </table>
+                                              </div>
+                                          </div>
+                                      </div>
+                                  </div>
+                              </div>
+                                </div>
                                 <div class="tab-pane fade" id="project-purchases">5</div>
                             </div>
                         </div>
@@ -510,7 +576,8 @@
     <script src="{{url('/assets/plugins/pplDataTable/pplDataTable.js')}}"></script>
 		<script src="{{url('/assets/plugins/pplDataTable/dataTable.min.js')}}"></script>
 
-
+		<script src="{{url('/')}}/assets/plugins/bootstrap-multiselect/bootstrap-multiselect.js?r={{date('YmdHis')}}"></script>
+		<script src="{{url('/')}}/assets/js/select2/select2.full.min.js?r={{date('YmdHis')}}"></script>
  
 </body>
 
@@ -591,9 +658,7 @@
           $(document).on('click','#openContractsModal',function(){
             let data = $(this).data('tdata');
             let html = '<h2 class="text-xl font-bold mb-4">User Details</h2>';
-
-            console.log(data);
-
+ 
             if(data.profile_image){
               html += `<img id="taskImage" src="${data.profile_image}" alt="task image" style="border-radius: 5px;">`;
             }
@@ -726,8 +791,133 @@
                 ]
             });
  
+            
+            // Initialize multiselect for filters
+            initMultiSelect();
+            
+            // Setup event handlers
+            $('#multiselect_project_id, #status, #from_date_filter, #to_date_filter').on('change', reloadTable);
+            $('#clearFilters').click(clearFilter);
+            
+            // Initialize DataTable
+            $('#list_table').DataTable({ 
+                "columnDefs": [
+                    {"className": "dt-center", "targets": "_all"}
+                ],
+                serverSide: true,
+                iDisplayLength: 10,
+                lengthMenu: [[10, 25, 50, -1], [10, 25, 50, "All"]],
+                dom: 'lBfrtip',
+                buttons: [
+                    'copy', 'excel', 'pdf', 'print'
+                ],
+                ajax: {
+                    url: '{{ route("laborTableList") }}',
+                    type: 'GET',
+                    data: function (d) {
+                        d.project_id = [project_id];
+                        d.paid_status = $('#status').val();
+                        d.from_date = $('#from_date_filter').val();
+                        d.to_date = $('#to_date_filter').val();
+                    }
+                },
+                columns: [
+                    { data: 'DT_RowIndex', orderable: false, searchable: false },
+                    { data: 'project_name' },
+                    { data: 'date' },
+                    { data: 'labor_count' },
+                    { data: 'contract_labor_count' },
+                    { data: 'action', orderable: false, searchable: false }
+                ]
+            });
+            
+            // Load projects
+            getProjects();
+
+        function initMultiSelect() {
+            // Initialize multiselect for dropdown filters
+            $('#status').multiselect({
+                buttonClass: 'btn btn-link',
+                enableFiltering: true,
+                maxHeight: 250,
+                buttonWidth: '100%'
+            });
+        }
+        
+        function reloadTable() {
+            $('#list_table').DataTable().ajax.reload();
+        }
+        
+        function getProjects() {
+            const $multiSelect = $('#multiselect_project_id'); 
+            const $modalSelect = $('#selectProjectModal #project_id'); 
+            const selectedMultiProject = $multiSelect.attr('data-selected');
+            const selectedModalProject = $modalSelect.attr('data-selected');
+
+            $.ajax({
+                url: "{{ route('getProjects') }}",
+                type: 'GET',
+                dataType: 'json',
+                success: function (response) {
+                    let options = '<option value="">Select a Project</option>';
+                    response.forEach(item => {
+                        options += `<option value="${item.id}" ${(item.id == selectedMultiProject || item.id == selectedModalProject) ? 'selected' : ''}>${item.name}</option>`;
+                    });
+
+                    // Update and rebuild multiselect
+                    $multiSelect.html(options);
+                    $multiSelect.multiselect('rebuild');
+
+                    // Update and reinitialize Select2
+                    $modalSelect.html(options);
+                    $modalSelect.select2({ dropdownParent: $('#selectProjectModal') });
+                },
+                error: function () {
+                    console.error("Error fetching projects.");
+                }
+            });
+        }
+
+
+        // function getLaborStatus() {
+        //     let statusSelect = $('#status');
+        //     let selectedProject = statusSelect.attr('data-selected');
+
+        //     $.ajax({
+        //         url: "{{ route('getLaborStatus') }}",
+        //         type: 'GET',
+        //         dataType: 'json',
+        //         data: {'status':0},
+        //         success: function (response) {
+        //           console.log(response);
+        //         }
+        //     })
+        // };
+
+        // getLaborStatus();
+
+        $('#selectProjectForm').submit(function(e) {
+            e.preventDefault();
+            let projectId = $('#selectProjectModal #project_id').val();
+            let date = $('#date').val();
+            if (projectId && date) {
+                window.location.href = '/admin/manage-projects/labors/create?project_id=' + projectId + '&date=' + date;
+            } else {
+                alert('Please fill all required fields.');
+            }
+        });
+
+        function clearFilter() {
+            $('#multiselect_project_id').val('').multiselect('refresh');
+            $('#status').val('').multiselect('refresh');
+            $('#from_date_filter').val('');
+            $('#to_date_filter').val('');
+            reloadTable();
+        }
+
         })
     </script> 
+    {{-- map script --}}
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const project = "{{ $project->site->name ?? 'Site Location' }}";
