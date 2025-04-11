@@ -5,6 +5,7 @@ use App\Http\Controllers\API\BlogController;
 use App\Http\Controllers\API\GeneralController;
 use App\Http\Controllers\API\LaborController;
 use App\Http\Controllers\API\MobileUserAttendanceController;
+use App\Http\Controllers\API\PurchaseRequestApiController;
 use App\Http\Controllers\API\SupportTicketController;
 use App\Models\Admin\Labor\LaborDesignation;
 use Illuminate\Http\JsonResponse;
@@ -74,15 +75,16 @@ Route::middleware('auth:sanctum')->group(static function () {
     Route::post('blog/getCompletedTaskData', [BlogController::class, 'getCompletedTaskData'])->name('getCompletedTaskData');
     Route::post('blog/createBlog', [BlogController::class, 'createBlog'])->name('createBlog');
 
-
-    // Blog
+    // Labor
     Route::post('labors/getLaborDates', [LaborController::class, 'getLaborDates'])->name('getLaborDates');
     Route::post('labors/getLaborData', [LaborController::class, 'getLaborData'])->name('getLaborData');
     Route::post('labors/create', [LaborController::class, 'storeMultipleLabors'])->name('storeMultipleLabors');
     Route::post('labors/getLaborsByProject', [LaborController::class, 'getLaborsByProject'])->name('getLaborsByProject');
     Route::post('labors/reallocateLabors', [LaborController::class, 'reallocateLabors'])->name('reallocateLabors');
 
-
+    Route::post('purchase-requests', [PurchaseRequestApiController::class, 'index']);
+    Route::post('purchase-requests/show', [PurchaseRequestApiController::class, 'show']);
+    Route::post('purchase-requests/store', [PurchaseRequestApiController::class, 'store']);
 
 
 
