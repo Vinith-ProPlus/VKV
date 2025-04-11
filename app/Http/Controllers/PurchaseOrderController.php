@@ -32,6 +32,9 @@ class PurchaseOrderController extends Controller
 {
     use AuthorizesRequests;
 
+    /**
+     * @throws AuthorizationException
+     */
     public function index(Request $request): Factory|Application|View|JsonResponse
     {
         $this->authorize('View Purchase Orders');
@@ -63,13 +66,21 @@ class PurchaseOrderController extends Controller
         return view('admin.purchase_orders.index');
     }
 
-    public function show($id)
+    /**
+     * @param $id
+     * @return \Illuminate\Foundation\Application|Factory|View
+     */
+    public function show($id): \Illuminate\Foundation\Application|Factory|View
     {
         $order = PurchaseOrder::with(['details.product', 'details.category'])->findOrFail($id);
         return view('admin.purchase_orders.show', compact('order'));
     }
 
-    public function create(Request $request)
+    /**
+     * @param Request $request
+     * @return \Illuminate\Foundation\Application|Factory|View
+     */
+    public function create(Request $request): \Illuminate\Foundation\Application|Factory|View
     {
         $purchaseRequest = null;
         $products = collect();
@@ -89,7 +100,7 @@ class PurchaseOrderController extends Controller
         ));
     }
 
-    public function store(Request $request)
+    public function store(Request $request): RedirectResponse
     {
         $request->validate([
             'project_id' => 'required|exists:projects,id',
@@ -181,16 +192,6 @@ class PurchaseOrderController extends Controller
                     'total_amount_with_gst' => $totalWithGstValue,
                     'status' => 'Pending', // Default status for new items
                 ]);
-
-                // Update project stock
-                $this->updateProjectStock(
-                    $request->project_id,
-                    $productId,
-                    $categoryId,
-                    $quantity,
-                    $currentUserId,
-                    'PO Created'
-                );
             }
 
             DB::commit();
@@ -204,7 +205,7 @@ class PurchaseOrderController extends Controller
     /**
      * Update project stock - add new stock or update existing
      */
-    private function updateProjectStock($projectId, $productId, $categoryId, $quantity, $updatedBy, $transactionType)
+    private function updateProjectStock($projectId, $productId, $categoryId, $quantity, $updatedBy, $transactionType): void
     {
         // Try to find existing stock record
         $stock = ProjectStock::where('project_id', $projectId)
@@ -230,39 +231,63 @@ class PurchaseOrderController extends Controller
         }
     }
 
-    public function markAsDelivered(Request $request)
+    public function markAsDelivered(Request $request): JsonResponse
     {
         $request->validate([
             'id' => 'required|exists:purchase_order_details,id',
         ]);
 
-        $detail = PurchaseOrderDetail::findOrFail($request->id);
+        DB::beginTransaction();
+        try {
+            $detail = PurchaseOrderDetail::findOrFail($request->id);
 
-        $detail->status = 'Delivered';
-        $detail->remarks = $request->remarks ?? '';
-        $detail->delivery_date = Carbon::now();
+            if($detail) {
+                $detail->status = 'Delivered';
+                $detail->remarks = $request->remarks ?? '';
+                $detail->delivery_date = Carbon::now();
 
-        if ($request->hasFile('attachments')) {
-            foreach ($request->file('attachments') as $file) {
-                $filename = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME) .
-                    '_' . now()->timestamp . '_' . random_int(1000, 9999) .
-                    '.' . $file->getClientOriginalExtension();
-                $path = $file->storeAs('documents', $filename, 'public');
+                if ($request->hasFile('attachments')) {
+                    foreach ($request->file('attachments') as $file) {
+                        $filename = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME) .
+                            '_' . now()->timestamp . '_' . random_int(1000, 9999) .
+                            '.' . $file->getClientOriginalExtension();
+                        $path = $file->storeAs('documents', $filename, 'public');
 
-                Document::create([
-                    'title' => 'Purchase Order Detail Attachment',
-                    'description' => '',
-                    'module_name' => 'Purchase Order Detail',
-                    'module_id' => $detail->id,
-                    'file_path' => $path,
-                    'file_name' => $filename,
-                    'uploaded_by' => auth()->id(),
-                ]);
+                        Document::create([
+                            'title' => 'Purchase Order Detail Attachment',
+                            'description' => '',
+                            'module_name' => 'Purchase Order Detail',
+                            'module_id' => $detail->id,
+                            'file_path' => $path,
+                            'file_name' => $filename,
+                            'uploaded_by' => auth()->id(),
+                        ]);
+                    }
+                }
+
+                // Get the purchase order to access the project ID
+                $purchaseOrder = $detail->purchaseOrder;
+
+                // Update project stock when item is delivered
+                $this->updateProjectStock(
+                    $purchaseOrder->project_id,
+                    $detail->product_id,
+                    $detail->category_id,
+                    $detail->quantity,
+                    Auth::id(),
+                    'PO Item Delivered'
+                );
+
+                $detail->save();
+            } else {
+                return response()->json(['success' => false, 'message' => 'Product not found!.'], 500);
             }
+
+            DB::commit();
+            return response()->json(['success' => true, 'message' => 'Marked as Delivered!']);
+        } catch (\Exception $e) {
+            DB::rollback();
+            return response()->json(['success' => false, 'message' => 'Error: ' . $e->getMessage()], 500);
         }
-
-        $detail->save();
-
-        return response()->json(['success' => true, 'message' => 'Marked as Delivered!']);
     }
 }
