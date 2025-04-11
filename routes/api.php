@@ -58,6 +58,7 @@ Route::middleware('auth:sanctum')->group(static function () {
     Route::post('visitors/get-visitor', [GeneralController::class, 'getVisitor']);
     Route::post('visitors/get-visitors', [GeneralController::class, 'getVisitors']);
     Route::post('visitors/create-visitor', [GeneralController::class, 'createVisitor']);
+    Route::post('visitors/delete-visitor', [GeneralController::class, 'deleteVisitor']);
 
     // Support Ticket
     Route::post('support/getSupportTypes', [SupportTicketController::class, 'getSupportTypes'])->name('getSupportTypes');

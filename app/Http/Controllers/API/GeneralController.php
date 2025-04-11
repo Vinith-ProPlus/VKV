@@ -356,6 +356,26 @@ class GeneralController extends Controller
         }
     }
 
+    public function deleteVisitor(Request $request): JsonResponse
+    {
+        DB::beginTransaction();
+        try {
+            $request->validate([
+                'id' => 'required|exists:visitors,id',
+            ]);
+
+            $visitor = Visitor::findOrFail($request->id);
+            $visitor->delete();
+            DB::commit();
+            return $this->successResponse([], "Visitor deleted successfully!");
+        } catch (Exception $exception) {
+            DB::rollBack();
+            $ErrMsg = $exception->getMessage();
+            warning('Error::Place@GeneralController@deleteVisitor - ' . $ErrMsg);
+            return $this->errorResponse($ErrMsg, "Visitor deletion failed!", 500);
+        }
+    }
+
     public function getContent(Request $request): JsonResponse
     {
         $query = Content::where('is_active', 1);

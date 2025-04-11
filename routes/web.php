@@ -8,7 +8,7 @@ use App\Http\Controllers\Admin\Settings\ContentController;
 use App\Http\Controllers\Admin\Users\BlogController;
 use App\Http\Controllers\Admin\Users\SupportTicketController;
 use App\Http\Controllers\Admin\Users\SupportTicketMessageController;
-use App\Http\Controllers\admin\Users\UserController;
+use App\Http\Controllers\Admin\Users\UserController;
 use App\Http\Controllers\Auth\SocialLoginController;
 use App\Http\Controllers\GeneralController;
 use App\Http\Controllers\PayrollController;
