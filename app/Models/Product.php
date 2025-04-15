@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 /**
  * @method static create(mixed $data)
  * @method static findOrFail($id)
+ * @method static where(string $string, mixed $categoryId)
  */
 class Product extends Model
 {
@@ -18,6 +19,8 @@ class Product extends Model
     protected $fillable = [
         'name', 'code', 'is_active', 'image', 'category_id', 'tax_id', 'uom_id'
     ];
+
+    protected $appends = ['image_url'];
 
     /**
      * @return BelongsTo
@@ -49,5 +52,10 @@ class Product extends Model
     public function projectStocks(): HasMany
     {
         return $this->hasMany(ProjectStock::class);
+    }
+
+    public function getImageUrlAttribute()
+    {
+        return generate_file_url($this->image);
     }
 }

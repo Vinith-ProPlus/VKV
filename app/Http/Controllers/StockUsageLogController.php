@@ -25,7 +25,7 @@ class StockUsageLogController extends Controller
         $users = User::all();
 
         if ($request->ajax()) {
-            $query = StockUsageLog::with(['project', 'product', 'category', 'takenByUser']);
+            $query = StockUsageLog::with(['project', 'product', 'category', 'takenByUser'])->latest();
 
             if ($request->has('project_id') && !empty($request->project_id)) {
                 $query->where('project_id', $request->project_id);

@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 
 /**
  * @method static create(array $array)
+ * @method static where(string $string, mixed $project_id)
  */
 class ProjectStock extends Model
 {

@@ -21,6 +21,8 @@ use App\Models\Product;
 use App\Models\ProductCategory;
 use App\Models\Project;
 use App\Models\ProjectContract;
+use App\Models\ProjectStock;
+use App\Models\StockUsageLog;
 use App\Models\SupportType;
 use App\Models\User;
 use App\Models\UserDevice;
@@ -492,5 +494,94 @@ class GeneralController extends Controller
             ]);
 
         return $this->successResponse($contractors, "Project Contractors fetched successfully!");
+    }
+
+    public function getProjectStockCategories(Request $request): JsonResponse
+    {
+        $request->validate([
+            'project_id' => 'required|exists:projects,id'
+        ]);
+        $request->merge(['per_page' => 100000, 'sort_order' => 'asc', 'sort_by' => 'name']);
+        $categories = ProductCategory::whereHas('products.projectStocks', static function($query) use ($request) {
+            $query->where('project_id', $request->project_id);
+        });
+
+        $query = dataFilter($categories, $request);
+        return $this->successResponse(dataFormatter($query), "Product Stock Categories fetched successfully!");
+    }
+
+    public function getProjectStockProducts(Request $request): JsonResponse
+    {
+        $request->validate([
+            'project_id' => 'required|exists:projects,id',
+            'category_id' => 'required|exists:product_categories,id'
+        ]);
+        $request->merge(['per_page' => 100000, 'sort_order' => 'asc', 'sort_by' => 'name']);
+        $projectId = $request->project_id;
+        $categoryId = $request->category_id;
+
+        $products = Product::with('projectStocks')->where('category_id', $categoryId)
+            ->whereHas('projectStocks', static function($query) use ($projectId) {
+                $query->where('project_id', $projectId);
+            });
+
+        $query = dataFilter($products, $request);
+        return $this->successResponse(dataFormatter($query), "Product Stock Product fetched successfully!");
+    }
+
+    public function adjustProductStock(Request $request): JsonResponse
+    {
+        $request->validate([
+            'project_id' => 'required|exists:project_stocks,project_id',
+            'category_id' => 'required|exists:project_stocks,category_id',
+            'product_id' => 'required|exists:project_stocks,product_id',
+            'quantity' => 'required|numeric|min:1',
+            'remarks' => 'required|string|max:255',
+        ]);
+
+        DB::beginTransaction();
+
+        try {
+            $stock = ProjectStock::where('project_id', $request->project_id)->where('product_id', $request->product_id)->first();
+
+            if (!$stock) {
+                return $this->errorResponse('Stock not found for the given product and project.', '',404);
+            }
+
+            if ($stock->quantity < $request->quantity) {
+                return $this->errorResponse('Cannot subtract more than available stock.', '',404);
+            }
+
+            // Get previous quantity before updating
+            $previousQuantity = $stock->quantity;
+
+            // Calculate balance quantity
+            $balanceQuantity = $previousQuantity - $request->quantity;
+
+            // Perform subtraction
+            $stock->quantity -= $request->quantity;
+            $stock->last_updated_by = Auth::id();
+            $stock->last_transaction_type = $request->remarks;
+            $stock->save();
+
+            // Log usage
+            $log = new StockUsageLog([
+                'project_id' => $request->project_id,
+                'category_id' => $request->category_id,
+                'product_id' => $request->product_id,
+                'previous_quantity' => $previousQuantity,
+                'quantity' => $request->quantity,
+                'balance_quantity' => $balanceQuantity,
+                'taken_by' => Auth::id(),
+                'taken_at' => now(),
+                'remarks' => $request->remarks,
+            ]);
+            $log->save();
+            DB::commit();
+            return $this->successResponse($stock, "Stock updated successfully.");
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return $this->errorResponse('Cannot subtract the product stock.', $e->getMessage(),500);
+        }
     }
 }

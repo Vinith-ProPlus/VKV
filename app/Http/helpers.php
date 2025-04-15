@@ -1254,7 +1254,7 @@ function generate_file_url($file_path): Application|string|UrlGenerator
         // Search filter
         $query->when($inputs->has('search') && !empty($searchColumns), function ($q) use ($inputs, $searchColumns) {
             $search = $inputs->get('search');
-            $q->where(function ($subQuery) use ($searchColumns, $search) {
+            $q->where(static function ($subQuery) use ($searchColumns, $search) {
                 foreach ($searchColumns as $column) {
                     $subQuery->orWhere($column, 'like', "%{$search}%");
                 }

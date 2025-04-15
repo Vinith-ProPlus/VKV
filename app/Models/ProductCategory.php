@@ -7,6 +7,9 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * @method static whereHas(string $string, \Closure $param)
+ */
 class ProductCategory extends Model
 {
     use HasFactory, SoftDeletes;
