@@ -12,7 +12,9 @@ use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use function Laravel\Prompts\warning;
 
@@ -28,6 +30,7 @@ class BlogController extends Controller
                 'project_id' => 'required|exists:projects,id',
                 'stage_ids' => 'required',
             ]);
+            $project_id = $request->project_id;
 
             $attachments = [];
             if ($request->hasFile('attachments')) {
@@ -49,7 +52,7 @@ class BlogController extends Controller
             foreach ($request->stage_ids as $stage_id) {
                 $blog = Blog::create([
                     'user_id'          => Auth::id(),
-                    'project_id'       => $request->project_id,
+                    'project_id'       => $project_id,
                     'project_stage_id' => $stage_id,
                     'remarks'          => $request->remarks,
                     'is_damaged'        => $request->is_damaged ?? 0,
@@ -58,7 +61,12 @@ class BlogController extends Controller
                 foreach ($attachments as $attachment) {
                     Document::create(array_merge($attachment, ['module_id' => $blog->id]));
                 }
+
+                Cache::forget("blog_dates:{$project_id}:{$stage_id}:month");
+                Cache::forget("blog_dates:{$project_id}:{$stage_id}:date");
             }
+            Cache::forget("blog_dates:{$project_id}::month");
+            Cache::forget("blog_dates:{$project_id}::date");
             DB::commit();
             return $this->successResponse($blog, "Blog created successfully!");
         } catch (Exception $exception) {
@@ -77,123 +85,98 @@ class BlogController extends Controller
     {
         $request->validate([
             'project_id' => 'required|integer|exists:projects,id',
-            'stage_id'   => 'required|integer|exists:project_stages,id',
+            'stage_id'   => 'nullable|integer|exists:project_stages,id',
             'type'       => 'required|in:month,date',
         ]);
 
         $projectId = $request->input('project_id');
-        $stageId = $request->input('stage_id');
-        $type = $request->input('type'); // 'month' or 'date'
+        $stageId   = $request->input('stage_id');
+        $type      = $request->input('type');
 
-        if ($type === 'month') {
-            $dates = Blog::where('project_id', $projectId)
-                ->where('project_stage_id', $stageId)
-                ->selectRaw("DISTINCT DATE_FORMAT(created_at, '%Y-%m') as month_key, DATE_FORMAT(created_at, '%m/%Y') as formatted_month")
-                ->orderByRaw("DATE_FORMAT(created_at, '%Y-%m') DESC") // Sorting is done here in SQL
-                ->pluck('formatted_month');
-        } elseif ($type === 'date') {
-            $dates = Blog::where('project_id', $projectId)
-                ->where('project_stage_id', $stageId)
-                ->selectRaw("DISTINCT DATE_FORMAT(created_at, '%Y-%m-%d') as date_key, DATE_FORMAT(created_at, '%d/%m/%Y') as formatted_date")
-                ->orderByRaw("DATE_FORMAT(created_at, '%Y-%m-%d') DESC") // Sorting is done here in SQL
-                ->pluck('formatted_date');
-        }
+        $cacheKey = "blog_dates:{$projectId}:{$stageId}:{$type}";
+
+        $dates = Cache::remember($cacheKey, now()->addMinutes(30), static function () use ($projectId, $stageId, $type) {
+            $query = Blog::where('project_id', $projectId);
+
+            if ($stageId) {
+                $query->where('project_stage_id', $stageId);
+            }
+
+            $createdAts = $query->orderBy('created_at', 'desc')->pluck('created_at');
+
+            return $createdAts->map(function ($createdAt) use ($type) {
+                $date = Carbon::parse($createdAt);
+                if ($type === 'month') {
+                    return $date->format('m/Y');
+                }
+                return $date->format('d/m/Y');
+            })->unique()->values();
+        });
+
         return $this->successResponse($dates, "Blog dates fetched successfully!");
     }
 
     public function getBlogData(Request $request): JsonResponse
     {
-        $request->validate([
-            'project_id' => 'required|integer|exists:projects,id',
-            'stage_id'   => 'required|integer|exists:project_stages,id',
-            'type'       => ['required', Rule::in(['month', 'date'])],
-            'value'      => 'required',
+        // Validate the incoming request
+        $validated = $request->validate([
+            'project_id'  => ['required', 'integer', 'exists:projects,id'],
+            'stage_id'    => ['nullable', 'integer', 'exists:project_stages,id'],
+            'is_damaged'  => ['nullable', 'integer', Rule::in([0, 1])],
+            'type'        => ['required', Rule::in(['month', 'date'])],
+            'value'       => ['required'],
+        ], [
+            'project_id.required' => 'Project ID is required.',
+            'project_id.integer'  => 'Project ID must be an integer.',
+            'project_id.exists'   => 'The selected project does not exist.',
+            'stage_id.integer'    => 'Stage ID must be an integer.',
+            'stage_id.exists'     => 'The selected stage does not exist.',
+            'is_damaged.integer'  => 'Damaged flag must be 0 or 1.',
+            'is_damaged.in'       => 'Invalid value for damage filter. Use 0 or 1.',
+            'type.required'       => 'Type is required (month or date).',
+            'type.in'             => 'Type must be either "month" or "date".',
+            'value.required'      => 'Value is required based on the selected type.',
         ]);
 
-        $projectId = $request->input('project_id');
-        $stageId = $request->input('stage_id');
-        $type = $request->input('type');
-        $value = $request->input('value');
+        $projectId   = $validated['project_id'];
+        $stageId     = $validated['stage_id'] ?? null;
+        $isDamaged   = $validated['is_damaged'];
+        $type        = $validated['type'];
+        $value       = $validated['value'];
 
-        // Start building the query for blogs
-        $query = Blog::with(['project:id,name', 'stage:id,name', 'user:id,name', 'documents'])
-            ->where('project_id', $projectId)->where('project_stage_id', $stageId)->where('is_damaged', 0);
+        try {
+            // Start building the query
+            $query = Blog::with(['project:id,name', 'stage:id,name', 'user:id,name', 'documents'])->where('project_id', $projectId);
 
-        // Filter based on type and value
-        if ($type === 'month') {
-            try {
-                $monthDate = Carbon::createFromFormat('F, Y', $value, 'Asia/Kolkata')->startOfMonth();
-                $startOfMonth = $monthDate->copy()->setTime(0, 0, 0);
-                $endOfMonth = $monthDate->copy()->endOfMonth()->setTime(23, 59, 59);
-                $query->whereBetween('created_at', [$startOfMonth, $endOfMonth]);
-            } catch (\Exception $e) {
-                return response()->json(['error' => 'Invalid month format. Please use "Month, Year" (e.g., March, 2025).'], 422);
+            // Apply filters
+            if ($stageId) {
+                $query->where('project_stage_id', $stageId);
             }
-        } elseif ($type === 'date') {
-            // Use Carbon to parse the date (e.g., 01/04/2025)
-            try {
-                $date = Carbon::createFromFormat('d/m/Y', $value);
-                $formattedDate = $date->toDateString(); // Get the date in Y-m-d format
-                $query->whereDate('created_at', $formattedDate);
-            } catch (\Exception $e) {
-                return response()->json(['error' => 'Invalid date format. Please use "DD/MM/YYYY" (e.g., 01/04/2025).'], 422);
+
+            if ($isDamaged === 1) {
+                $query->where('is_damaged', 1);
+            } elseif ($isDamaged === 0) {
+                $query->where('is_damaged', 0);
             }
+
+            // Apply date/month-based filter
+            if ($type === 'month') {
+                Log::error($value);
+                $monthDate = Carbon::createFromFormat('F, Y', $value, 'Asia/Kolkata')?->startOfMonth();
+                $query->whereBetween('created_at', [$monthDate->copy()->startOfDay(), $monthDate->copy()->endOfMonth()->endOfDay()]);
+            } elseif ($type === 'date') {
+                $date = Carbon::createFromFormat('d/m/Y', $value, 'Asia/Kolkata');
+                $query->whereDate('created_at', $date?->toDateString());
+            }
+
+            // Fetch, filter and format data
+            $blogs = $query->orderByDesc('created_at');
+            $filteredData = dataFilter($blogs, $request);
+            return $this->successResponse(dataFormatter($filteredData), 'Blogs fetched successfully!');
+        } catch (\Exception $e) {
+            Log::error('Error fetching blog data', ['error'  => $e->getMessage(), 'input'  => $request->all()]);
+            return response()->json(['error' => 'An error occurred while fetching the blog data.'], 500);
         }
-
-        // Execute the query
-        $blogs = $query->orderByDesc('created_at');
-
-        // Apply additional data filtering if needed
-        $filteredData = dataFilter($blogs, $request);
-
-        return $this->successResponse(dataFormatter($filteredData), "Blogs fetched successfully!");
-    }
-    public function getDamagedData(Request $request): JsonResponse
-    {
-        $request->validate([
-            'project_id' => 'required|integer|exists:projects,id',
-            'stage_id'   => 'required|integer|exists:project_stages,id',
-            'type'       => ['required', Rule::in(['month', 'date'])],
-            'value'      => 'required',
-        ]);
-
-        $projectId = $request->input('project_id');
-        $stageId = $request->input('stage_id');
-        $type = $request->input('type');
-        $value = $request->input('value');
-
-        // Start building the query for blogs
-        $query = Blog::with(['project:id,name', 'stage:id,name', 'user:id,name', 'documents'])
-            ->where('project_id', $projectId)->where('project_stage_id', $stageId)->where('is_damaged', 1);
-
-        // Filter based on type and value
-        if ($type === 'month') {
-            try {
-                $monthDate = Carbon::createFromFormat('F, Y', $value, 'Asia/Kolkata')->startOfMonth();
-                $startOfMonth = $monthDate->copy()->setTime(0, 0, 0);
-                $endOfMonth = $monthDate->copy()->endOfMonth()->setTime(23, 59, 59);
-                $query->whereBetween('created_at', [$startOfMonth, $endOfMonth]);
-            } catch (\Exception $e) {
-                return response()->json(['error' => 'Invalid month format. Please use "Month, Year" (e.g., March, 2025).'], 422);
-            }
-        } elseif ($type === 'date') {
-            // Use Carbon to parse the date (e.g., 01/04/2025)
-            try {
-                $date = Carbon::createFromFormat('d/m/Y', $value);
-                $formattedDate = $date->toDateString(); // Get the date in Y-m-d format
-                $query->whereDate('created_at', $formattedDate);
-            } catch (\Exception $e) {
-                return response()->json(['error' => 'Invalid date format. Please use "DD/MM/YYYY" (e.g., 01/04/2025).'], 422);
-            }
-        }
-
-        // Execute the query
-        $blogs = $query->orderByDesc('created_at');
-
-        // Apply additional data filtering if needed
-        $filteredData = dataFilter($blogs, $request);
-
-        return $this->successResponse(dataFormatter($filteredData), "Damaged data fetched successfully!");
     }
 
     /**

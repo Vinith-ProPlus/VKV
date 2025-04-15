@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 /**
  * @method static create(array $array)
  * @method static findOrFail($id)
+ * @method static where(string $string, mixed $projectId)
  */
 class Blog extends Model
 {
