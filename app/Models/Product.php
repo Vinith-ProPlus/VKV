@@ -1,11 +1,14 @@
 <?php
 namespace App\Models;
 
+use Illuminate\Contracts\Routing\UrlGenerator;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Foundation\Application;
 
 /**
  * @method static create(mixed $data)
@@ -54,7 +57,10 @@ class Product extends Model
         return $this->hasMany(ProjectStock::class);
     }
 
-    public function getImageUrlAttribute()
+    /**
+     * @return Application|string|UrlGenerator
+     */
+    public function getImageUrlAttribute(): Application|string|UrlGenerator
     {
         return generate_file_url($this->image);
     }

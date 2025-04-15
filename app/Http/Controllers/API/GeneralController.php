@@ -516,16 +516,27 @@ class GeneralController extends Controller
             'project_id' => 'required|exists:projects,id',
             'category_id' => 'required|exists:product_categories,id'
         ]);
+
         $request->merge(['per_page' => 100000, 'sort_order' => 'asc', 'sort_by' => 'name']);
         $projectId = $request->project_id;
         $categoryId = $request->category_id;
 
-        $products = Product::with('projectStocks')->where('category_id', $categoryId)
-            ->whereHas('projectStocks', static function($query) use ($projectId) {
-                $query->where('project_id', $projectId);
-            });
+        $products = Product::with(['projectStocks' => static function ($query) use ($projectId) {
+            $query->where('project_id', $projectId);
+        }])->where('category_id', $categoryId)->whereHas('projectStocks', static function ($query) use ($projectId) {
+            $query->where('project_id', $projectId);
+        });
 
         $query = dataFilter($products, $request);
+
+        // Add current_stock field to each product
+        $query->getCollection()->transform(static function ($product) {
+            $stock = $product->projectStocks->first();
+            $product->current_stock = $stock ? $stock->quantity : 0;
+            unset($product->projectStocks);
+            return $product;
+        });
+
         return $this->successResponse(dataFormatter($query), "Product Stock Product fetched successfully!");
     }
 
@@ -536,7 +547,7 @@ class GeneralController extends Controller
             'category_id' => 'required|exists:project_stocks,category_id',
             'product_id' => 'required|exists:project_stocks,product_id',
             'quantity' => 'required|numeric|min:1',
-            'remarks' => 'required|string|max:255',
+            'remarks' => 'nullable|string|max:255',
         ]);
 
         DB::beginTransaction();
@@ -561,7 +572,7 @@ class GeneralController extends Controller
             // Perform subtraction
             $stock->quantity -= $request->quantity;
             $stock->last_updated_by = Auth::id();
-            $stock->last_transaction_type = $request->remarks;
+            $stock->last_transaction_type = 'Taken for today use '.$request->remarks;
             $stock->save();
 
             // Log usage
