@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use App\Models\MobileUserAttendance;
 use Carbon\Carbon;
@@ -55,7 +56,7 @@ class MobileUserAttendanceRequest extends FormRequest
                 $fail("You must check-in before checking out.");
             }
         } else if ($type === 'check_in' && $lastAttendance && $lastAttendance->type === 'check_in') {
-            $fail("You must check-out before checking out.");
+            $fail("You must check-out before checking in.");
         }
     }
 }

@@ -308,7 +308,7 @@ class GeneralController extends Controller
             ->first();
 
         // Determine if the user should check in or check out
-        $check_in_status = !$lastAttendance || $lastAttendance->type === 'check_out';
+        $check_in_status = $lastAttendance && $lastAttendance->type === 'check_in';
 
         return $this->successResponse(
             compact('user', 'today_tasks', 'total_today_task', 'notification_count', 'check_in_status'),
