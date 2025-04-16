@@ -22,7 +22,7 @@ use App\Models\ProductCategory;
 use App\Models\Project;
 use App\Models\ProjectContract;
 use App\Models\ProjectStock;
-use App\Models\StockUsageLog;
+use App\Models\StockLog;
 use App\Models\SupportType;
 use App\Models\User;
 use App\Models\UserDevice;
@@ -576,15 +576,16 @@ class GeneralController extends Controller
             $stock->save();
 
             // Log usage
-            $log = new StockUsageLog([
+            $log = new StockLog([
                 'project_id' => $request->project_id,
                 'category_id' => $request->category_id,
                 'product_id' => $request->product_id,
                 'previous_quantity' => $previousQuantity,
                 'quantity' => $request->quantity,
                 'balance_quantity' => $balanceQuantity,
-                'taken_by' => Auth::id(),
-                'taken_at' => now(),
+                'user_id' => Auth::id(),
+                'time' => now(),
+                'type' => TAKEN_FOR_CONSTRUCTION,
                 'remarks' => $request->remarks,
             ]);
             $log->save();

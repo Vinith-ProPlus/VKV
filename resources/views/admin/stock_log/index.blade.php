@@ -2,8 +2,8 @@
 
 @section('content')
     @php
-        $PageTitle = "Stock Usage Logs";
-        $ActiveMenuName = 'Stock-Usage';
+        $PageTitle = "Stock Logs";
+        $ActiveMenuName = 'Stock-Log';
     @endphp
 
     <div class="container-fluid">
@@ -61,7 +61,7 @@
                             </div>
                             <div class="col-md-3">
                                 <div class="form-group">
-                                    <label>Taken By</label>
+                                    <label>Made By</label>
                                     <select class="form-control select2" id="user_filter">
                                         <option value="">All Users</option>
                                         @foreach($users as $user)
@@ -89,8 +89,8 @@
                                 <button id="reset_btn" class="btn btn-secondary">Reset</button>
                             </div>
                             <div class="col-md-3 text-end align-self-end">
-                                <a href="{{ route('stock-usages.create') }}" class="btn btn-primary">
-                                    <i class="fa fa-plus"></i> Log New Stock Usage
+                                <a href="{{ route('stock-logs.create') }}" class="btn btn-primary">
+                                    <i class="fa fa-plus"></i> New Stock Log
                                 </a>
                             </div>
                         </div>
@@ -103,10 +103,10 @@
             <div class="col-12">
                 <div class="card">
                     <div class="card-header">
-                        <h5>Stock Usage Logs</h5>
+                        <h5>Stock Logs</h5>
                     </div>
                     <div class="card-body">
-                        <table class="table table-bordered table-striped" id="stock_usage_table">
+                        <table class="table table-bordered table-striped" id="stock_log_table">
                             <thead>
                             <tr>
                                 <th>#</th>
@@ -116,8 +116,9 @@
                                 <th>Previous Qty</th>
                                 <th>Quantity</th>
                                 <th>Balance Qty</th>
-                                <th>Taken By</th>
-                                <th>Taken At</th>
+                                <th>Made By</th>
+                                <th>Time</th>
+                                <th>Type</th>
                                 <th>Remarks</th>
                             </tr>
                             </thead>
@@ -135,12 +136,12 @@
     <script>
         $(document).ready(function() {
             // Initialize DataTable
-            let table = $('#stock_usage_table').DataTable({
+            let table = $('#stock_log_table').DataTable({
                 "columnDefs": [{"className": "dt-center", "targets": "_all"}],
                 processing: true,
                 serverSide: true,
                 ajax: {
-                    url: "{{ route('stock-usages.index') }}",
+                    url: "{{ route('stock-logs.index') }}",
                     data: function (d) {
                         d.project_id = $('#project_filter').val();
                         d.category_id = $('#category_filter').val();
@@ -158,8 +159,9 @@
                     {data: 'previous_quantity', name: 'previous_quantity'},
                     {data: 'quantity', name: 'quantity'},
                     {data: 'balance_quantity', name: 'balance_quantity'},
-                    {data: 'taken_by_name', name: 'taken_by_name'},
-                    {data: 'taken_at', name: 'taken_at'},
+                    {data: 'user_id_name', name: 'user_id_name'},
+                    {data: 'time', name: 'time'},
+                    {data: 'type', name: 'type'},
                     {data: 'remarks', name: 'remarks'}
                 ]
             });
@@ -187,7 +189,7 @@
 
                 if (categoryId) {
                     $.ajax({
-                        url: "{{ route('stock-usages.get-products-by-category') }}",
+                        url: "{{ route('stock-logs.get-products-by-category') }}",
                         type: "GET",
                         data: {
                             category_id: categoryId,

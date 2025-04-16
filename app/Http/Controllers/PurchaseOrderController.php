@@ -11,6 +11,7 @@ use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderDetail;
 use App\Models\PurchaseRequest;
 use App\Models\PurchaseRequestDetail;
+use App\Models\StockLog;
 use App\Models\User;
 use Carbon\Carbon;
 use Exception;
@@ -69,9 +70,11 @@ class PurchaseOrderController extends Controller
     /**
      * @param $id
      * @return \Illuminate\Foundation\Application|Factory|View
+     * @throws AuthorizationException
      */
     public function show($id): \Illuminate\Foundation\Application|Factory|View
     {
+        $this->authorize('View Purchase Orders');
         $order = PurchaseOrder::with(['details.product', 'details.category'])->findOrFail($id);
         return view('admin.purchase_orders.show', compact('order'));
     }
@@ -79,9 +82,11 @@ class PurchaseOrderController extends Controller
     /**
      * @param Request $request
      * @return \Illuminate\Foundation\Application|Factory|View
+     * @throws AuthorizationException
      */
     public function create(Request $request): \Illuminate\Foundation\Application|Factory|View
     {
+        $this->authorize('Create Purchase Orders');
         $purchaseRequest = null;
         $products = collect();
         $project = null;
@@ -100,8 +105,12 @@ class PurchaseOrderController extends Controller
         ));
     }
 
+    /**
+     * @throws AuthorizationException
+     */
     public function store(Request $request): RedirectResponse
     {
+        $this->authorize('Create Purchase Orders');
         $request->validate([
             'project_id' => 'required|exists:projects,id',
             'products' => 'required|array|min:1',
@@ -205,14 +214,16 @@ class PurchaseOrderController extends Controller
     /**
      * Update project stock - add new stock or update existing
      */
-    private function updateProjectStock($projectId, $productId, $categoryId, $quantity, $updatedBy, $transactionType): void
+    private function updateProjectStock($projectId, $productId, $categoryId, $quantity, $updatedBy, $transactionType, $remarks = ""): void
     {
         // Try to find existing stock record
         $stock = ProjectStock::where('project_id', $projectId)
             ->where('product_id', $productId)
             ->first();
+        $previousQuantity = 0;
 
         if ($stock) {
+            $previousQuantity = $stock->quantity;
             // Update existing stock
             $stock->quantity += $quantity;
             $stock->last_updated_by = $updatedBy;
@@ -220,7 +231,7 @@ class PurchaseOrderController extends Controller
             $stock->save();
         } else {
             // Create new stock record
-            ProjectStock::create([
+            $stock = ProjectStock::create([
                 'project_id' => $projectId,
                 'product_id' => $productId,
                 'category_id' => $categoryId,
@@ -229,6 +240,18 @@ class PurchaseOrderController extends Controller
                 'last_transaction_type' => $transactionType
             ]);
         }
+        StockLog::create([
+            'project_id' => $projectId,
+            'category_id' => $categoryId,
+            'product_id' => $productId,
+            'previous_quantity' => $previousQuantity,
+            'quantity' => $quantity,
+            'balance_quantity' => $stock->quantity,
+            'user_id' => $updatedBy,
+            'type' => $transactionType,
+            'time' => now(),
+            'remarks' => $remarks,
+        ]);
     }
 
     public function markAsDelivered(Request $request): JsonResponse
@@ -275,7 +298,8 @@ class PurchaseOrderController extends Controller
                     $detail->category_id,
                     $detail->quantity,
                     Auth::id(),
-                    'PO Item Delivered'
+                    PO_ITEM_DELIVERED,
+                    $detail->remarks
                 );
 
                 $detail->save();

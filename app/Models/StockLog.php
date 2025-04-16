@@ -4,8 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class StockUsageLog extends Model
+/**
+ * @method static create(array $array)
+ */
+class StockLog extends Model
 {
     use HasFactory;
 
@@ -16,35 +20,36 @@ class StockUsageLog extends Model
         'previous_quantity',
         'quantity',
         'balance_quantity',
-        'taken_by',
-        'taken_at',
+        'user_id',
+        'time',
+        'type',
         'remarks'
     ];
 
     protected $casts = [
-        'taken_at' => 'datetime',
+        'time' => 'datetime',
         'quantity' => 'decimal:2',
         'previous_quantity' => 'decimal:2',
         'balance_quantity' => 'decimal:2'
     ];
 
-    public function project()
+    public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);
     }
 
-    public function category()
+    public function category(): BelongsTo
     {
         return $this->belongsTo(ProductCategory::class);
     }
 
-    public function product()
+    public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
     }
 
-    public function takenByUser()
+    public function user(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'taken_by');
+        return $this->belongsTo(User::class);
     }
 }

@@ -5,6 +5,9 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * @method static findOrFail(mixed $id)
+ */
 class PurchaseOrderDetail extends Model
 {
     use HasFactory, SoftDeletes;

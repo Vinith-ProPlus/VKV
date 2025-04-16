@@ -6,6 +6,14 @@ use App\Models\Product;
 use App\Models\ProductCategory;
 use App\Models\Project;
 use App\Models\ProjectStock;
+use App\Models\StockLog;
+use Exception;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Contracts\View\Factory;
+use Illuminate\Contracts\View\View;
+use Illuminate\Foundation\Application;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -14,8 +22,14 @@ use Yajra\DataTables\Facades\DataTables;
 
 class ProjectStockController extends Controller
 {
-    public function index(Request $request)
+    use AuthorizesRequests;
+
+    /**
+     * @throws AuthorizationException
+     */
+    public function index(Request $request): Application|Factory|View|JsonResponse
     {
+        $this->authorize('View Purchase Orders');
         $projects = Project::all();
 
         if ($request->ajax()) {
@@ -28,10 +42,10 @@ class ProjectStockController extends Controller
             $data = $query->get();
 
             return DataTables::of($data)
-                ->editColumn('quantity', function($row) {
+                ->editColumn('quantity', static function($row) {
                     return number_format($row->quantity, 2);
                 })
-                ->addColumn('last_updated', function($row) {
+                ->addColumn('last_updated', static function($row) {
                     return $row->updated_at->format('d-m-Y H:i') .
                         ($row->last_transaction_type ? ' (' . $row->last_transaction_type . ')' : '');
                 })
@@ -42,14 +56,15 @@ class ProjectStockController extends Controller
     }
 
     /**
-     * Get categories for a project
+     * @param Request $request
+     * @return JsonResponse
      */
-    public function getCategories(Request $request)
+    public function getCategories(Request $request): JsonResponse
     {
         $projectId = $request->project_id;
 
         // Get categories that have products with stock in this project
-        $categories = ProductCategory::whereHas('products.projectStocks', function($query) use ($projectId) {
+        $categories = ProductCategory::whereHas('products.projectStocks', static function($query) use ($projectId) {
             $query->where('project_id', $projectId);
         })->get();
 
@@ -65,7 +80,7 @@ class ProjectStockController extends Controller
         $categoryId = $request->category_id;
 
         $products = Product::where('category_id', $categoryId)
-            ->whereHas('projectStocks', function($query) use ($projectId) {
+            ->whereHas('projectStocks', static function($query) use ($projectId) {
                 $query->where('project_id', $projectId);
             })
             ->get();
@@ -74,9 +89,10 @@ class ProjectStockController extends Controller
     }
 
     /**
-     * Get current stock for a product in a project
+     * @param Request $request
+     * @return JsonResponse
      */
-    public function getStock(Request $request)
+    public function getStock(Request $request): JsonResponse
     {
         $projectId = $request->project_id;
         $productId = $request->product_id;
@@ -91,9 +107,10 @@ class ProjectStockController extends Controller
     }
 
     /**
-     * Adjust stock quantity
+     * @param Request $request
+     * @return JsonResponse
      */
-    public function adjust(Request $request)
+    public function adjust(Request $request): JsonResponse
     {
         $request->validate([
             'project_id' => 'required|exists:projects,id',
@@ -110,8 +127,6 @@ class ProjectStockController extends Controller
                 ->where('product_id', $request->product_id)
                 ->first();
 
-            $product = Product::findOrFail($request->product_id);
-
             if (!$stock && $request->adjustment_type === 'subtract') {
                 throw new RuntimeException("Cannot subtract from non-existent stock.");
             }
@@ -125,6 +140,7 @@ class ProjectStockController extends Controller
                     'quantity' => 0,
                 ]);
             }
+            $previousQuantity = $stock->quantity;
 
             // Apply adjustment
             switch ($request->adjustment_type) {
@@ -146,9 +162,22 @@ class ProjectStockController extends Controller
             $stock->last_transaction_type = 'Manual Adjustment: ' . $request->reason;
             $stock->save();
 
+            StockLog::create([
+                'project_id' => $request->project_id,
+                'category_id' => $request->category_id,
+                'product_id' => $request->product_id,
+                'previous_quantity' => $previousQuantity,
+                'quantity' => $request->quantity,
+                'balance_quantity' => $stock->quantity,
+                'user_id' => Auth::id(),
+                'type' => $request->adjustment_type === 'subtract' ? 'Manual Adjustment - Out' : 'Manual Adjustment - In',
+                'time' => now(),
+                'remarks' => 'Manual Adjustment: ' . $request->reason,
+            ]);
+
             DB::commit();
             return response()->json(['success' => true]);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             DB::rollBack();
             return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
         }

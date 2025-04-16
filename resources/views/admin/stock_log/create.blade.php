@@ -2,8 +2,8 @@
 
 @section('content')
     @php
-        $PageTitle = "Log Stock Usage";
-        $ActiveMenuName = 'Stock-Usage';
+        $PageTitle = "Stock Log";
+        $ActiveMenuName = 'Stock-Log';
     @endphp
 
     <div class="container-fluid">
@@ -13,7 +13,7 @@
                     <ol class="breadcrumb">
                         <li class="breadcrumb-item"><a href="{{ url('/') }}"><i class="f-16 fa fa-home"></i></a></li>
                         <li class="breadcrumb-item">Manage Stock</li>
-                        <li class="breadcrumb-item"><a href="{{ route('stock-usages.index') }}">Stock Usage Logs</a></li>
+                        <li class="breadcrumb-item"><a href="{{ route('stock-logs.index') }}">Stock Logs</a></li>
                         <li class="breadcrumb-item">{{ $PageTitle }}</li>
                     </ol>
                 </div>
@@ -26,7 +26,7 @@
             <div class="col-12 col-lg-8 mx-auto">
                 <div class="card">
                     <div class="card-header">
-                        <h5>Log New Stock Usage</h5>
+                        <h5>New Stock Log</h5>
                     </div>
                     <div class="card-body">
                         @if(session('error'))
@@ -35,7 +35,7 @@
                             </div>
                         @endif
 
-                        <form method="POST" action="{{ route('stock-usages.store') }}">
+                        <form method="POST" action="{{ route('stock-logs.store') }}">
                             @csrf
                             <div class="row mb-15">
                                 <div class="col-md-6">
@@ -67,11 +67,8 @@
                             <div class="row mb-15">
                                 <div class="col-md-6">
                                     <label class="form-label">Product <span class="text-danger">*</span></label>
-                                    <select name="product_id" id="product_id" class="form-control @error('product_id') is-invalid @enderror" required>
+                                    <select name="product_id" id="product_id" class="form-control @error('product_id') is-invalid @enderror" data-selected="{{ old('product_id') }}" required>
                                         <option value="">Select Product</option>
-                                        @foreach($products as $product)
-                                            <option value="{{ $product->id }}" {{ old('product_id') == $product->id ? 'selected' : '' }}>{{ $product->name }}</option>
-                                        @endforeach
                                     </select>
                                     @error('product_id')
                                     <div class="invalid-feedback">{{ $message }}</div>
@@ -92,28 +89,21 @@
                                     @enderror
                                 </div>
                                 <div class="col-md-6">
-                                    <label class="form-label">Taken By <span class="text-danger">*</span></label>
-                                    <select name="taken_by" class="form-control @error('taken_by') is-invalid @enderror" required>
+                                    <label class="form-label">Transaction Made By <span class="text-danger">*</span></label>
+                                    <select name="user_id" id="user_id" class="form-control @error('user_id') is-invalid @enderror" required>
                                         <option value="">Select User</option>
                                         @foreach(\App\Models\User::all() as $user)
-                                            <option value="{{ $user->id }}" {{ old('taken_by') == $user->id ? 'selected' : '' }}>{{ $user->name }}</option>
+                                            <option value="{{ $user->id }}" {{ old('user_id') == $user->id ? 'selected' : '' }}>{{ $user->name }}</option>
                                         @endforeach
                                     </select>
-                                    @error('taken_by')
+                                    @error('user_id')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>
                             </div>
 
                             <div class="row mb-15">
-                                <div class="col-md-6">
-                                    <label class="form-label">Taken At <span class="text-danger">*</span></label>
-                                    <input type="datetime-local" name="taken_at" class="form-control @error('taken_at') is-invalid @enderror" value="{{ old('taken_at') ?? now()->format('Y-m-d\TH:i') }}" required>
-                                    @error('taken_at')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
-                                </div>
-                                <div class="col-md-6">
+                                <div class="col-md-12">
                                     <label class="form-label">Remarks</label>
                                     <textarea name="remarks" class="form-control @error('remarks') is-invalid @enderror" rows="3">{{ old('remarks') }}</textarea>
                                     @error('remarks')
@@ -133,9 +123,9 @@
                             <div class="row mt-4">
                                 <div class="col-12 text-center">
                                     <button type="submit" class="btn btn-primary" id="submit_btn">
-                                        <i class="fa fa-save"></i> Log Stock Usage
+                                        <i class="fa fa-save"></i> Stock Log
                                     </button>
-                                    <a href="{{ route('stock-usages.index') }}" class="btn btn-secondary">
+                                    <a href="{{ route('stock-logs.index') }}" class="btn btn-secondary">
                                         <i class="fa fa-times"></i> Cancel
                                     </a>
                                 </div>
@@ -151,7 +141,7 @@
 @section('script')
     <script>
         $(document).ready(function() {
-            $('#project_id, #category_id, #product_id').select2({
+            $('#project_id, #category_id, #product_id, #user_id').select2({
                 width: '100%',
                 placeholder: 'Select an option',
                 allowClear: true
@@ -161,10 +151,11 @@
             $('#project_id, #category_id').change(function() {
                 const projectId = $('#project_id').val();
                 const categoryId = $('#category_id').val();
+                const selectedProduct = $('#project_id').attr('data-selected');
 
                 if (projectId && categoryId) {
                     $.ajax({
-                        url: "{{ route('stock-usages.get-products-by-category') }}",
+                        url: "{{ route('stock-logs.get-products-by-category') }}",
                         data: {
                             project_id: projectId,
                             category_id: categoryId
@@ -174,7 +165,11 @@
 
                             if (data.length > 0) {
                                 $.each(data, function(key, product) {
-                                    options += '<option value="' + product.id + '">' + product.name + '</option>';
+                                    if(product.id === selectedProduct){
+                                        options += '<option value="' + product.id + '" selected>' + product.name + '</option>';
+                                    } else {
+                                        options += '<option value="' + product.id + '">' + product.name + '</option>';
+                                    }
                                 });
                                 $('#product_id').html(options);
                                 $('#product_id').prop('disabled', false);
@@ -205,7 +200,7 @@
 
                 if (projectId && productId) {
                     $.ajax({
-                        url: "{{ route('stock-usages.get-product-stock') }}",
+                        url: "{{ route('stock-logs.get-product-stock') }}",
                         data: {
                             project_id: projectId,
                             product_id: productId
@@ -259,10 +254,10 @@
             });
 
             // Set default date to today
-            if (!$('input[name="taken_at"]').val()) {
+            if (!$('input[name="time"]').val()) {
                 const now = new Date();
                 const localDatetime = now.toISOString().slice(0, 16);
-                $('input[name="taken_at"]').val(localDatetime);
+                $('input[name="time"]').val(localDatetime);
             }
         });
     </script>

@@ -17,7 +17,7 @@ use App\Http\Controllers\ProjectStockController;
 use App\Http\Controllers\PurchaseOrderController;
 use App\Http\Controllers\PurchaseRequestController;
 use App\Http\Controllers\SqlImportController;
-use App\Http\Controllers\StockUsageLogController;
+use App\Http\Controllers\StockLogController;
 use App\Http\Controllers\Admin\ProjectReports\ProjectReportsController;
 use App\Models\Admin\Master\City;
 use App\Models\Admin\Master\District;
@@ -147,9 +147,9 @@ Route::group(['prefix'=>'admin'], static function (){
         Route::get('project-stocks/get-stock', [ProjectStockController::class, 'getStock'])->name('project-stocks.get-stock');
         Route::post('project-stocks/adjust', [ProjectStockController::class, 'adjust'])->name('project-stocks.adjust');
 
-        Route::resource('stock-usages', StockUsageLogController::class)->except(['show']);
-        Route::get('stock-usages/get-products-by-category', [StockUsageLogController::class, 'getProductsByCategory'])->name('stock-usages.get-products-by-category');
-        Route::get('stock-usages/get-product-stock', [StockUsageLogController::class, 'getProductStock'])->name('stock-usages.get-product-stock');
+        Route::resource('stock-logs', StockLogController::class)->except(['show']);
+        Route::get('stock-logs/get-products-by-category', [StockLogController::class, 'getProductsByCategory'])->name('stock-logs.get-products-by-category');
+        Route::get('stock-logs/get-product-stock', [StockLogController::class, 'getProductStock'])->name('stock-logs.get-product-stock');
 
         Route::prefix('payroll')->group(function () {
             Route::view('/', 'payroll.index')->name('payroll.index');
