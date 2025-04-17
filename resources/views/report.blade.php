@@ -214,7 +214,7 @@
                                           <div>
                                             <h1 class="text-3xl font-bold text-gray-800"><i class="fas fa-map-marker-alt mr-2"></i>{{ $project->location }}</h1>
                                           </div>
-                                          <div class="flex space-x-3"> 
+                                          <div class="flex space-x-3">
                                             <button id="printDiv" class="no-print px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-800 transition">
                                               <i class="fas fa-print mr-2"></i>Print
                                             </button>
@@ -361,7 +361,7 @@
                                             </div>
                                           </div>
                                         </div>
-
+                                        <div style="page-break-before:always">&nbsp;</div>
                                         <!-- Amenities Section -->
                                         <div class="mt-8">
                                           <div class="bg-white rounded-xl shadow-md p-6 transition duration-300 card-hover">
@@ -977,7 +977,7 @@
 
           btn.style.display = 'none';
 
-          setTimeout(() => { 
+          setTimeout(() => {
               btn.style.display = 'inline-block';
           }, 100);
 
@@ -995,7 +995,7 @@
                   scrollY: 0,
                   useCORS: true
               },
-              jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+              jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
           };
 
           html2pdf().set(opt).from(element).save();
