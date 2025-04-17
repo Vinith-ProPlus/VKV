@@ -183,7 +183,8 @@ class ProjectStockController extends Controller
     }
 
     /**
-     * Get products for a category within a project
+     * @param Request $request
+     * @return JsonResponse
      */
     public function getProducts(Request $request)
     {
@@ -214,7 +215,7 @@ class ProjectStockController extends Controller
 
         $quantity = $stock ? number_format($stock->quantity, 2) : '0.00';
 
-        return response()->json(['quantity' => $quantity]);
+        return response()->json(compact('quantity'));
     }
 
     /**
