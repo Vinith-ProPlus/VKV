@@ -5,6 +5,7 @@ use App\Http\Controllers\API\BlogController;
 use App\Http\Controllers\API\GeneralController;
 use App\Http\Controllers\API\LaborController;
 use App\Http\Controllers\API\MobileUserAttendanceController;
+use App\Http\Controllers\API\PurchaseOrderApiController;
 use App\Http\Controllers\API\PurchaseRequestApiController;
 use App\Http\Controllers\API\SupportTicketController;
 use App\Models\Admin\Labor\LaborDesignation;
@@ -92,8 +93,10 @@ Route::middleware('auth:sanctum')->group(static function () {
     Route::post('purchase-requests/show', [PurchaseRequestApiController::class, 'show']);
     Route::post('purchase-requests/store', [PurchaseRequestApiController::class, 'store']);
 
-
-
+    Route::post('purchase-orders', [PurchaseOrderApiController::class, 'index']);
+    Route::post('purchase-orders/show', [PurchaseOrderApiController::class, 'show']);
+    Route::post('purchase-orders/store', [PurchaseOrderApiController::class, 'store']);
+    Route::post('purchase-orders/mark-as-delivered', [PurchaseOrderApiController::class, 'markAsDelivered']);
 
 
 

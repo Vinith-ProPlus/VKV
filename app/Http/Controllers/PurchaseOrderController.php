@@ -303,6 +303,15 @@ class PurchaseOrderController extends Controller
                 );
 
                 $detail->save();
+
+                $pendingDetails = PurchaseOrderDetail::where('purchase_order_id', $purchaseOrder->id)
+                    ->where('status', '!=', 'Delivered')
+                    ->count();
+
+                if ($pendingDetails === 0) {
+                    $purchaseOrder->status = 'Completed';
+                    $purchaseOrder->save();
+                }
             } else {
                 return response()->json(['success' => false, 'message' => 'Product not found!.'], 500);
             }

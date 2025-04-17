@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Auth;
 
 /**
  * @method static where(string $string, string $string1, string $string2)
+ * @method static select(string $string, string $string1, string $string2, string $string3, string $string4, string $string5)
  */
 class PurchaseOrder extends Model
 {
