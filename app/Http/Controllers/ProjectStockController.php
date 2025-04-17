@@ -14,6 +14,7 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -29,7 +30,6 @@ class ProjectStockController extends Controller
      */
     public function index(Request $request): Application|Factory|View|JsonResponse
     {
-        $this->authorize('View Purchase Orders');
         $projects = Project::all();
 
         if ($request->ajax()) {
@@ -56,6 +56,117 @@ class ProjectStockController extends Controller
     }
 
     /**
+     * @return View|Factory|Application
+     * @throws AuthorizationException
+     */
+    public function reAllocation(): View|Factory|Application
+    {
+        $this->authorize('Create Project Stocks');
+        $projects = Project::all();
+        $categories = ProductCategory::all();
+
+        return view('admin.project_stocks.re_allocation', compact('projects', 'categories'));
+    }
+
+    /**
+     * @param Request $request
+     * @return RedirectResponse
+     * @throws AuthorizationException
+     */
+    public function reAllocationStore(Request $request): RedirectResponse
+    {
+        $this->authorize('Create Project Stocks');
+
+        $request->validate([
+            'from_project_id' => 'required|exists:projects,id',
+            'category_id' => 'required|exists:product_categories,id',
+            'product_id' => 'required|exists:products,id',
+            'quantity' => 'required|numeric|min:0.01',
+            'to_project_id' => 'required|exists:projects,id',
+            'remarks' => 'nullable|string|max:255',
+        ]);
+
+        DB::beginTransaction();
+
+        try {
+            // Fetch From and To project stock
+            $from_project_stock = ProjectStock::with('project')->where('project_id', $request->from_project_id)
+                ->where('product_id', $request->product_id)
+                ->first();
+
+            $to_project_stock = ProjectStock::with('project')->where('project_id', $request->to_project_id)
+                ->where('product_id', $request->product_id)
+                ->first();
+
+            if (!$from_project_stock || $from_project_stock->quantity < $request->quantity) {
+                throw new RuntimeException("Insufficient stock available.");
+            }
+
+            // Reduce stock from 'from' project
+            $fromPreviousQuantity = $from_project_stock->quantity;
+            $fromBalanceQuantity = $fromPreviousQuantity - $request->quantity;
+
+            $from_project_stock->quantity = $fromBalanceQuantity;
+            $from_project_stock->last_updated_by = Auth::id();
+            $from_project_stock->last_transaction_type = RE_ALLOCATION . ' to - ' . ($to_project_stock->project->name ?? 'New Project') . ' by - ' . Auth::user()->name;
+            $from_project_stock->save();
+
+            // Create StockLog for from project
+            StockLog::create([
+                'project_id' => $request->from_project_id,
+                'category_id' => $request->category_id,
+                'product_id' => $request->product_id,
+                'previous_quantity' => $fromPreviousQuantity,
+                'quantity' => $request->quantity,
+                'balance_quantity' => $fromBalanceQuantity,
+                'user_id' => Auth::id(),
+                'type' => RE_ALLOCATION .' - Transfer',
+                'time' => now(),
+                'remarks' => 'Transferred to Project: ' . $to_project_stock->project->name . ($request->remarks ? ' | ' . $request->remarks : ''),
+            ]);
+
+            // Add to 'to' project
+            if ($to_project_stock) {
+                $toPreviousQuantity = $to_project_stock->quantity;
+                $to_project_stock->quantity += $request->quantity;
+            } else {
+                $toPreviousQuantity = 0;
+                $to_project_stock = new ProjectStock();
+                $to_project_stock->project_id = $request->to_project_id;
+                $to_project_stock->category_id = $request->category_id;
+                $to_project_stock->product_id = $request->product_id;
+                $to_project_stock->quantity = $request->quantity;
+            }
+
+            $toBalanceQuantity = $to_project_stock->quantity;
+            $to_project_stock->last_updated_by = Auth::id();
+            $to_project_stock->last_transaction_type = RE_ALLOCATION . ' received from - ' . $from_project_stock->project->name . ' by - ' . Auth::user()->name;
+            $to_project_stock->save();
+
+            // Create StockLog for to project
+            StockLog::create([
+                'project_id' => $request->to_project_id,
+                'category_id' => $request->category_id,
+                'product_id' => $request->product_id,
+                'previous_quantity' => $toPreviousQuantity,
+                'quantity' => $request->quantity,
+                'balance_quantity' => $toBalanceQuantity,
+                'user_id' => Auth::id(),
+                'type' => RE_ALLOCATION .' - Received',
+                'time' => now(),
+                'remarks' => 'Received from Project: ' . $from_project_stock->project->name . ($request->remarks ? ' | ' . $request->remarks : ''),
+            ]);
+
+            DB::commit();
+
+            return redirect()->route('project-stocks.index')->with('success', 'Stock re-allocated successfully!');
+        } catch (Exception $e) {
+            DB::rollBack();
+            return redirect()->back()->with('error', $e->getMessage())->withInput();
+        }
+    }
+
+    /**
      * @param Request $request
      * @return JsonResponse
      */
@@ -72,7 +183,8 @@ class ProjectStockController extends Controller
     }
 
     /**
-     * Get products for a category within a project
+     * @param Request $request
+     * @return JsonResponse
      */
     public function getProducts(Request $request)
     {
@@ -103,7 +215,7 @@ class ProjectStockController extends Controller
 
         $quantity = $stock ? number_format($stock->quantity, 2) : '0.00';
 
-        return response()->json(['quantity' => $quantity]);
+        return response()->json(compact('quantity'));
     }
 
     /**

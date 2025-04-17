@@ -90,4 +90,4 @@ const SUPPORT_TYPES = [ALL, BILLING, TECHNICAL, OTHERS];
 
 const PO_ITEM_DELIVERED = 'PO Item Delivered';
 const TAKEN_FOR_CONSTRUCTION = 'Taken for construction';
-const RE_ALLOCATED = 'Re-Allocated';
+const RE_ALLOCATION = 'Re-Allocation';

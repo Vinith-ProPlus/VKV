@@ -2,8 +2,8 @@
 
 @section('content')
     @php
-        $PageTitle = "Stock Log";
-        $ActiveMenuName = 'Stock-Log';
+        $PageTitle = "Stock Re-Allocation";
+        $ActiveMenuName = 'Project-Stock-Management';
     @endphp
 
     <div class="container-fluid">
@@ -12,8 +12,8 @@
                 <div class="col-sm-12">
                     <ol class="breadcrumb">
                         <li class="breadcrumb-item"><a href="{{ url('/') }}"><i class="f-16 fa fa-home"></i></a></li>
-                        <li class="breadcrumb-item">Manage Stock</li>
-                        <li class="breadcrumb-item"><a href="{{ route('stock-logs.index') }}">Stock Logs</a></li>
+                        <li class="breadcrumb-item">Transactions</li>
+                        <li class="breadcrumb-item"><a href="{{ route('stock-logs.index') }}">Project Stock</a></li>
                         <li class="breadcrumb-item">{{ $PageTitle }}</li>
                     </ol>
                 </div>
@@ -26,7 +26,7 @@
             <div class="col-12 col-lg-8 mx-auto">
                 <div class="card">
                     <div class="card-header">
-                        <h5>New Stock Log</h5>
+                        <h5>Stock Re-Allocation</h5>
                     </div>
                     <div class="card-body">
                         @if(session('error'))
@@ -35,18 +35,18 @@
                             </div>
                         @endif
 
-                        <form method="POST" action="{{ route('stock-logs.store') }}">
+                        <form method="POST" action="{{ route('project-stocks.re_allocation.store') }}">
                             @csrf
                             <div class="row mb-15">
                                 <div class="col-md-6">
-                                    <label class="form-label">Project <span class="text-danger">*</span></label>
-                                    <select name="project_id" id="project_id" class="form-control @error('project_id') is-invalid @enderror" required>
+                                    <label class="form-label">From Project <span class="text-danger">*</span></label>
+                                    <select name="from_project_id" id="from_project_id" class="form-control @error('from_project_id') is-invalid @enderror" required>
                                         <option value="">Select Project</option>
                                         @foreach($projects as $project)
-                                            <option value="{{ $project->id }}" {{ old('project_id') == $project->id ? 'selected' : '' }}>{{ $project->name }}</option>
+                                            <option value="{{ $project->id }}" {{ old('from_project_id') == $project->id ? 'selected' : '' }}>{{ $project->name }}</option>
                                         @endforeach
                                     </select>
-                                    @error('project_id')
+                                    @error('from_project_id')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>
@@ -89,14 +89,14 @@
                                     @enderror
                                 </div>
                                 <div class="col-md-6">
-                                    <label class="form-label">Transaction Made By <span class="text-danger">*</span></label>
-                                    <select name="user_id" id="user_id" class="form-control @error('user_id') is-invalid @enderror" required>
-                                        <option value="">Select User</option>
-                                        @foreach(\App\Models\User::all() as $user)
-                                            <option value="{{ $user->id }}" {{ old('user_id') == $user->id ? 'selected' : '' }}>{{ $user->name }}</option>
+                                    <label class="form-label">To Project <span class="text-danger">*</span></label>
+                                    <select name="to_project_id" id="to_project_id" class="form-control @error('to_project_id') is-invalid @enderror" required>
+                                        <option value="">Select Project</option>
+                                        @foreach($projects as $project)
+                                            <option value="{{ $project->id }}" {{ old('to_project_id') == $project->id ? 'selected' : '' }}>{{ $project->name }}</option>
                                         @endforeach
                                     </select>
-                                    @error('user_id')
+                                    @error('to_project_id')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>
@@ -122,9 +122,7 @@
 
                             <div class="row mt-4">
                                 <div class="col-12 text-center">
-                                    <button type="submit" class="btn btn-primary" id="submit_btn">
-                                        <i class="fa fa-save"></i> Stock Log
-                                    </button>
+                                    <button type="submit" class="btn btn-primary" id="submit_btn"><i class="fa fa-save"></i> Re-Allocate</button>
                                     <a href="javascript:void(0)" onclick="window.history.back()" class="btn btn-warning"><i class="fa fa-times"></i> Cancel</a>
                                 </div>
                             </div>
@@ -139,23 +137,23 @@
 @section('script')
     <script>
         $(document).ready(function() {
-            $('#project_id, #category_id, #product_id, #user_id').select2({
+            $('#from_project_id, #category_id, #product_id, #to_project_id').select2({
                 width: '100%',
                 placeholder: 'Select an option',
                 allowClear: true
             });
 
             // When project or category changes, update product dropdown
-            $('#project_id, #category_id').change(function() {
-                const projectId = $('#project_id').val();
+            $('#from_project_id, #category_id').change(function() {
+                const fromProjectId = $('#from_project_id').val();
                 const categoryId = $('#category_id').val();
-                const selectedProduct = $('#project_id').attr('data-selected');
+                const selectedProduct = $('#product_id').attr('data-selected');
 
-                if (projectId && categoryId) {
+                if (fromProjectId && categoryId) {
                     $.ajax({
                         url: "{{ route('stock-logs.get-products-by-category') }}",
                         data: {
-                            project_id: projectId,
+                            project_id: fromProjectId,
                             category_id: categoryId
                         },
                         success: function(data) {
@@ -191,16 +189,23 @@
                 }
             });
 
+            $('#to_project_id, #from_project_id').change(function () {
+                if ($('#to_project_id').val() && $('#to_project_id').val() === $('#from_project_id').val()) {
+                    alert('From and To Project cannot be the same.');
+                    $('#to_project_id').val(null).trigger('change');
+                }
+            });
+
             // When product changes, update available stock
             $('#product_id').change(function() {
-                const projectId = $('#project_id').val();
+                const fromProjectId = $('#from_project_id').val();
                 const productId = $(this).val();
 
-                if (projectId && productId) {
+                if (fromProjectId && productId) {
                     $.ajax({
                         url: "{{ route('stock-logs.get-product-stock') }}",
                         data: {
-                            project_id: projectId,
+                            project_id: fromProjectId,
                             product_id: productId
                         },
                         success: function(data) {
@@ -250,13 +255,6 @@
                     $('#submit_btn').prop('disabled', true);
                 }
             });
-
-            // Set default date to today
-            if (!$('input[name="time"]').val()) {
-                const now = new Date();
-                const localDatetime = now.toISOString().slice(0, 16);
-                $('input[name="time"]').val(localDatetime);
-            }
         });
     </script>
 @endsection
