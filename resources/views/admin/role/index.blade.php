@@ -75,7 +75,7 @@
                     type: 'GET'
                 },
                 columns: [
-                    { data: 'DT_RowIndex' },
+                    { data: 'DT_RowIndex', orderable: false, searchable: false },
                     { data: 'name' },
                     { data: 'view', orderable: false },
                     { data: 'edit', orderable: false },
