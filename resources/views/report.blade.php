@@ -146,6 +146,13 @@
           background-color: #7268f4;
           color: #fff !important;
         }
+
+        @media print {
+          .no-print {
+            display: none !important;
+          }
+        }
+
     </style>
     <body class="">
         <div class="container-fluid">
@@ -207,15 +214,11 @@
                                           <div>
                                             <h1 class="text-3xl font-bold text-gray-800"><i class="fas fa-map-marker-alt mr-2"></i>{{ $project->location }}</h1>
                                           </div>
-                                          {{-- <div class="flex space-x-3">
-                                            <span class="px-4 py-2 bg-blue-100 text-blue-800 rounded-full font-medium">{{ $project->status }}</span>
-                                            <button class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
-                                              <i class="fas fa-edit mr-2"></i>Edit
-                                            </button>
-                                            <button class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition">
+                                          <div class="flex space-x-3"> 
+                                            <button id="printDiv" class="no-print px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-800 transition">
                                               <i class="fas fa-print mr-2"></i>Print
                                             </button>
-                                          </div> --}}
+                                          </div>
                                         </div>
 
                                         <!-- Main Grid -->
@@ -229,7 +232,7 @@
                                                 <h2 class="text-xl font-bold text-gray-800 ml-3">Project Details</h2>
 
                                                 <div class="ml-20">
-                                                    <span class="px-4 py-2 bg-blue-100 text-blue-800 rounded-full font-medium">{{ $project->status }}</span>
+                                                    <span class="px-4 py-2 bg-blue-100 text-blue-800 rounded-full font-medium" >{{ $project->status }}</span>
                                                 </div>
                                             </div>
 
@@ -603,6 +606,8 @@
 		<script src="{{url('/')}}/assets/plugins/bootstrap-multiselect/bootstrap-multiselect.js?r={{date('YmdHis')}}"></script>
 		<script src="{{url('/')}}/assets/js/select2/select2.full.min.js?r={{date('YmdHis')}}"></script>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
 </body>
 
     <script>
@@ -963,6 +968,40 @@
             $('#to_date_filter').val('');
             reloadTable();
         }
+
+
+
+        $('#printDiv').on('click', function () {
+
+          const btn = document.getElementById('printDiv');
+
+          btn.style.display = 'none';
+
+          setTimeout(() => { 
+              btn.style.display = 'inline-block';
+          }, 100);
+
+          const element = document.getElementById('project-details');
+
+          const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+          window.scrollTo(0, 0);
+
+          const opt = {
+              margin: 0,
+              filename: 'ProjectDetails.pdf',
+              image: { type: 'jpeg', quality: 0.98 },
+              html2canvas: {
+                  scale: 3,
+                  scrollY: 0,
+                  useCORS: true
+              },
+              jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+          };
+
+          html2pdf().set(opt).from(element).save();
+
+        });
+
 
         })
     </script>
