@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin\ProjectReports;
 
 use Illuminate\Http\Request;
 use App\Models\Project;
+use App\Models\PurchaseOrder;
 use App\Models\Admin\ManageProjects\ProjectStage;
 use App\Models\Admin\ManageProjects\ProjectTask;
 use App\Models\ProjectContract;
@@ -28,9 +29,9 @@ class ProjectReportsController extends Controller
 
     public function create(Request $request){
         $project = $this->projects->where('id',$request->input('project'))->first();
-        $stages = $project->stages; 
-        $contracts = $project->contracts;
-        $amenities = $project->amenities; 
+        $stages = $project->stages ?? ''; 
+        $contracts = $project->contracts ?? '';
+        $amenities = $project->amenities ?? ''; 
         return view('report', compact('project','stages','contracts','amenities'));
     }
 
@@ -163,6 +164,38 @@ class ProjectReportsController extends Controller
                     return $button;
                 })
                 ->rawColumns(['action'])
+                ->make(true);
+        }
+    }
+
+    public function purchaseTableList(Request $request)
+    {
+        logger($request->project_id);
+        if ($request->ajax()) {
+            $data = PurchaseOrder::with(['supervisor', 'project', 'details'])->latest();
+
+            if ($request->filled('project_id')) {
+                $data->whereIn('project_id', $request->project_id);
+            }
+
+            return DataTables::of($data)
+                ->addIndexColumn()
+                ->editColumn('order_date', static fn($data): string => Carbon::parse($data->order_date)->format('d-m-Y'))
+                ->editColumn('product_count', static fn($data) => $data->details->count())
+                ->editColumn('status', static function ($data) {
+                    $deliveredCount = $data->details->where('status', 'Delivered')->count();
+                    $total = $data->details->count();
+                    $badgeClass = $deliveredCount === $total ? 'success' : 'warning';
+                    return '<span class="badge bg-' . $badgeClass . '">' . $deliveredCount . '/' . $total . ' Delivered</span>';
+                })
+                ->addColumn('action', static function ($data) {
+                    return '<div class="d-flex justify-content-center">
+                        <a href="' . route('purchase-orders.show', $data->id) . '" class="btn btn-outline-success btn-sm m-1">
+                            <i class="fa fa-pencil"></i>
+                        </a>
+                    </div>';
+                })
+                ->rawColumns(['status', 'action'])
                 ->make(true);
         }
     }

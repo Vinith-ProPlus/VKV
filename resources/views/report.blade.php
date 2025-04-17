@@ -151,7 +151,7 @@
         <div class="container-fluid">
             <div class="hero-title w-25">
                 <span>
-                    {{$project->name}}
+                    {{$project->name ?? ''}}
                  </span>
              </div>
             <div class="row justify-content-center" style="padding: 15px;">
@@ -188,12 +188,12 @@
                                         <span class="nav-title">Labors</span>
                                     </span>
                                 </a>
-{{--                                <a class="nav-link" href="#project-purchases" data-tab="project-purchases"--}}
-{{--                                data-name="tab-project-purchases" data-bs-toggle="tab">--}}
-{{--                                    <span class="nav-contents">--}}
-{{--                                        <span class="nav-title">Purchases</span>--}}
-{{--                                    </span>--}}
-{{--                                </a>--}}
+                               <a class="nav-link" href="#project-purchases" data-tab="project-purchases"
+                               data-name="tab-project-purchases" data-bs-toggle="tab">
+                                   <span class="nav-contents">
+                                       <span class="nav-title">Purchases</span>
+                                   </span>
+                               </a>
                             </div>
                             <div class="position-relative" style="margin: 0 -2rem; background-color: #b1b1b1;">
                                 <hr class="border-top">
@@ -539,7 +539,6 @@
                                                       <thead class="thead-light">
                                                       <tr>
                                                           <th>S.No</th>
-                                                          <th>Project Name</th>
                                                           <th>Date</th>
                                                           <th>Labor Count</th>
                                                           <th>Contract Labor Count</th>
@@ -555,7 +554,32 @@
                                   </div>
                               </div>
                                 </div>
-{{--                                <div class="tab-pane fade" id="project-purchases">5</div>--}}
+                               <div class="tab-pane fade" id="project-purchases">
+                                <div class="card-body">
+                                  <div class="row">
+                                      <div class="col-12 col-sm-12 col-lg-12">
+                                        <div class="table-responsive">
+                                          <table class="table text-center border rounded" id="purchase_table">
+                                            <thead class="thead-light">
+                                            <tr>
+                                              <th>S.No</th>
+                                              <th>Order ID</th>
+                                              <th>Supervisor</th>
+                                              <th>Purchase Request ID</th>
+                                              <th>Order Date</th>
+                                              <th>Product Count</th>
+                                              <th>Status</th>
+                                              <th>Action</th>
+                                            </tr>
+                                            </thead>
+                                            <tbody class="small">
+                                            </tbody>
+                                          </table>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                               </div>
                             </div>
                         </div>
                     </div>
@@ -823,7 +847,6 @@
                 },
                 columns: [
                     { data: 'DT_RowIndex', orderable: false, searchable: false },
-                    { data: 'project_name' },
                     { data: 'date' },
                     { data: 'labor_count' },
                     { data: 'contract_labor_count' },
@@ -833,6 +856,32 @@
 
             // Load projects
             getProjects();
+
+            $('#purchase_table').DataTable({
+                "columnDefs": [{ "className": "dt-center", "targets": "_all" }],
+                serverSide: true,
+                iDisplayLength: 10,
+                lengthMenu: [[10, 25, 50, -1], [10, 25, 50, "All"]],
+                ajax: {
+                    url: '{{ route("purchaseTableList") }}',
+                    type: 'GET',
+                    data: function (d) {
+                        d.project_id = [project_id];
+                    }
+                },
+                order: [[1, 'desc']],
+                columns: [
+                    { data: 'DT_RowIndex', orderable: false, searchable: false },
+                    { data: 'order_id' },
+                    { data: 'supervisor.name', defaultContent: '-' },
+                    { data: 'purchase_request_id' },
+                    { data: 'order_date' },
+                    { data: 'product_count' },
+                    { data: 'status' },
+                    { data: 'action', orderable: false },
+                ]
+            });
+
 
         function initMultiSelect() {
             // Initialize multiselect for dropdown filters
