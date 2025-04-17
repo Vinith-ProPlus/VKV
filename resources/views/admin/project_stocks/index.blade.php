@@ -31,6 +31,8 @@
                             <div class="col-sm-4 my-2"><h5>{{$PageTitle}}</h5></div>
                             <div class="col-sm-4 my-2 text-right text-md-right">
                                 @can('Edit Project Stocks')
+                                    <a href="{{ route('project-stocks.re_allocation') }}" type="button" class="btn btn-secondary btn-sm">
+                                        <i class="fa fa-book"></i> Stock Re-Allocation </a>
                                     <button type="button" class="btn btn-primary btn-sm" onclick="$('#adjustStockModal').modal('show');">
                                         <i class="fa fa-edit"></i> Adjust Stock </button>
                                 @endcan

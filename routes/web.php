@@ -147,6 +147,9 @@ Route::group(['prefix'=>'admin'], static function (){
         Route::get('project-stocks/get-stock', [ProjectStockController::class, 'getStock'])->name('project-stocks.get-stock');
         Route::post('project-stocks/adjust', [ProjectStockController::class, 'adjust'])->name('project-stocks.adjust');
 
+        Route::get('project-stocks/re-allocation', [ProjectStockController::class, 'reAllocation'])->name('project-stocks.re_allocation');
+        Route::post('project-stocks/re-allocation/store', [ProjectStockController::class, 'reAllocationStore'])->name('project-stocks.re_allocation.store');
+
         Route::resource('stock-logs', StockLogController::class)->except(['show']);
         Route::get('stock-logs/get-products-by-category', [StockLogController::class, 'getProductsByCategory'])->name('stock-logs.get-products-by-category');
         Route::get('stock-logs/get-product-stock', [StockLogController::class, 'getProductStock'])->name('stock-logs.get-product-stock');
