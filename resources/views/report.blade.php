@@ -234,7 +234,7 @@
                                             </div>
 
                                             <div class="space-y-4">
-                                              <div class="grid grid-cols-2 gap-4">
+                                              <div class="grid grid-cols-2">
                                                 <div>
                                                   <p class="text-sm text-gray-500">Type</p>
                                                   <p class="font-medium">{{ $project->type }}</p>
@@ -331,7 +331,7 @@
                                                 <p class="font-medium">{{ $project->site->location }}</p>
                                               </div>
 
-                                              <div class="grid grid-cols-2 gap-4">
+                                              <div class="grid grid-cols-2">
                                                 <div>
                                                   <p class="text-sm text-gray-500">Latitude</p>
                                                   <p class="font-medium">{{ $project->site->latitude }}</p>
