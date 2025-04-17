@@ -212,7 +212,8 @@
                                         <!-- Header -->
                                         <div class="flex justify-between items-center mb-8">
                                           <div>
-                                            <h1 class="text-3xl font-bold text-gray-800"><i class="fas fa-map-marker-alt mr-2"></i>{{ $project->location }}</h1>
+                                            <h1 class="text-3xl font-bold text-blue-800">{{ $project->name }}</h1>
+                                            <h1 class="text-xl font-bold text-gray-800"><i class="fas fa-map-marker-alt mr-2" style="font-size: initial;"></i>{{ $project->location }}</h1>
                                           </div>
                                           <div class="flex space-x-3">
                                             <button id="printDiv" class="no-print px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-800 transition">
@@ -232,7 +233,7 @@
                                                 <h2 class="text-xl font-bold text-gray-800 ml-3">Project Details</h2>
 
                                                 <div class="ml-20">
-                                                    <span class="px-4 py-2 bg-blue-100 text-blue-800 rounded-full font-medium" >{{ $project->status }}</span>
+                                                    <span class="px-4 py-2 bg-blue-100 text-blue-800 rounded-full font-medium text-nowrap" >{{ $project->status }}</span>
                                                 </div>
                                             </div>
 
