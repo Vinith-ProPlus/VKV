@@ -989,7 +989,7 @@
 
           const opt = {
               margin: 0,
-              filename: 'ProjectDetails.pdf',
+              filename: 'Project_details.pdf',
               image: { type: 'jpeg', quality: 0.98 },
               html2canvas: {
                   scale: 3,
