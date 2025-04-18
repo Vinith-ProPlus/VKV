@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @method static findOrFail($id)
  * @method static create(array $all)
  * @method static whereIn(string $string, mixed $documentIds)
+ * @method static where(string $string, mixed $module_name)
  */
 class Document extends Model
 {

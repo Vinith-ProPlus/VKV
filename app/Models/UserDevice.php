@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * @method static updateOrCreate(array $array, array $array1)
+ * @method static where(string $string, int|string|null $user_id)
  */
 class UserDevice extends Model
 {

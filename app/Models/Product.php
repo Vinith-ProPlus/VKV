@@ -14,6 +14,7 @@ use Illuminate\Foundation\Application;
  * @method static create(mixed $data)
  * @method static findOrFail($id)
  * @method static where(string $string, mixed $categoryId)
+ * @method static Active()
  */
 class Product extends Model
 {
@@ -30,7 +31,7 @@ class Product extends Model
      * @param $query
      * @return mixed
      */
-    public function scopeActive($query)
+    public function scopeActive($query): mixed
     {
         return $query->where('is_active', 1);
     }

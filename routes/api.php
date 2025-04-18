@@ -8,9 +8,6 @@ use App\Http\Controllers\API\MobileUserAttendanceController;
 use App\Http\Controllers\API\PurchaseOrderApiController;
 use App\Http\Controllers\API\PurchaseRequestApiController;
 use App\Http\Controllers\API\SupportTicketController;
-use App\Models\Admin\Labor\LaborDesignation;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/register', [AuthController::class, 'register']);
@@ -50,9 +47,9 @@ Route::middleware('auth:sanctum')->group(static function () {
     Route::post('attendance/history', [MobileUserAttendanceController::class, 'getAttendanceHistory']);
 
     // Manage Project Stocks
-
     Route::post('manage-stocks/getProjectStocks', [GeneralController::class, 'getProjectStocks'])->name('getProjectStocks');
     Route::post('manage-stocks/adjustProductStock', [GeneralController::class, 'adjustProductStock'])->name('adjustProductStock');
+    Route::post('manage-stocks/stocksReAllocation', [GeneralController::class, 'stocksReAllocation'])->name('stocksReAllocation');
 
     // Manage Task
     Route::post('manage-task/get-projects', [GeneralController::class, 'getTaskProjects']);
