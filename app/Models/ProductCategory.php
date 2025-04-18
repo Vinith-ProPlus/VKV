@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * @method static whereHas(string $string, \Closure $param)
+ * @method static where(string $string, int $int)
  */
 class ProductCategory extends Model
 {

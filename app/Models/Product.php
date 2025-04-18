@@ -24,6 +24,16 @@ class Product extends Model
     ];
 
     protected $appends = ['image_url'];
+    protected $casts = ['is_active' => 'boolean'];
+
+    /**
+     * @param $query
+     * @return mixed
+     */
+    public function scopeActive($query)
+    {
+        return $query->where('is_active', 1);
+    }
 
     /**
      * @return BelongsTo

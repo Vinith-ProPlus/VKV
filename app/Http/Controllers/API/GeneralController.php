@@ -496,48 +496,22 @@ class GeneralController extends Controller
         return $this->successResponse($contractors, "Project Contractors fetched successfully!");
     }
 
-    public function getProjectStockCategories(Request $request): JsonResponse
+    public function getProjectStocks(Request $request): JsonResponse
     {
-        $request->validate([
-            'project_id' => 'required|exists:projects,id'
-        ]);
-        $request->merge(['per_page' => 100000, 'sort_order' => 'asc', 'sort_by' => 'name']);
-        $categories = ProductCategory::whereHas('products.projectStocks', static function($query) use ($request) {
-            $query->where('project_id', $request->project_id);
-        });
+        $request->validate(['project_id' => 'required|exists:projects,id']);
+        $request->merge(['per_page' => 1000000, 'sort_order' => 'asc', 'sort_by' => 'name']);
+        $project_id = $request->project_id;
+        $project_stocks = ProductCategory::where('is_active', 1)->select('id', 'name')->whereHas('products.projectStocks', static function ($query) use ($project_id) {
+            $query->where('project_id', $project_id)->where('quantity', '>', 0);
+        })->with(['products' => static function ($query) use ($project_id) {
+            $query->select('id', 'name', 'image', 'category_id')->active()->whereHas('projectStocks', static function ($subQuery) use ($project_id) {
+                    $subQuery->where('project_id', $project_id)->where('quantity', '>', 0);
+            })->with(['projectStocks' => static function ($stockQuery) use ($project_id) {
+                $stockQuery->select('project_id', 'product_id', 'quantity')->where('project_id', $project_id)->where('quantity', '>', 0);
+            }]);
+        }])->get();
 
-        $query = dataFilter($categories, $request);
-        return $this->successResponse(dataFormatter($query), "Product Stock Categories fetched successfully!");
-    }
-
-    public function getProjectStockProducts(Request $request): JsonResponse
-    {
-        $request->validate([
-            'project_id' => 'required|exists:projects,id',
-            'category_id' => 'required|exists:product_categories,id'
-        ]);
-
-        $request->merge(['per_page' => 100000, 'sort_order' => 'asc', 'sort_by' => 'name']);
-        $projectId = $request->project_id;
-        $categoryId = $request->category_id;
-
-        $products = Product::with(['projectStocks' => static function ($query) use ($projectId) {
-            $query->where('project_id', $projectId);
-        }])->where('category_id', $categoryId)->whereHas('projectStocks', static function ($query) use ($projectId) {
-            $query->where('project_id', $projectId);
-        });
-
-        $query = dataFilter($products, $request);
-
-        // Add current_stock field to each product
-        $query->getCollection()->transform(static function ($product) {
-            $stock = $product->projectStocks->first();
-            $product->current_stock = $stock ? $stock->quantity : 0;
-            unset($product->projectStocks);
-            return $product;
-        });
-
-        return $this->successResponse(dataFormatter($query), "Product Stock Product fetched successfully!");
+        return $this->successResponse($project_stocks, "Product Stocks fetched successfully!");
     }
 
     public function adjustProductStock(Request $request): JsonResponse

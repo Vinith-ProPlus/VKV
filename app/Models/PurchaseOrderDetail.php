@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * @method static findOrFail(mixed $id)
+ * @method static where(string $string, $id)
  */
 class PurchaseOrderDetail extends Model
 {

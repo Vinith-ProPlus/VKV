@@ -51,8 +51,7 @@ Route::middleware('auth:sanctum')->group(static function () {
 
     // Manage Project Stocks
 
-    Route::post('manage-stocks/getProjectStockCategories', [GeneralController::class, 'getProjectStockCategories'])->name('getProjectStockCategories');
-    Route::post('manage-stocks/getProjectStockProducts', [GeneralController::class, 'getProjectStockProducts'])->name('getProjectStockProducts');
+    Route::post('manage-stocks/getProjectStocks', [GeneralController::class, 'getProjectStocks'])->name('getProjectStocks');
     Route::post('manage-stocks/adjustProductStock', [GeneralController::class, 'adjustProductStock'])->name('adjustProductStock');
 
     // Manage Task
