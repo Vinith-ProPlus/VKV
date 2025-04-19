@@ -17,6 +17,7 @@ use App\Models\Document;
 use App\Models\LeadSource;
 use App\Models\LeadStatus;
 use App\Models\MobileUserAttendance;
+use App\Models\Notification;
 use App\Models\Product;
 use App\Models\ProductCategory;
 use App\Models\Project;
@@ -228,12 +229,11 @@ class GeneralController extends Controller
 
     public function getTasks(Request $request): JsonResponse
     {
-        $user = auth()->user();
-        $userId = $user->id;
+        $userId = Auth::id();
         $today = today();
         $tasks = ProjectTask::with('project:id,name', 'stage:id,name', 'created_by:id,name');
         $tasks->whereHas('project.site.supervisors', static fn($q) => $q->where('users.id', $userId))
-            ->when($request->filled('project_id'), fn($q) => $q->where('project_id', $request->project_id))
+            ->when($request->filled('project_id'), static fn($q) => $q->where('project_id', $request->project_id))
             ->where(static function ($q) use ($today) {
                 $q->where(static function ($subQuery) use ($today) {
                     $subQuery->where('date', '<', $today)
@@ -495,6 +495,23 @@ class GeneralController extends Controller
             ]);
 
         return $this->successResponse($contractors, "Project Contractors fetched successfully!");
+    }
+
+    public function getNotifications(Request $request): JsonResponse
+    {
+        $notifications = Notification::where('user_id', Auth::id());
+        $notifications = dataFilter($notifications, $request);
+        return $this->successResponse(dataFormatter($notifications), "Notifications fetched successfully!");
+    }
+
+    public function markAsReadNotification(Request $request): JsonResponse
+    {
+        $notification = Notification::findOrFail($request->id);
+        if($notification) {
+            $notification->update(['is_read' => true]);
+            return $this->successResponse($notification, "Notification marked as read successfully!");
+        }
+        return $this->errorResponse("", "Failed to mark this notification as marked!", 404);
     }
 
     public function getProjectStocks(Request $request): JsonResponse

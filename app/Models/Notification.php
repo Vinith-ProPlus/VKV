@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * @method static create(array $array)
+ * @method static where(string $string, int|string|null $userId)
+ * @method static findOrFail(mixed $id)
  */
 class Notification extends Model
 {
@@ -20,15 +22,8 @@ class Notification extends Model
         'message',
         'module_name',
         'module_id',
-        'device_ids',
-        'fcm_tokens',
         'status',
         'is_read',
-    ];
-
-    protected $casts = [
-        'device_ids' => 'array',
-        'fcm_tokens' => 'array',
     ];
 
     public function user(): BelongsTo

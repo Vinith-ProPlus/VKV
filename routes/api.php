@@ -46,6 +46,10 @@ Route::middleware('auth:sanctum')->group(static function () {
     Route::post('attendance/record-attendance', [MobileUserAttendanceController::class, 'recordAttendance']);
     Route::post('attendance/history', [MobileUserAttendanceController::class, 'getAttendanceHistory']);
 
+    // Notification
+    Route::post('getNotifications', [GeneralController::class, 'getNotifications'])->name('getNotifications');
+    Route::post('markAsReadNotification', [GeneralController::class, 'markAsReadNotification'])->name('markAsReadNotification');
+
     // Manage Project Stocks
     Route::post('manage-stocks/getProjectStocks', [GeneralController::class, 'getProjectStocks'])->name('getProjectStocks');
     Route::post('manage-stocks/adjustProductStock', [GeneralController::class, 'adjustProductStock'])->name('adjustProductStock');
