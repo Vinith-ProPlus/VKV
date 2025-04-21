@@ -247,7 +247,7 @@ class PurchaseOrderApiController extends Controller
                 $detail->category_id,
                 $detail->quantity,
                 auth()->id(),
-                'PO_ITEM_DELIVERED',
+                PO_ITEM_DELIVERED,
                 $detail->remarks
             );
 
