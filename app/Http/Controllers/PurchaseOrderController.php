@@ -25,6 +25,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Spatie\Permission\Models\Role;
 use Yajra\DataTables\Facades\DataTables;
@@ -207,6 +208,7 @@ class PurchaseOrderController extends Controller
             return redirect()->route('purchase-orders.index')->with('success', 'Purchase Order Created Successfully.');
         } catch (\Exception $e) {
             DB::rollback();
+            Log::error('Error in PurchaseOrderController@store: ' . $e->getMessage());
             return back()->with('error', 'Error: ' . $e->getMessage())->withInput();
         }
     }

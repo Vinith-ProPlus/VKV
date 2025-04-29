@@ -62,9 +62,22 @@ class LaborController extends Controller
             'project_labor_date_id' => 'required|integer|exists:project_labor_dates,id',
         ]);
 
-        $projectLaborDate = ProjectLaborDate::with(['labors.labor_designation', 'contractLabors.projectContract'])
+        $projectLaborDate = ProjectLaborDate::with(['labors.labor_designation', 'contractLabors.projectContract.user:name', 'contractLabors.projectContract.contract_type'])
             ->findOrFail($request->input('project_labor_date_id'));
         $projectLaborDate->count = $projectLaborDate->labor_count + $projectLaborDate->contract_count;
+
+        foreach ($projectLaborDate->contractLabors as $contractLabor) {
+            $user = optional($contractLabor->projectContract->user)->name;
+            $type = optional($contractLabor->projectContract->contract_type)->name;
+
+            // Add formatted string
+            $contractLabor->contractor_name = "$user - $type";
+
+            // Remove original nested objects
+            unset($contractLabor->projectContract->user);
+            unset($contractLabor->projectContract->contract_type);
+        }
+
 
         return $this->successResponse($projectLaborDate, "Labor data fetched successfully!");
     }

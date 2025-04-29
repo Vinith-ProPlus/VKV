@@ -49,7 +49,7 @@
                                         <input type="text" class="form-control" value="{{ $project->name ?? 'N/A' }}" readonly>
                                         <input type="hidden" name="project_id" value="{{ $project->id }}">
                                     @else
-                                        <select name="project_id" class="form-control" required>
+                                        <select id="project_id" name="project_id" class="form-control" required>
                                             <option value="">Select Project</option>
                                             @foreach($projects as $proj)
                                                 <option value="{{ $proj->id }}" {{ (old('project_id', $purchaseRequest->project_id ?? '') == $proj->id) ? 'selected' : '' }}>{{ $proj->name }}</option>
@@ -242,6 +242,12 @@
 
             // Counter for new products
             let newProductIndex = {{ isset($products) ? $products->count() : 0 }};
+
+            $('#project_id').select2({
+                width: '100%',
+                placeholder: 'Select a Project',
+                allowClear: true
+            });
 
             $('#categorySelect, #productSelect').select2({
                 dropdownParent: $('#productModal'),
