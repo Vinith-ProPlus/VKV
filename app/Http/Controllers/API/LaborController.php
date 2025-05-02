@@ -181,6 +181,43 @@ class LaborController extends Controller
             ]);
         }
     }
+    public function deleteLabor(Request $request): JsonResponse
+    {
+        DB::beginTransaction();
+        try {
+            $request->validate([
+                'labor_type' => ['required', Rule::in(['Self', 'Contract'])],
+                'labor_id' => [
+                    'required',
+                    'integer',
+                    static function ($attribute, $value, $fail) use ($request) {
+                        if ($request->labor_type === 'Self' && !Labor::where('id', $value)->exists()) {
+                            return $fail('The selected labor ID is invalid for Self labor.');
+                        }
+                        if ($request->labor_type === 'Contract' && !ContractLabor::where('id', $value)->exists()) {
+                            return $fail('The selected labor ID is invalid for Contract labor.');
+                        }
+                    }
+                ],
+            ]);
+
+            $model = $request->labor_type === 'Self' ? Labor::class : ContractLabor::class;
+            $labor = $model::find($request->labor_id);
+
+            if (!$labor) {
+                return $this->errorResponse([], 'Labor not found', 404);
+            }
+
+            $labor->delete();
+            DB::commit();
+            return $this->successResponse([], 'Labor deleted successfully');
+        } catch (Exception $exception) {
+            DB::rollBack();
+            $error = $exception->getMessage();
+            Log::error("Error in ProjectLaborDateController@deleteLabor: " .$error);
+            return $this->errorResponse([], 'Something went wrong: ' . $error);
+        }
+    }
 
     public function getLaborsByProject(Request $request): JsonResponse
     {

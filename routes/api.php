@@ -86,6 +86,7 @@ Route::middleware('auth:sanctum')->group(static function () {
     Route::post('labors/getLaborDates', [LaborController::class, 'getLaborDates'])->name('getLaborDates');
     Route::post('labors/getLaborData', [LaborController::class, 'getLaborData'])->name('getLaborData');
     Route::post('labors/create', [LaborController::class, 'storeMultipleLabors'])->name('storeMultipleLabors');
+    Route::post('labors/delete', [LaborController::class, 'deleteLabor'])->name('deleteLabor');
     Route::post('labors/getLaborsByProject', [LaborController::class, 'getLaborsByProject'])->name('getLaborsByProject');
     Route::post('labors/reallocateLabors', [LaborController::class, 'reallocateLabors'])->name('reallocateLabors');
 

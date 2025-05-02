@@ -11,6 +11,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * @method static create(array $only)
+ * @method static find($id)
+ * @method static where(string $string, $value)
  */
 class Labor extends Model
 {
