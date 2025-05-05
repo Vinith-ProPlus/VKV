@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 /**
  * @method static updateOrCreate(array $array)
  * @method static firstOrCreate(array $array)
+ * @method static where(string $string, mixed $projectId)
  */
 class ProjectLaborDate extends Model
 {

@@ -122,7 +122,7 @@ class BlogController extends Controller
         $validated = $request->validate([
             'project_id'  => ['required', 'integer', 'exists:projects,id'],
             'stage_id'    => ['nullable', 'integer', 'exists:project_stages,id'],
-            'is_damaged'  => ['nullable', 'integer', Rule::in([0, 1])],
+            'is_damaged'  => ['nullable', 'boolean', Rule::in([0, 1])],
             'type'        => ['required', Rule::in(['month', 'date'])],
             'value'       => ['required'],
         ], [
@@ -139,8 +139,8 @@ class BlogController extends Controller
         ]);
 
         $projectId   = $validated['project_id'];
-        $stageId     = $validated['stage_id'] ?? null;
-        $isDamaged   = $validated['is_damaged'];
+        $stageId     = $request->input('stage_id');
+        $isDamaged   = $request->input('is_damaged');
         $type        = $validated['type'];
         $value       = $validated['value'];
 

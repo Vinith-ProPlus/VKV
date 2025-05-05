@@ -7,6 +7,7 @@ use App\Http\Controllers\API\LaborController;
 use App\Http\Controllers\API\MobileUserAttendanceController;
 use App\Http\Controllers\API\PurchaseOrderApiController;
 use App\Http\Controllers\API\PurchaseRequestApiController;
+use App\Http\Controllers\API\StockLogController;
 use App\Http\Controllers\API\SupportTicketController;
 use Illuminate\Support\Facades\Route;
 
@@ -54,6 +55,8 @@ Route::middleware('auth:sanctum')->group(static function () {
     Route::post('manage-stocks/getProjectStocks', [GeneralController::class, 'getProjectStocks'])->name('getProjectStocks');
     Route::post('manage-stocks/adjustProductStock', [GeneralController::class, 'adjustProductStock'])->name('adjustProductStock');
     Route::post('manage-stocks/stocksReAllocation', [GeneralController::class, 'stocksReAllocation'])->name('stocksReAllocation');
+    Route::post('manage-stocks/getStockLogDates', [StockLogController::class, 'getStockLogDates'])->name('getStockLogDates');
+    Route::post('manage-stocks/getStockLogData', [StockLogController::class, 'getStockLogData'])->name('getStockLogData');
 
     // Manage Task
     Route::post('manage-task/get-projects', [GeneralController::class, 'getTaskProjects']);
