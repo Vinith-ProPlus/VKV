@@ -57,12 +57,13 @@ class StockLogController extends Controller
         $date = Carbon::createFromFormat('d/m/Y', $request->input('date'))?->format('Y-m-d');
 
         // Filter stock logs by project, date, and desired types
-        $stockLogs = StockLog::with(['project', 'category', 'product', 'user'])
+        $stockLogs = StockLog::with(['category', 'product'])
             ->where('project_id', $projectId)
             ->whereDate('time', $date)
-            ->whereIn('type', ['Re-Allocation', 'Taken for construction', 'Manual Adjustment - Out'])
+            ->whereIn('type', ['Re-Allocation - Transfer', 'Re-Allocation - Received', 'Taken for construction', 'Manual Adjustment - Out'])
             ->get();
-        $transferredData = $stockLogs->where('type', 'Re-Allocation')->values();
+        logger($stockLogs);
+        $transferredData = $stockLogs->whereIn('type', ['Re-Allocation - Transfer', 'Re-Allocation - Received'])->values();
         $usedData = $stockLogs->whereIn('type', ['Taken for construction', 'Manual Adjustment - Out'])->values();
 
         $formattedData = [
@@ -91,7 +92,7 @@ class StockLogController extends Controller
             'quantity' => $log->quantity,
         ];
 
-        if ($log->type === 'Re-Allocation' && !empty($remarks)) {
+        if (($log->type === 'Re-Allocation - Transfer' || $log->type === 'Re-Allocation - Received') && !empty($remarks)) {
             if (str_contains($remarks, 'Transferred to Project:')) {
                 $parts = explode('Transferred to Project:', $remarks);
                 if (isset($parts[1])) {
