@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\CRM\LeadSourceController;
 use App\Http\Controllers\Admin\CRM\VisitorController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\Settings\ContentController;
+use App\Http\Controllers\Admin\Settings\MobileVersionController;
 use App\Http\Controllers\Admin\Users\BlogController;
 use App\Http\Controllers\Admin\Users\SupportTicketController;
 use App\Http\Controllers\Admin\Users\SupportTicketMessageController;
@@ -159,10 +160,11 @@ Route::group(['prefix'=>'admin'], static function (){
             Route::post('/unpaid-labor', [PayrollController::class, 'getUnpaidLabor'])->name('payroll.getUnpaidLabor');
             Route::post('/process-payment', [PayrollController::class, 'processPayment'])->name('payroll.processPayment');
             Route::get('/payroll/history', [PayrollController::class, 'payrollHistory'])->name('payroll.history');
-
         });
-    });
 
+        Route::get('/mobile-version', [MobileVersionController::class, 'index'])->name('mobile_version.index');
+        Route::put('/mobile-version', [MobileVersionController::class, 'update'])->name('mobile_version.update');
+    });
 });
 
 Route::get('/getDistricts', [GeneralController::class, 'getDistricts'])->name('getDistricts');

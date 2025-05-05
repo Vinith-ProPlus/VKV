@@ -40,6 +40,7 @@ Route::group(['prefix' => 'master', 'middleware' => 'auth:sanctum'], static func
     Route::post('/getDocuments', [GeneralController::class, 'getDocuments'])->name('getDocuments');
     Route::post('/getLaborDesignations', [GeneralController::class, 'getLaborDesignations'])->name('getLaborDesignations');
     Route::post('/getProjectContractors', [GeneralController::class, 'getProjectContractors'])->name('getProjectContractors');
+    Route::post('/mobile_version', [GeneralController::class, 'mobile_version'])->name('mobile_version');
 });
 
 Route::middleware('auth:sanctum')->group(static function () {

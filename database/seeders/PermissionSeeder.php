@@ -36,6 +36,7 @@ class PermissionSeeder extends Seeder
             ['guard_name' => 'web', 'model' => 'Lead Source', 'SplPermission' => 1],
             ['guard_name' => 'web', 'model' => 'Lead', 'SplPermission' => 1],
             ['guard_name' => 'web', 'model' => 'Contents', 'SplPermission' => 1],
+            ['guard_name' => 'web', 'model' => 'Mobile Versions', 'SplPermission' => 1],
 
             ['guard_name' => 'web', 'model' => 'Product Category'],
             ['guard_name' => 'web', 'model' => 'Product'],

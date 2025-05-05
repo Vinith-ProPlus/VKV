@@ -17,6 +17,7 @@ use App\Models\Document;
 use App\Models\LeadSource;
 use App\Models\LeadStatus;
 use App\Models\MobileUserAttendance;
+use App\Models\MobileVersion;
 use App\Models\Notification;
 use App\Models\Product;
 use App\Models\ProductCategory;
@@ -495,6 +496,11 @@ class GeneralController extends Controller
             ]);
 
         return $this->successResponse($contractors, "Project Contractors fetched successfully!");
+    }
+
+    public function mobile_version()
+    {
+        return MobileVersion::first();
     }
 
     public function getNotifications(Request $request): JsonResponse

@@ -267,12 +267,12 @@
                             <div class="according-menu"><i class="fa fa-angle-double-right"></i></div>
                         </a>
                         <ul class="nav-submenu menu-content" style="display: none;">
-                            <li class=""><a href="{{ route('contents.index') }}"
-                                            data-active-name="CMS" data-original-title=""
-                                            title="">CMS</a></li>
-{{--                            <li class=""><a href="http://localhost/VKV-OLD/admin/settings/company/"--}}
-{{--                                            data-active-name="Company-Settings" data-original-title=""--}}
-{{--                                            title="">Company</a></li>--}}
+                            @can('View Contents')
+                            <li class=""><a href="{{ route('contents.index') }}" data-active-name="CMS" data-original-title="" title="">CMS</a></li>
+                            @endcan
+                            @can('View Mobile Versions')
+                            <li class=""><a href="{{ route('mobile_version.index') }}" data-active-name="Mobile-version" data-original-title="" title="">Mobile Version</a></li>
+                            @endcan
                         </ul>
                     </li>
                     <li class="dropdown CMenus">
