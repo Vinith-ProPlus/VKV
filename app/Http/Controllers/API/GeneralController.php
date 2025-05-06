@@ -613,6 +613,8 @@ class GeneralController extends Controller
             $to_project_stock = ProjectStock::with('project')->where('project_id', $request->to_project_id)
                 ->where('product_id', $request->product_id)
                 ->first();
+            $from_project_name = $from_project_stock->project->name ?? Project::find($request->from_project_id)?->name ?? 'Unknown Project';
+            $to_project_name = $to_project_stock->project->name ?? Project::find($request->to_project_id)?->name ?? 'Unknown Project';
 
             if (!$from_project_stock || $from_project_stock->quantity < $request->quantity) {
                 return $this->errorResponse('Insufficient stock available.', '',404);
@@ -624,7 +626,7 @@ class GeneralController extends Controller
 
             $from_project_stock->quantity = $fromBalanceQuantity;
             $from_project_stock->last_updated_by = Auth::id();
-            $from_project_stock->last_transaction_type = RE_ALLOCATION . ' to - ' . ($to_project_stock->project->name ?? 'New Project') . ' by - ' . Auth::user()->name;
+            $from_project_stock->last_transaction_type = RE_ALLOCATION . ' to - ' . $to_project_name . ' by - ' . Auth::user()->name;
             $from_project_stock->save();
 
             // Create StockLog for from project
@@ -638,7 +640,7 @@ class GeneralController extends Controller
                 'user_id' => Auth::id(),
                 'type' => RE_ALLOCATION .' - Transfer',
                 'time' => now(),
-                'remarks' => 'Transferred to Project: ' . $to_project_stock->project->name . ($request->remarks ? ' | ' . $request->remarks : ''),
+                'remarks' => 'Transferred to Project: ' . $to_project_name . ($request->remarks ? ' | ' . $request->remarks : ''),
             ]);
 
             // Add to 'to' project
@@ -656,7 +658,7 @@ class GeneralController extends Controller
 
             $toBalanceQuantity = $to_project_stock->quantity;
             $to_project_stock->last_updated_by = Auth::id();
-            $to_project_stock->last_transaction_type = RE_ALLOCATION . ' received from - ' . $from_project_stock->project->name . ' by - ' . Auth::user()->name;
+            $to_project_stock->last_transaction_type = RE_ALLOCATION . ' received from - ' . $from_project_name . ' by - ' . Auth::user()->name;
             $to_project_stock->save();
 
             // Create StockLog for to project
@@ -670,7 +672,7 @@ class GeneralController extends Controller
                 'user_id' => Auth::id(),
                 'type' => RE_ALLOCATION .' - Received',
                 'time' => now(),
-                'remarks' => 'Received from Project: ' . $from_project_stock->project->name . ($request->remarks ? ' | ' . $request->remarks : ''),
+                'remarks' => 'Received from Project: ' . $from_project_name . ($request->remarks ? ' | ' . $request->remarks : ''),
             ]);
 
             DB::commit();
