@@ -41,6 +41,7 @@ Route::group(['prefix' => 'master', 'middleware' => 'auth:sanctum'], static func
     Route::post('/getLaborDesignations', [GeneralController::class, 'getLaborDesignations'])->name('getLaborDesignations');
     Route::post('/getProjectContractors', [GeneralController::class, 'getProjectContractors'])->name('getProjectContractors');
     Route::post('/mobile_version', [GeneralController::class, 'mobile_version'])->name('mobile_version');
+    Route::post('getWarehouses', [GeneralController::class, 'getWarehouses'])->name('getWarehouses');
 });
 
 Route::middleware('auth:sanctum')->group(static function () {
@@ -56,6 +57,7 @@ Route::middleware('auth:sanctum')->group(static function () {
     Route::post('manage-stocks/getProjectStocks', [GeneralController::class, 'getProjectStocks'])->name('getProjectStocks');
     Route::post('manage-stocks/adjustProductStock', [GeneralController::class, 'adjustProductStock'])->name('adjustProductStock');
     Route::post('manage-stocks/stocksReAllocation', [GeneralController::class, 'stocksReAllocation'])->name('stocksReAllocation');
+    Route::post('manage-stocks/stocksReturn', [GeneralController::class, 'stocksReturn'])->name('stocksReturn');
     Route::post('manage-stocks/getStockLogDates', [StockLogController::class, 'getStockLogDates'])->name('getStockLogDates');
     Route::post('manage-stocks/getStockLogData', [StockLogController::class, 'getStockLogData'])->name('getStockLogData');
 

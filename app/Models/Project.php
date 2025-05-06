@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 /**
  * @method static findOrFail($id)
  * @method static create(array $all)
+ * @method static find(mixed $from_project_id)
  */
 class Project extends Model
 {

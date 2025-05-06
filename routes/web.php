@@ -20,6 +20,7 @@ use App\Http\Controllers\PurchaseRequestController;
 use App\Http\Controllers\SqlImportController;
 use App\Http\Controllers\StockLogController;
 use App\Http\Controllers\Admin\ProjectReports\ProjectReportsController;
+use App\Http\Controllers\WarehouseStockController;
 use App\Models\Admin\Master\City;
 use App\Models\Admin\Master\District;
 use App\Models\Admin\Master\Pincode;
@@ -154,6 +155,25 @@ Route::group(['prefix'=>'admin'], static function (){
         Route::resource('stock-logs', StockLogController::class)->except(['show']);
         Route::get('stock-logs/get-products-by-category', [StockLogController::class, 'getProductsByCategory'])->name('stock-logs.get-products-by-category');
         Route::get('stock-logs/get-product-stock', [StockLogController::class, 'getProductStock'])->name('stock-logs.get-product-stock');
+
+        // Routes for Warehouse Stock Management
+        Route::prefix('warehouse-stocks')->name('warehouse-stocks.')->middleware(['auth'])->group(function () {
+            Route::get('/', [WarehouseStockController::class, 'index'])->name('index');
+
+            // Project Return routes
+            Route::get('/project-return', [WarehouseStockController::class, 'projectReturn'])->name('project-return');
+            Route::post('/project-return', [WarehouseStockController::class, 'projectReturnStore'])->name('project-return-store');
+
+            // Ajax routes
+            Route::get('/get-categories', [WarehouseStockController::class, 'getCategories'])->name('get-categories');
+            Route::get('/get-products', [WarehouseStockController::class, 'getProducts'])->name('get-products');
+            Route::get('/get-stock', [WarehouseStockController::class, 'getStock'])->name('get-stock');
+            Route::get('/get-warehouse-products', [WarehouseStockController::class, 'getWarehouseProducts'])->name('get-warehouse-products');
+            Route::get('/get-warehouse-stock', [WarehouseStockController::class, 'getWarehouseStock'])->name('get-warehouse-stock');
+
+            // Stock Adjustment
+            Route::post('/adjust', [WarehouseStockController::class, 'adjustStock'])->name('adjust');
+        });
 
         Route::prefix('payroll')->group(function () {
             Route::view('/', 'payroll.index')->name('payroll.index');
