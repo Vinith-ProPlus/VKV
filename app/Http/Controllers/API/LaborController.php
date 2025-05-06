@@ -81,6 +81,18 @@ class LaborController extends Controller
 
         return $this->successResponse($projectLaborDate, "Labor data fetched successfully!");
     }
+    public function getTodayLaborData(Request $request): JsonResponse
+    {
+        $request->validate([
+            'project_id' => 'required|integer|exists:projects,id',
+        ]);
+        $projectLaborDate = ProjectLaborDate::with(['labors.labor_designation'])
+            ->where('project_id', $request->input('project_id'))->where('date', now()->format('Y-m-d'))->first();
+        if ($projectLaborDate) {
+            return $this->successResponse($projectLaborDate, "Labor data fetched successfully!");
+        }
+        return $this->errorResponse([], "Labor data not found!");
+    }
 
     public function storeMultipleLabors(Request $request): JsonResponse
     {
