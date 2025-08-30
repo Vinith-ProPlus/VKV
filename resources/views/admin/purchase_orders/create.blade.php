@@ -86,11 +86,11 @@
                                         <th>Product</th>
                                         <th>Quantity</th>
                                         <th>Rate</th>
-                                        <th>GST?</th>
-                                        <th>GST %</th>
+                                        <th class="{{ ($gst) ? '' : 'd-none' }}">GST?</th>
+                                        <th class="{{ ($gst) ? '' : 'd-none' }}">GST %</th>
                                         <th>Total</th>
-                                        <th>GST Value</th>
-                                        <th>Total w/ GST</th>
+                                        <th class="{{ ($gst) ? '' : 'd-none' }}">GST Value</th>
+                                        <th class="{{ ($gst) ? '' : 'd-none' }}">Total w/ GST</th>
                                         <th>Action</th>
                                     </tr>
                                     </thead>
@@ -112,19 +112,19 @@
                                                 <td>
                                                     <input type="number" step="1" class="form-control rate" name="products[{{ $index }}][rate]" min="1" required />
                                                 </td>
-                                                <td class="text-center">
+                                                <td class="text-center {{ ($gst) ? '' : 'd-none' }}">
                                                     <input type="checkbox" class="form-check-input gst-applicable" name="products[{{ $index }}][gst_applicable]" value="1" />
                                                 </td>
-                                                <td>
+                                                <td class="{{ ($gst) ? '' : 'd-none' }}">
                                                     <input type="number" step="1" class="form-control gst-percentage" name="products[{{ $index }}][gst_percentage]" disabled />
                                                 </td>
                                                 <td>
                                                     <input type="text" readonly class="form-control total-amount" name="products[{{ $index }}][total_amount]" />
                                                 </td>
-                                                <td>
+                                                <td class="{{ ($gst) ? '' : 'd-none' }}">
                                                     <input type="text" readonly class="form-control gst-value" name="products[{{ $index }}][gst_value]" />
                                                 </td>
-                                                <td>
+                                                <td class="{{ ($gst) ? '' : 'd-none' }}">
                                                     <input type="text" readonly class="form-control total-with-gst" name="products[{{ $index }}][total_with_gst]" />
                                                 </td>
                                                 <td>
@@ -155,14 +155,14 @@
                                                         <input type="hidden" name="total_items">
                                                     </td>
                                                 </tr>
-                                                <tr>
+                                                <tr class="{{ ($gst) ? '' : 'd-none' }}">
                                                     <td class="text-right"><strong>Total Amount (Without GST):</strong></td>
                                                     <td>
                                                         <span id="totalAmount">₹0.00</span>
                                                         <input type="hidden" name="total_amount">
                                                     </td>
                                                 </tr>
-                                                <tr>
+                                                <tr class="{{ ($gst) ? '' : 'd-none' }}">
                                                     <td class="text-right"><strong>Total GST:</strong></td>
                                                     <td>
                                                         <span id="totalGST">₹0.00</span>

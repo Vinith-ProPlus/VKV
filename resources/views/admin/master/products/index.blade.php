@@ -39,10 +39,6 @@
                     </div>
 
                     <div class="card-body">
-                        @php
-
-echo $filtered;
-                        @endphp
                         <div class="table-responsive">
                             <table class="table text-center border rounded" id="list_table">
                                 <thead class="thead-light">

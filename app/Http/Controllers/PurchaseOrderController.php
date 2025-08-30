@@ -91,6 +91,7 @@ class PurchaseOrderController extends Controller
         $purchaseRequest = null;
         $products = collect();
         $project = null;
+        $gst = $request->has('gst') ? $request->gst : false;
 
         if ($request->has('request_id')) {
             $purchaseRequest = PurchaseRequest::with(['project', 'details.product.category'])->findOrFail($request->request_id);
@@ -102,7 +103,7 @@ class PurchaseOrderController extends Controller
         $categories = ProductCategory::with('products')->get();
 
         return view('admin.purchase_orders.create', compact(
-            'purchaseRequest', 'products', 'project', 'projects', 'categories'
+            'purchaseRequest', 'products', 'project', 'projects', 'categories', 'gst'
         ));
     }
 

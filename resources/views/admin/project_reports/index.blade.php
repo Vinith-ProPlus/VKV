@@ -28,15 +28,12 @@
                             <div class="col-sm-4"></div>
                             <div class="col-sm-4 my-2"><h5>{{ $PageTitle }}</h5></div>
                             <div class="col-sm-4 my-2 text-right">
-                                @can('Create Project Reports')
-                                    <a class="btn btn-sm btn-primary add-btn" href="{{ route('purchase-requests.create') }}">Add New Request</a>
-                                @endcan
                             </div>
                         </div>
                     </div>
                     <form method="GET" action="{{route('project_reports.create')}}">
-                        <div class="card-body"> 
-                            <div class="mt-20"> 
+                        <div class="card-body">
+                            <div class="mt-20">
                                 <label for="">Project</label>
                                 <select class="form-control" name="project" required>
                                     <option value="">Select a Project</option>
@@ -58,5 +55,5 @@
     </div>
 @endsection
 
-@section('script') 
+@section('script')
 @endsection
