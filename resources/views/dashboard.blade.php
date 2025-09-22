@@ -481,7 +481,7 @@
             let container = $('.pichart-container');
 
             if(value.slice(-1)=='%'){
-                value = value.slice(0, -1)
+                value = parseInt(value.slice(0, -1));
             }
             let html = `
                 <div class="chart-box">
