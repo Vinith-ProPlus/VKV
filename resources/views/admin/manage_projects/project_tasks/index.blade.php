@@ -37,10 +37,10 @@
                         <div class="row align-items-center justify-content-center">
                             <div class="col-sm-2">
                                 <div class="form-group text-center mh-60">
-                                    <label style="margin-bottom: 0px;">Projects</label>
+                                    <label style="margin-bottom: 0px;">Sites</label>
                                     <div id="divProject">
                                         <select class="form-control form-control-sm text-center" id="project_id">
-                                            <option value="">Select a Project</option>
+                                            <option value="">Select a Site</option>
                                         </select>
                                     </div>
                                 </div>
@@ -165,7 +165,7 @@
                     type: 'GET',
                     dataType: 'json',
                     success: function (response) {
-                        let options = '<option value="">Select a Project</option>';
+                        let options = '<option value="">Select a Site</option>';
                         response.forEach(item => {
                             options += `<option value="${item.id}" ${item.id == SelectedProject ? 'selected' : ''}>${item.name}</option>`;
                         });

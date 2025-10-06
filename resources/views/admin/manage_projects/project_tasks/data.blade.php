@@ -53,10 +53,10 @@
                             <div class="row mt-10">
                                 <div class="col-6">
                                     <div class="form-group">
-                                        <label>Project</label>
+                                        <label>Site</label>
                                         <select name="project_id" id="project_id" class="form-control select2 @error('project_id') is-invalid @enderror"
                                                 data-selected='{{ $project_task ? old('project_id', $project_task->project_id) : old('project_id') }}' required>
-                                            <option value="">Select a Project</option>
+                                            <option value="">Select a Site</option>
                                         </select>
                                         @error('project_id')
                                         <div class="text-danger mt-1">{{ $message }}</div>
@@ -156,7 +156,7 @@
                 let SelectedProject = ProjectID.attr('data-selected');
                 ProjectID.select2('destroy');
                 $('#project_id option').remove();
-                ProjectID.append('<option value="">Select a Project</option>');
+                ProjectID.append('<option value="">Select a Site</option>');
 
                 $.ajax({
                     url:"{{route('getProjects')}}",
