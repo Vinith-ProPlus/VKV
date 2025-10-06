@@ -2,7 +2,7 @@
 
 @section('content')
     @php
-        $PageTitle = "Sites";
+        $PageTitle = "Project";
         $ActiveMenuName = 'Sitess';
     @endphp
 
@@ -38,7 +38,7 @@
                             <div class="row">
                                 <div class="col-6">
                                     <div class="form-group">
-                                        <label>Site name</label>
+                                        <label>Project name</label>
                                         <input type="text" name="name" class="form-control" value="{{ old('name', $site->name ?? '') }}" required>
                                         @error('name')
                                         <div class="text-danger mt-1">{{ $message }}</div>

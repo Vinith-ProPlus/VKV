@@ -2,7 +2,7 @@
 
 @section('content')
     @php
-        $PageTitle = "Project";
+        $PageTitle = "Site";
         $ActiveMenuName = 'Projects';
     @endphp
     <div class="container-fluid">
@@ -78,7 +78,7 @@
                                     <div class="row">
                                         <div class="col-6">
                                             <div class="form-group">
-                                                <label for="site_id">Site Name <span
+                                                <label for="site_id">Project Name <span
                                                         class="text-danger">*</span></label>
                                                 <select name="site_id" id="site_id" class="form-control select2"
                                                         data-selected="{{ old('site_id', $project->site_id ?? '') }}"
@@ -105,7 +105,7 @@
                                     <div class="row mt-10">
                                         <div class="col-6">
                                             <div class="form-group">
-                                                <label>Project ID <span class="text-danger">*</span></label>
+                                                <label>Site ID <span class="text-danger">*</span></label>
                                                 <input type="text" name="project_id" class="form-control"
                                                        value="{{ old('project_id', $project->project_id ?? '') }}"
                                                        required>
@@ -116,7 +116,7 @@
                                         </div>
                                         <div class="col-6">
                                             <div class="form-group">
-                                                <label>Project Name <span class="text-danger">*</span></label>
+                                                <label>Site Name <span class="text-danger">*</span></label>
                                                 <input type="text" name="name" class="form-control"
                                                        value="{{ old('name', $project->name ?? '') }}" required>
                                                 @error('name')
