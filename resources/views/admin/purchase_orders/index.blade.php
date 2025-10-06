@@ -75,7 +75,7 @@
                     type: 'GET'
                 },
                 columns: [
-                    { data: 'DT_RowIndex' },
+                    { data: 'DT_RowIndex', orderable: false, searchable: false },
                     { data: 'order_id' },
                     { data: 'project.name' },
                     { data: 'supervisor.name', defaultContent: '-' },

@@ -5,6 +5,7 @@
         $PageTitle="Roles and Permissions";
         $ActiveMenuName='Roles-and-Permissions';
     @endphp
+{{--    <x-sidebar user="{{$PageTitle}}"></x-sidebar>--}}
     <div class="container-fluid">
         <div class="page-header">
             <div class="row">
@@ -75,7 +76,7 @@
                     type: 'GET'
                 },
                 columns: [
-                    { data: 'DT_RowIndex' },
+                    { data: 'DT_RowIndex', orderable: false, searchable: false },
                     { data: 'name' },
                     { data: 'view', orderable: false },
                     { data: 'edit', orderable: false },

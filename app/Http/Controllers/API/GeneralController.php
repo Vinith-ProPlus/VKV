@@ -17,19 +17,27 @@ use App\Models\Document;
 use App\Models\LeadSource;
 use App\Models\LeadStatus;
 use App\Models\MobileUserAttendance;
+use App\Models\MobileVersion;
+use App\Models\Notification;
 use App\Models\Product;
 use App\Models\ProductCategory;
 use App\Models\Project;
 use App\Models\ProjectContract;
+use App\Models\ProjectStock;
+use App\Models\StockLog;
 use App\Models\SupportType;
 use App\Models\User;
 use App\Models\UserDevice;
 use App\Models\UserDeviceLocation;
 use App\Models\Visitor;
+use App\Models\Warehouse;
+use App\Models\WarehouseStock;
+use App\Models\WarehouseStockLog;
 use App\Traits\ApiResponse;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -192,6 +200,14 @@ class GeneralController extends Controller
         return $this->successResponse(dataFormatter($query), "Categories fetched successfully!");
     }
 
+    public function getWarehouses(Request $request): JsonResponse
+    {
+        $query = Warehouse::Active();
+
+        $query = dataFilter($query, $request, ['name']);
+        return $this->successResponse(dataFormatter($query), "Warehouses fetched successfully!");
+    }
+
     public function getProducts(Request $request): JsonResponse
     {
         $query = Product::with('category', 'unit')->where('is_active', 1);
@@ -225,12 +241,11 @@ class GeneralController extends Controller
 
     public function getTasks(Request $request): JsonResponse
     {
-        $user = auth()->user();
-        $userId = $user->id;
+        $userId = Auth::id();
         $today = today();
         $tasks = ProjectTask::with('project:id,name', 'stage:id,name', 'created_by:id,name');
         $tasks->whereHas('project.site.supervisors', static fn($q) => $q->where('users.id', $userId))
-            ->when($request->filled('project_id'), fn($q) => $q->where('project_id', $request->project_id))
+            ->when($request->filled('project_id'), static fn($q) => $q->where('project_id', $request->project_id))
             ->where(static function ($q) use ($today) {
                 $q->where(static function ($subQuery) use ($today) {
                     $subQuery->where('date', '<', $today)
@@ -308,7 +323,7 @@ class GeneralController extends Controller
             ->first();
 
         // Determine if the user should check in or check out
-        $check_in_status = !$lastAttendance || $lastAttendance->type === 'check_out';
+        $check_in_status = $lastAttendance && $lastAttendance->type === 'check_in';
 
         return $this->successResponse(
             compact('user', 'today_tasks', 'total_today_task', 'notification_count', 'check_in_status'),
@@ -492,5 +507,303 @@ class GeneralController extends Controller
             ]);
 
         return $this->successResponse($contractors, "Project Contractors fetched successfully!");
+    }
+
+    public function mobile_version()
+    {
+        return MobileVersion::first();
+    }
+
+    public function getNotifications(Request $request): JsonResponse
+    {
+        $notifications = Notification::where('user_id', Auth::id());
+        $notifications = dataFilter($notifications, $request);
+        return $this->successResponse(dataFormatter($notifications), "Notifications fetched successfully!");
+    }
+
+    public function markAsReadNotification(Request $request): JsonResponse
+    {
+        $notification = Notification::findOrFail($request->id);
+        if($notification) {
+            $notification->update(['is_read' => true]);
+            return $this->successResponse($notification, "Notification marked as read successfully!");
+        }
+        return $this->errorResponse("", "Failed to mark this notification as marked!", 404);
+    }
+
+    public function getProjectStocks(Request $request): JsonResponse
+    {
+        $request->validate(['project_id' => 'required|exists:projects,id']);
+        $request->merge(['per_page' => 1000000, 'sort_order' => 'asc', 'sort_by' => 'name']);
+        $project_id = $request->project_id;
+        $project_stocks = $this->getStocksByProjectId($project_id);
+
+        return $this->successResponse($project_stocks, "Product Stocks fetched successfully!");
+    }
+
+    public function adjustProductStock(Request $request): JsonResponse
+    {
+        $request->validate([
+            'project_id' => 'required|exists:project_stocks,project_id',
+            'category_id' => 'required|exists:project_stocks,category_id',
+            'product_id' => 'required|exists:project_stocks,product_id',
+            'quantity' => 'required|numeric|min:1',
+            'remarks' => 'nullable|string|max:255',
+        ]);
+
+        DB::beginTransaction();
+
+        try {
+            $stock = ProjectStock::where('project_id', $request->project_id)->where('product_id', $request->product_id)->first();
+
+            if (!$stock) {
+                return $this->errorResponse('Stock not found for the given product and project.', '',404);
+            }
+
+            if ($stock->quantity < $request->quantity) {
+                return $this->errorResponse('Cannot subtract more than available stock.', '',404);
+            }
+
+            // Get previous quantity before updating
+            $previousQuantity = $stock->quantity;
+
+            // Calculate balance quantity
+            $balanceQuantity = $previousQuantity - $request->quantity;
+
+            // Perform subtraction
+            $stock->quantity -= $request->quantity;
+            $stock->last_updated_by = Auth::id();
+            $stock->last_transaction_type = 'Taken for today use '.$request->remarks;
+            $stock->save();
+
+            // Log usage
+            $log = new StockLog([
+                'project_id' => $request->project_id,
+                'category_id' => $request->category_id,
+                'product_id' => $request->product_id,
+                'previous_quantity' => $previousQuantity,
+                'quantity' => $request->quantity,
+                'balance_quantity' => $balanceQuantity,
+                'user_id' => Auth::id(),
+                'time' => now(),
+                'type' => TAKEN_FOR_CONSTRUCTION,
+                'remarks' => $request->remarks,
+            ]);
+            $log->save();
+            DB::commit();
+            return $this->successResponse($stock, "Stock updated successfully.");
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return $this->errorResponse('Cannot subtract the product stock.', $e->getMessage(),500);
+        }
+    }
+
+    /**
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function stocksReAllocation(Request $request): JsonResponse
+    {
+        $request->validate([
+            'from_project_id' => 'required|exists:projects,id',
+            'category_id' => 'required|exists:product_categories,id',
+            'product_id' => 'required|exists:products,id',
+            'quantity' => 'required|numeric|min:0.01',
+            'to_project_id' => 'required|exists:projects,id',
+            'remarks' => 'nullable|string|max:255',
+        ]);
+
+        DB::beginTransaction();
+
+        try {
+            // Fetch From and To project stock
+            $from_project_stock = ProjectStock::with('project')->where('project_id', $request->from_project_id)
+                ->where('product_id', $request->product_id)
+                ->first();
+
+            $to_project_stock = ProjectStock::with('project')->where('project_id', $request->to_project_id)
+                ->where('product_id', $request->product_id)
+                ->first();
+            $from_project_name = $from_project_stock->project->name ?? Project::find($request->from_project_id)?->name ?? 'Unknown Project';
+            $to_project_name = $to_project_stock->project->name ?? Project::find($request->to_project_id)?->name ?? 'Unknown Project';
+
+            if (!$from_project_stock || $from_project_stock->quantity < $request->quantity) {
+                return $this->errorResponse('Insufficient stock available.', '',404);
+            }
+
+            // Reduce stock from 'from' project
+            $fromPreviousQuantity = $from_project_stock->quantity;
+            $fromBalanceQuantity = $fromPreviousQuantity - $request->quantity;
+
+            $from_project_stock->quantity = $fromBalanceQuantity;
+            $from_project_stock->last_updated_by = Auth::id();
+            $from_project_stock->last_transaction_type = RE_ALLOCATION . ' to - ' . $to_project_name . ' by - ' . Auth::user()->name;
+            $from_project_stock->save();
+
+            // Create StockLog for from project
+            StockLog::create([
+                'project_id' => $request->from_project_id,
+                'category_id' => $request->category_id,
+                'product_id' => $request->product_id,
+                'previous_quantity' => $fromPreviousQuantity,
+                'quantity' => $request->quantity,
+                'balance_quantity' => $fromBalanceQuantity,
+                'user_id' => Auth::id(),
+                'type' => RE_ALLOCATION .' - Transfer',
+                'time' => now(),
+                'remarks' => 'Transferred to Project: ' . $to_project_name . ($request->remarks ? ' | ' . $request->remarks : ''),
+            ]);
+
+            // Add to 'to' project
+            if ($to_project_stock) {
+                $toPreviousQuantity = $to_project_stock->quantity;
+                $to_project_stock->quantity += $request->quantity;
+            } else {
+                $toPreviousQuantity = 0;
+                $to_project_stock = new ProjectStock();
+                $to_project_stock->project_id = $request->to_project_id;
+                $to_project_stock->category_id = $request->category_id;
+                $to_project_stock->product_id = $request->product_id;
+                $to_project_stock->quantity = $request->quantity;
+            }
+
+            $toBalanceQuantity = $to_project_stock->quantity;
+            $to_project_stock->last_updated_by = Auth::id();
+            $to_project_stock->last_transaction_type = RE_ALLOCATION . ' received from - ' . $from_project_name . ' by - ' . Auth::user()->name;
+            $to_project_stock->save();
+
+            // Create StockLog for to project
+            StockLog::create([
+                'project_id' => $request->to_project_id,
+                'category_id' => $request->category_id,
+                'product_id' => $request->product_id,
+                'previous_quantity' => $toPreviousQuantity,
+                'quantity' => $request->quantity,
+                'balance_quantity' => $toBalanceQuantity,
+                'user_id' => Auth::id(),
+                'type' => RE_ALLOCATION .' - Received',
+                'time' => now(),
+                'remarks' => 'Received from Project: ' . $from_project_name . ($request->remarks ? ' | ' . $request->remarks : ''),
+            ]);
+
+            DB::commit();
+            $from_project_stocks = $this->getStocksByProjectId($request->from_project_id);
+            $to_project_stocks = $this->getStocksByProjectId($request->to_project_id);
+            return $this->successResponse(compact('from_project_stocks', 'to_project_stocks'), "Stock re-allocated successfully!");
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return $this->errorResponse('Cannot re-allocate the product stock.', $e->getMessage(),500);
+        }
+    }
+
+    /**
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function stocksReturn(Request $request): JsonResponse
+    {
+        $request->validate([
+            'project_id' => 'required|exists:projects,id',
+            'category_id' => 'required|exists:product_categories,id',
+            'product_id' => 'required|exists:products,id',
+            'quantity' => 'required|numeric|min:0.01',
+            'warehouse_id' => 'required|exists:warehouses,id',
+            'remarks' => 'nullable|string|max:255',
+        ]);
+
+        DB::beginTransaction();
+
+        try {
+            $project_stock = ProjectStock::with('project')->where('project_id', $request->project_id)
+                ->where('product_id', $request->product_id)
+                ->first();
+
+            $warehouse_stock = WarehouseStock::with('warehouse')->where('warehouse_id', $request->warehouse_id)
+                ->where('product_id', $request->product_id)
+                ->first();
+
+            $project_name = $project_stock->project->name ?? Project::find($request->project_id)?->name ?? 'Unknown Project';
+            $warehouse_name = $warehouse_stock->warehouse->name ?? Warehouse::find($request->warehouse_id)?->name ?? 'New Warehouse';
+
+            if (!$project_stock || $project_stock->quantity < $request->quantity) {
+                return $this->errorResponse('Insufficient project stock available.', '', 404);
+            }
+
+            // Reduce stock from project
+            $projectPreviousQuantity = $project_stock->quantity;
+            $projectBalanceQuantity = $projectPreviousQuantity - $request->quantity;
+
+            $project_stock->quantity = $projectBalanceQuantity;
+            $project_stock->last_updated_by = Auth::id();
+            $project_stock->last_transaction_type = 'RETURN to - ' . $warehouse_name . ' by - ' . Auth::user()->name;
+            $project_stock->save();
+
+            StockLog::create([
+                'project_id' => $request->project_id,
+                'category_id' => $request->category_id,
+                'product_id' => $request->product_id,
+                'previous_quantity' => $projectPreviousQuantity,
+                'quantity' => $request->quantity,
+                'balance_quantity' => $projectBalanceQuantity,
+                'user_id' => Auth::id(),
+                'type' => 'Return to Warehouse',
+                'time' => now(),
+                'remarks' => 'Returned to Warehouse: ' . $warehouse_name . ($request->remarks ? ' | ' . $request->remarks : ''),
+            ]);
+
+            // Add to warehouse
+            if ($warehouse_stock) {
+                $warehousePreviousQuantity = $warehouse_stock->quantity;
+                $warehouse_stock->quantity += $request->quantity;
+            } else {
+                $warehousePreviousQuantity = 0;
+                $warehouse_stock = new WarehouseStock();
+                $warehouse_stock->warehouse_id = $request->warehouse_id;
+                $warehouse_stock->category_id = $request->category_id;
+                $warehouse_stock->product_id = $request->product_id;
+                $warehouse_stock->quantity = $request->quantity;
+            }
+
+            $warehouseBalanceQuantity = $warehouse_stock->quantity;
+            $warehouse_stock->last_updated_by = Auth::id();
+            $warehouse_stock->last_transaction_type = 'RETURN received from - ' . $project_name . ' by - ' . Auth::user()->name;
+            $warehouse_stock->save();
+
+            WarehouseStockLog::create([
+                'warehouse_id' => $request->warehouse_id,
+                'category_id' => $request->category_id,
+                'product_id' => $request->product_id,
+                'previous_quantity' => $warehousePreviousQuantity,
+                'quantity' => $request->quantity,
+                'balance_quantity' => $warehouseBalanceQuantity,
+                'user_id' => Auth::id(),
+                'type' => 'Project Return',
+                'time' => now(),
+                'remarks' => 'Received from Project: ' . $project_name . ($request->remarks ? ' | ' . $request->remarks : ''),
+            ]);
+            DB::commit();
+            return $this->successResponse([], 'Stock successfully returned from project to warehouse.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error::GeneralController@stocksReturn - ' . $e->getMessage());
+            return $this->errorResponse('Stock return failed.', $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * @param $project_id
+     * @return mixed
+     */
+    public function getStocksByProjectId($project_id): mixed
+    {
+        return ProductCategory::Active()->select('id', 'name')->whereHas('products.projectStocks', static function ($query) use ($project_id) {
+            $query->where('project_id', $project_id)->where('quantity', '>', 0);
+        })->with(['products' => static function ($query) use ($project_id) {
+            $query->select('id', 'name', 'image', 'category_id')->active()->whereHas('projectStocks', static function ($subQuery) use ($project_id) {
+                $subQuery->where('project_id', $project_id)->where('quantity', '>', 0);
+            })->with(['projectStocks' => static function ($stockQuery) use ($project_id) {
+                $stockQuery->select('project_id', 'product_id', 'quantity')->where('project_id', $project_id)->where('quantity', '>', 0);
+            }]);
+        }])->get();
     }
 }

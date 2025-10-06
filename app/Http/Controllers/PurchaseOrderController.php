@@ -11,6 +11,7 @@ use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderDetail;
 use App\Models\PurchaseRequest;
 use App\Models\PurchaseRequestDetail;
+use App\Models\StockLog;
 use App\Models\User;
 use Carbon\Carbon;
 use Exception;
@@ -24,6 +25,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Spatie\Permission\Models\Role;
 use Yajra\DataTables\Facades\DataTables;
@@ -32,6 +34,9 @@ class PurchaseOrderController extends Controller
 {
     use AuthorizesRequests;
 
+    /**
+     * @throws AuthorizationException
+     */
     public function index(Request $request): Factory|Application|View|JsonResponse
     {
         $this->authorize('View Purchase Orders');
@@ -63,17 +68,30 @@ class PurchaseOrderController extends Controller
         return view('admin.purchase_orders.index');
     }
 
-    public function show($id)
+    /**
+     * @param $id
+     * @return \Illuminate\Foundation\Application|Factory|View
+     * @throws AuthorizationException
+     */
+    public function show($id): \Illuminate\Foundation\Application|Factory|View
     {
+        $this->authorize('View Purchase Orders');
         $order = PurchaseOrder::with(['details.product', 'details.category'])->findOrFail($id);
         return view('admin.purchase_orders.show', compact('order'));
     }
 
-    public function create(Request $request)
+    /**
+     * @param Request $request
+     * @return \Illuminate\Foundation\Application|Factory|View
+     * @throws AuthorizationException
+     */
+    public function create(Request $request): \Illuminate\Foundation\Application|Factory|View
     {
+        $this->authorize('Create Purchase Orders');
         $purchaseRequest = null;
         $products = collect();
         $project = null;
+        $gst = $request->has('gst') ? $request->gst : false;
 
         if ($request->has('request_id')) {
             $purchaseRequest = PurchaseRequest::with(['project', 'details.product.category'])->findOrFail($request->request_id);
@@ -85,12 +103,16 @@ class PurchaseOrderController extends Controller
         $categories = ProductCategory::with('products')->get();
 
         return view('admin.purchase_orders.create', compact(
-            'purchaseRequest', 'products', 'project', 'projects', 'categories'
+            'purchaseRequest', 'products', 'project', 'projects', 'categories', 'gst'
         ));
     }
 
-    public function store(Request $request)
+    /**
+     * @throws AuthorizationException
+     */
+    public function store(Request $request): RedirectResponse
     {
+        $this->authorize('Create Purchase Orders');
         $request->validate([
             'project_id' => 'required|exists:projects,id',
             'products' => 'required|array|min:1',
@@ -181,22 +203,13 @@ class PurchaseOrderController extends Controller
                     'total_amount_with_gst' => $totalWithGstValue,
                     'status' => 'Pending', // Default status for new items
                 ]);
-
-                // Update project stock
-                $this->updateProjectStock(
-                    $request->project_id,
-                    $productId,
-                    $categoryId,
-                    $quantity,
-                    $currentUserId,
-                    'PO Created'
-                );
             }
 
             DB::commit();
             return redirect()->route('purchase-orders.index')->with('success', 'Purchase Order Created Successfully.');
         } catch (\Exception $e) {
             DB::rollback();
+            Log::error('Error in PurchaseOrderController@store: ' . $e->getMessage());
             return back()->with('error', 'Error: ' . $e->getMessage())->withInput();
         }
     }
@@ -204,14 +217,16 @@ class PurchaseOrderController extends Controller
     /**
      * Update project stock - add new stock or update existing
      */
-    private function updateProjectStock($projectId, $productId, $categoryId, $quantity, $updatedBy, $transactionType)
+    private function updateProjectStock($projectId, $productId, $categoryId, $quantity, $updatedBy, $transactionType, $remarks = ""): void
     {
         // Try to find existing stock record
         $stock = ProjectStock::where('project_id', $projectId)
             ->where('product_id', $productId)
             ->first();
+        $previousQuantity = 0;
 
         if ($stock) {
+            $previousQuantity = $stock->quantity;
             // Update existing stock
             $stock->quantity += $quantity;
             $stock->last_updated_by = $updatedBy;
@@ -219,7 +234,7 @@ class PurchaseOrderController extends Controller
             $stock->save();
         } else {
             // Create new stock record
-            ProjectStock::create([
+            $stock = ProjectStock::create([
                 'project_id' => $projectId,
                 'product_id' => $productId,
                 'category_id' => $categoryId,
@@ -228,41 +243,87 @@ class PurchaseOrderController extends Controller
                 'last_transaction_type' => $transactionType
             ]);
         }
+        StockLog::create([
+            'project_id' => $projectId,
+            'category_id' => $categoryId,
+            'product_id' => $productId,
+            'previous_quantity' => $previousQuantity,
+            'quantity' => $quantity,
+            'balance_quantity' => $stock->quantity,
+            'user_id' => $updatedBy,
+            'type' => $transactionType,
+            'time' => now(),
+            'remarks' => $remarks,
+        ]);
     }
 
-    public function markAsDelivered(Request $request)
+    public function markAsDelivered(Request $request): JsonResponse
     {
         $request->validate([
             'id' => 'required|exists:purchase_order_details,id',
         ]);
 
-        $detail = PurchaseOrderDetail::findOrFail($request->id);
+        DB::beginTransaction();
+        try {
+            $detail = PurchaseOrderDetail::findOrFail($request->id);
 
-        $detail->status = 'Delivered';
-        $detail->remarks = $request->remarks ?? '';
-        $detail->delivery_date = Carbon::now();
+            if($detail) {
+                $detail->status = 'Delivered';
+                $detail->remarks = $request->remarks ?? '';
+                $detail->delivery_date = Carbon::now();
 
-        if ($request->hasFile('attachments')) {
-            foreach ($request->file('attachments') as $file) {
-                $filename = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME) .
-                    '_' . now()->timestamp . '_' . random_int(1000, 9999) .
-                    '.' . $file->getClientOriginalExtension();
-                $path = $file->storeAs('documents', $filename, 'public');
+                if ($request->hasFile('attachments')) {
+                    foreach ($request->file('attachments') as $file) {
+                        $filename = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME) .
+                            '_' . now()->timestamp . '_' . random_int(1000, 9999) .
+                            '.' . $file->getClientOriginalExtension();
+                        $path = $file->storeAs('documents', $filename, 'public');
 
-                Document::create([
-                    'title' => 'Purchase Order Detail Attachment',
-                    'description' => '',
-                    'module_name' => 'Purchase Order Detail',
-                    'module_id' => $detail->id,
-                    'file_path' => $path,
-                    'file_name' => $filename,
-                    'uploaded_by' => auth()->id(),
-                ]);
+                        Document::create([
+                            'title' => 'Purchase Order Detail Attachment',
+                            'description' => '',
+                            'module_name' => 'Purchase Order Detail',
+                            'module_id' => $detail->id,
+                            'file_path' => $path,
+                            'file_name' => $filename,
+                            'uploaded_by' => auth()->id(),
+                        ]);
+                    }
+                }
+
+                // Get the purchase order to access the project ID
+                $purchaseOrder = $detail->purchaseOrder;
+
+                // Update project stock when item is delivered
+                $this->updateProjectStock(
+                    $purchaseOrder->project_id,
+                    $detail->product_id,
+                    $detail->category_id,
+                    $detail->quantity,
+                    Auth::id(),
+                    PO_ITEM_DELIVERED,
+                    $detail->remarks
+                );
+
+                $detail->save();
+
+                $pendingDetails = PurchaseOrderDetail::where('purchase_order_id', $purchaseOrder->id)
+                    ->where('status', '!=', 'Delivered')
+                    ->count();
+
+                if ($pendingDetails === 0) {
+                    $purchaseOrder->status = 'Completed';
+                    $purchaseOrder->save();
+                }
+            } else {
+                return response()->json(['success' => false, 'message' => 'Product not found!.'], 500);
             }
+
+            DB::commit();
+            return response()->json(['success' => true, 'message' => 'Marked as Delivered!']);
+        } catch (\Exception $e) {
+            DB::rollback();
+            return response()->json(['success' => false, 'message' => 'Error: ' . $e->getMessage()], 500);
         }
-
-        $detail->save();
-
-        return response()->json(['success' => true, 'message' => 'Marked as Delivered!']);
     }
 }

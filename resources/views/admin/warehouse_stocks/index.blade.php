@@ -1,10 +1,10 @@
-<!-- resources/views/admin/project_stocks/index.blade.php -->
+<!-- resources/views/admin/warehouse_stocks/index.blade.php -->
 @extends('layouts.admin')
 
 @section('content')
     @php
-        $PageTitle = "Project Stock Management";
-        $ActiveMenuName = 'Project-Stock-Management';
+        $PageTitle = "Warehouse Stock Management";
+        $ActiveMenuName = 'Warehouse-Stock-Management';
     @endphp
 
     <div class="container-fluid">
@@ -30,9 +30,9 @@
                             <div class="col-sm-4"></div>
                             <div class="col-sm-4 my-2"><h5>{{$PageTitle}}</h5></div>
                             <div class="col-sm-4 my-2 text-right text-md-right">
-                                @can('Edit Project Stocks')
-                                    <a href="{{ route('project-stocks.re_allocation') }}" type="button" class="btn btn-secondary btn-sm">
-                                        <i class="fa fa-book"></i> Stock Re-Allocation </a>
+                                @can('Edit Warehouse Stocks')
+                                    <a href="{{ route('warehouse-stocks.project-return') }}" type="button" class="btn btn-secondary btn-sm">
+                                        <i class="fa fa-undo"></i> Project Return </a>
                                     <button type="button" class="btn btn-primary btn-sm" onclick="$('#adjustStockModal').modal('show');">
                                         <i class="fa fa-edit"></i> Adjust Stock </button>
                                 @endcan
@@ -41,12 +41,12 @@
                         <div class="row align-items-center justify-content-center">
                             <div class="col-sm-2">
                                 <div class="form-group text-center mh-60">
-                                    <label style="margin-bottom: 0px;">Projects</label>
-                                    <div id="divProject">
-                                        <select class="form-control form-control-sm text-center" id="project_filter">
-                                            <option value="">Select a Project</option>
-                                            @foreach($projects as $project)
-                                                <option value="{{ $project->id }}">{{ $project->name }}</option>
+                                    <label style="margin-bottom: 0px;">Warehouses</label>
+                                    <div id="divWarehouse">
+                                        <select class="form-control form-control-sm text-center" id="warehouse_filter">
+                                            <option value="">Select a Warehouse</option>
+                                            @foreach($warehouses as $warehouse)
+                                                <option value="{{ $warehouse->id }}">{{ $warehouse->name }}</option>
                                             @endforeach
                                         </select>
                                     </div>
@@ -62,7 +62,7 @@
                             <table id="stocksTable" class="table table-bordered table-striped">
                                 <thead>
                                 <tr>
-                                    <th>Project</th>
+                                    <th>Warehouse</th>
                                     <th>Category</th>
                                     <th>Product</th>
                                     <th>Quantity</th>
@@ -82,7 +82,7 @@
         <div class="modal-dialog" role="document">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Adjust Stock</h5>
+                    <h5 class="modal-title">Adjust Warehouse Stock</h5>
                     <button type="button" class="close" onclick="$('#adjustStockModal').modal('hide');">
                         <span aria-hidden="true">&times;</span>
                     </button>
@@ -90,11 +90,11 @@
                 <form id="adjustStockForm">
                     <div class="modal-body">
                         <div class="form-group">
-                            <label>Project</label>
-                            <select name="project_id" class="form-control" required>
-                                <option value="">Select Project</option>
-                                @foreach($projects as $project)
-                                    <option value="{{ $project->id }}">{{ $project->name }}</option>
+                            <label>Warehouse</label>
+                            <select name="warehouse_id" class="form-control" required>
+                                <option value="">Select Warehouse</option>
+                                @foreach($warehouses as $warehouse)
+                                    <option value="{{ $warehouse->id }}">{{ $warehouse->name }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -149,18 +149,18 @@
             $('#clearFilters').click(clearFilter);
 
             function initMultiSelect() {
-                $('#project_filter').multiselect({
+                $('#warehouse_filter').multiselect({
                     buttonClass: 'btn btn-link',
                     enableFiltering: true,
                     maxHeight: 250,
                 });
-                $('select[name="project_id"]').select2({ dropdownParent: $('#adjustStockModal') });
+                $('select[name="warehouse_id"]').select2({ dropdownParent: $('#adjustStockModal') });
                 $('select[name="category_id"]').select2({ dropdownParent: $('#adjustStockModal') });
                 $('select[name="product_id"]').select2({ dropdownParent: $('#adjustStockModal') });
             }
 
             function clearFilter() {
-                $('#project_filter').val('').multiselect('refresh');
+                $('#warehouse_filter').val('').multiselect('refresh');
                 table.ajax.reload();
             }
 
@@ -171,13 +171,13 @@
                 processing: true,
                 serverSide: true,
                 ajax: {
-                    url: "{{ route('project-stocks.index') }}",
+                    url: "{{ route('warehouse-stocks.index') }}",
                     data: function (d) {
-                        d.project_id = $('#project_filter').val();
+                        d.warehouse_id = $('#warehouse_filter').val();
                     }
                 },
                 columns: [
-                    {data: 'project.name', name: 'project.name'},
+                    {data: 'warehouse.name', name: 'warehouse.name'},
                     {data: 'category.name', name: 'category.name'},
                     {data: 'product.name', name: 'product.name'},
                     {data: 'quantity', name: 'quantity'},
@@ -185,14 +185,14 @@
                 ]
             });
 
-            // Project filter for table
-            $('#project_filter').change(function() {
+            // Warehouse filter for table
+            $('#warehouse_filter').change(function() {
                 table.ajax.reload();
             });
 
-            // When project is selected in modal, load categories
-            $('select[name="project_id"]').change(function() {
-                var projectId = $(this).val();
+            // When warehouse is selected in modal, load categories
+            $('select[name="warehouse_id"]').change(function() {
+                var warehouseId = $(this).val();
                 var $categorySelect = $('select[name="category_id"]');
                 var $productSelect = $('select[name="product_id"]');
 
@@ -201,12 +201,12 @@
                 resetSelect($productSelect);
                 $('#current_quantity').val('');
 
-                if (projectId) {
-                    // Fetch categories for the selected project
+                if (warehouseId) {
+                    // Fetch categories for the selected warehouse
                     $.ajax({
-                        url: "{{ route('project-stocks.get-categories') }}",
+                        url: "{{ route('warehouse-stocks.get-categories') }}",
                         type: 'GET',
-                        data: { project_id: projectId },
+                        data: { warehouse_id: warehouseId },
                         dataType: 'json',
                         success: function(data) {
                             $categorySelect.empty().append('<option value="">Select Category</option>');
@@ -226,7 +226,7 @@
 
             // When category is selected, load products
             $('select[name="category_id"]').change(function() {
-                var projectId = $('select[name="project_id"]').val();
+                var warehouseId = $('select[name="warehouse_id"]').val();
                 var categoryId = $(this).val();
                 var $productSelect = $('select[name="product_id"]');
 
@@ -234,13 +234,13 @@
                 resetSelect($productSelect);
                 $('#current_quantity').val('');
 
-                if (categoryId && projectId) {
-                    // Fetch products for the selected category and project
+                if (categoryId && warehouseId) {
+                    // Fetch products for the selected category and warehouse
                     $.ajax({
-                        url: "{{ route('project-stocks.get-products') }}",
+                        url: "{{ route('warehouse-stocks.get-products') }}",
                         type: 'GET',
                         data: {
-                            project_id: projectId,
+                            warehouse_id: warehouseId,
                             category_id: categoryId
                         },
                         dataType: 'json',
@@ -262,16 +262,16 @@
 
             // When product is selected, fetch current quantity
             $('select[name="product_id"]').change(function() {
-                var projectId = $('select[name="project_id"]').val();
+                var warehouseId = $('select[name="warehouse_id"]').val();
                 var productId = $(this).val();
 
-                if (projectId && productId) {
+                if (warehouseId && productId) {
                     // Fetch current stock quantity
                     $.ajax({
-                        url: "{{ route('project-stocks.get-stock') }}",
+                        url: "{{ route('warehouse-stocks.get-stock') }}",
                         type: 'GET',
                         data: {
-                            project_id: projectId,
+                            warehouse_id: warehouseId,
                             product_id: productId
                         },
                         dataType: 'json',
@@ -299,7 +299,7 @@
                 e.preventDefault();
 
                 $.ajax({
-                    url: "{{ route('project-stocks.adjust') }}",
+                    url: "{{ route('warehouse-stocks.adjust') }}",
                     method: 'POST',
                     data: $(this).serialize(),
                     headers: {

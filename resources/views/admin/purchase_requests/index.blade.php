@@ -72,7 +72,7 @@
                     type: 'GET'
                 },
                 columns: [
-                    { data: 'DT_RowIndex' },
+                    { data: 'DT_RowIndex', orderable: false, searchable: false },
                     { data: 'supervisor.name', defaultContent: '-' },
                     { data: 'project.name', defaultContent: '-' },
                     { data: 'product_count' },

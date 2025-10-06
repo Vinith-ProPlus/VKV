@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\CRM\LeadSourceController;
 use App\Http\Controllers\Admin\CRM\VisitorController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\Settings\ContentController;
+use App\Http\Controllers\Admin\Settings\MobileVersionController;
 use App\Http\Controllers\Admin\Users\BlogController;
 use App\Http\Controllers\Admin\Users\SupportTicketController;
 use App\Http\Controllers\Admin\Users\SupportTicketMessageController;
@@ -17,8 +18,9 @@ use App\Http\Controllers\ProjectStockController;
 use App\Http\Controllers\PurchaseOrderController;
 use App\Http\Controllers\PurchaseRequestController;
 use App\Http\Controllers\SqlImportController;
-use App\Http\Controllers\StockUsageLogController;
+use App\Http\Controllers\StockLogController;
 use App\Http\Controllers\Admin\ProjectReports\ProjectReportsController;
+use App\Http\Controllers\WarehouseStockController;
 use App\Models\Admin\Master\City;
 use App\Models\Admin\Master\District;
 use App\Models\Admin\Master\Pincode;
@@ -147,19 +149,42 @@ Route::group(['prefix'=>'admin'], static function (){
         Route::get('project-stocks/get-stock', [ProjectStockController::class, 'getStock'])->name('project-stocks.get-stock');
         Route::post('project-stocks/adjust', [ProjectStockController::class, 'adjust'])->name('project-stocks.adjust');
 
-        Route::resource('stock-usages', StockUsageLogController::class)->except(['show']);
-        Route::get('stock-usages/get-products-by-category', [StockUsageLogController::class, 'getProductsByCategory'])->name('stock-usages.get-products-by-category');
-        Route::get('stock-usages/get-product-stock', [StockUsageLogController::class, 'getProductStock'])->name('stock-usages.get-product-stock');
+        Route::get('project-stocks/re-allocation', [ProjectStockController::class, 'reAllocation'])->name('project-stocks.re_allocation');
+        Route::post('project-stocks/re-allocation/store', [ProjectStockController::class, 'reAllocationStore'])->name('project-stocks.re_allocation.store');
+
+        Route::resource('stock-logs', StockLogController::class)->except(['show']);
+        Route::get('stock-logs/get-products-by-category', [StockLogController::class, 'getProductsByCategory'])->name('stock-logs.get-products-by-category');
+        Route::get('stock-logs/get-product-stock', [StockLogController::class, 'getProductStock'])->name('stock-logs.get-product-stock');
+
+        // Routes for Warehouse Stock Management
+        Route::prefix('warehouse-stocks')->name('warehouse-stocks.')->middleware(['auth'])->group(function () {
+            Route::get('/', [WarehouseStockController::class, 'index'])->name('index');
+
+            // Project Return routes
+            Route::get('/project-return', [WarehouseStockController::class, 'projectReturn'])->name('project-return');
+            Route::post('/project-return', [WarehouseStockController::class, 'projectReturnStore'])->name('project-return-store');
+
+            // Ajax routes
+            Route::get('/get-categories', [WarehouseStockController::class, 'getCategories'])->name('get-categories');
+            Route::get('/get-products', [WarehouseStockController::class, 'getProducts'])->name('get-products');
+            Route::get('/get-stock', [WarehouseStockController::class, 'getStock'])->name('get-stock');
+            Route::get('/get-warehouse-products', [WarehouseStockController::class, 'getWarehouseProducts'])->name('get-warehouse-products');
+            Route::get('/get-warehouse-stock', [WarehouseStockController::class, 'getWarehouseStock'])->name('get-warehouse-stock');
+
+            // Stock Adjustment
+            Route::post('/adjust', [WarehouseStockController::class, 'adjustStock'])->name('adjust');
+        });
 
         Route::prefix('payroll')->group(function () {
             Route::view('/', 'payroll.index')->name('payroll.index');
             Route::post('/unpaid-labor', [PayrollController::class, 'getUnpaidLabor'])->name('payroll.getUnpaidLabor');
             Route::post('/process-payment', [PayrollController::class, 'processPayment'])->name('payroll.processPayment');
             Route::get('/payroll/history', [PayrollController::class, 'payrollHistory'])->name('payroll.history');
-
         });
-    });
 
+        Route::get('/mobile-version', [MobileVersionController::class, 'index'])->name('mobile_version.index');
+        Route::put('/mobile-version', [MobileVersionController::class, 'update'])->name('mobile_version.update');
+    });
 });
 
 Route::get('/getDistricts', [GeneralController::class, 'getDistricts'])->name('getDistricts');
@@ -209,6 +234,8 @@ Route::group(['prefix' => 'project_reports'], static function () {
     Route::get('/getProjectTasks', [ProjectReportsController::class, 'getProjectTasks'])->name('getProjectTasks');
     Route::get('/tasksTableLists', [ProjectReportsController::class, 'tasksTableLists'])->name('tasksTableLists');
     Route::get('/contractsTableLists', [ProjectReportsController::class, 'contractsTableLists'])->name('contractsTableLists');
+    Route::get('/laborTableList', [ProjectReportsController::class, 'laborTableList'])->name('laborTableList');
+    Route::get('/purchaseTableList', [ProjectReportsController::class, 'purchaseTableList'])->name('purchaseTableList');
 });
 
 require __DIR__.'/auth.php';

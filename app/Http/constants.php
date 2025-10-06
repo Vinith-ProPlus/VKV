@@ -88,3 +88,9 @@ const BILLING = 'Billing';
 const TECHNICAL = 'Technical';
 const SUPPORT_TYPES = [ALL, BILLING, TECHNICAL, OTHERS];
 
+const PO_ITEM_DELIVERED = 'PO Item Delivered';
+const TAKEN_FOR_CONSTRUCTION = 'Taken for construction';
+const RE_ALLOCATION = 'Re-Allocation';
+const WAREHOUSE_TRANSFER = 'Warehouse transfer';
+const PROJECT_TRANSFER = 'Project transfer';
+const MANUAL_ADJUSTMENT = 'Manual adjustment';

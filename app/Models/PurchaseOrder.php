@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Auth;
 
 /**
  * @method static where(string $string, string $string1, string $string2)
+ * @method static select(string $string, string $string1, string $string2, string $string3, string $string4, string $string5)
  */
 class PurchaseOrder extends Model
 {
@@ -48,21 +49,16 @@ class PurchaseOrder extends Model
         return $this->belongsTo(User::class, 'approved_by');
     }
 
-
     public static function generateOrderID(): string
     {
-        $datePrefix = now()->format('Y-md'); // e.g., 2025-0330
+        $datePrefix = now()->format('Y-md'); // Use consistent prefix
 
-        // Get the last order number for today
-        $lastOrder = self::where('order_id', 'LIKE', "{$datePrefix}%")
-            ->orderBy('order_id', 'desc')
-            ->first();
+        // Lock the table range to avoid race condition
+        $lastOrder = self::where('order_id', 'LIKE', "O-{$datePrefix}%")->orderBy('order_id', 'desc')->first();
 
-        // Extract the last 4 digits and increment
         $nextNumber = $lastOrder ? ((int)substr($lastOrder->order_id, -4) + 1) : 1;
 
-        // Format the next number with leading zeros
-        return "O-".$datePrefix . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
+        return "O-" . $datePrefix . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
     }
 
     protected static function boot(): void

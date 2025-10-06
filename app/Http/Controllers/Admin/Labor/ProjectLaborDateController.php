@@ -34,31 +34,31 @@ class ProjectLaborDateController extends Controller
     public function index(Request $request): Factory|Application|View|JsonResponse
     {
         $this->authorize('View Labors');
-    
+
         if ($request->ajax()) {
             $query = ProjectLaborDate::with(['project', 'labors', 'contractLabors'])->withTrashed();
-    
+
             // Project
             if ($request->filled('project_id')) {
                 $query->whereIn('project_id', $request->project_id);
             }
-    
+
             // From and To Date
             if ($request->filled('from_date')) {
                 $query->whereDate('date', '>=', $request->from_date);
             }
-    
+
             if ($request->filled('to_date')) {
                 $query->whereDate('date', '<=', $request->to_date);
             }
-    
+
             // paid_status on related labors
             if ($request->filled('paid_status')) {
                 $query->whereHas('labors', function ($q) use ($request) {
                     $q->where('paid_status', $request->paid_status);
                 });
             }
-            
+
             return DataTables::eloquent($query)
                 ->addIndexColumn()
                 ->addColumn('project_name', fn($data) => $data->project->name ?? 'N/A')
@@ -81,10 +81,10 @@ class ProjectLaborDateController extends Controller
                 ->rawColumns(['action'])
                 ->make(true);
         }
-    
+
         return view('admin.labors.index');
     }
-    
+
 
     /**
      * @throws AuthorizationException
@@ -319,7 +319,7 @@ class ProjectLaborDateController extends Controller
                         }
                     },
                 ],
-                'labor_designation_id' => 'required|exists:labor_designations,id',
+                'labor_designation_id' => 'required_if:labor_type,Self|exists:labor_designations,id',
                 'salary' => 'required_if:labor_type,Self|numeric',
                 'count' => 'required_if:labor_type,Contract|numeric|min:1',
             ], [

@@ -3,8 +3,13 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * @method static findOrFail(mixed $id)
+ * @method static where(string $string, $id)
+ */
 class PurchaseOrderDetail extends Model
 {
     use HasFactory, SoftDeletes;
@@ -28,5 +33,16 @@ class PurchaseOrderDetail extends Model
     public function product()
     {
         return $this->belongsTo(Product::class, 'product_id');
+    }
+
+    public function purchaseOrder()
+    {
+        return $this->belongsTo(PurchaseOrder::class);
+    }
+
+    public function documents(): HasMany
+    {
+        return $this->hasMany(Document::class, 'module_id')
+            ->where('module_name', 'Purchase Order Detail');
     }
 }

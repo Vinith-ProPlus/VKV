@@ -24,55 +24,6 @@ use function Laravel\Prompts\warning;
 class LaborController extends Controller
 {
     use ApiResponse;
-    public function createBlog(Request $request): JsonResponse
-    {
-        DB::beginTransaction();
-        try {
-            $request->validate([
-                'remarks'      => 'required|string|max:500',
-                'project_id' => 'required|exists:projects,id',
-                'stage_ids' => 'required',
-            ]);
-
-            $attachments = [];
-            if ($request->hasFile('attachments')) {
-                $files = is_array($request->file('attachments')) ? $request->file('attachments') : [$request->file('attachments')];
-                foreach ($files as $file) {
-                    $filename = generateUniqueFileName($file);
-                    $path = $file->storeAs('documents', $filename, 'public');
-                    $attachments[] = [
-                        'title'       => 'Blog Attachment',
-                        'description' => '',
-                        'module_name' => 'Blog',
-                        'file_path'   => $path,
-                        'file_name'   => $filename,
-                        'uploaded_by' => Auth::id(),
-                    ];
-                }
-            }
-
-            foreach ($request->stage_ids as $stage_id) {
-                $blog = Blog::create([
-                    'user_id'          => Auth::id(),
-                    'project_id'       => $request->project_id,
-                    'project_stage_id' => $stage_id,
-                    'remarks'          => $request->remarks,
-                    'is_damaged'        => $request->is_damaged ?? 0,
-                ]);
-
-                foreach ($attachments as $attachment) {
-                    Document::create(array_merge($attachment, ['module_id' => $blog->id]));
-                }
-            }
-            DB::commit();
-            return $this->successResponse($blog, "Blog created successfully!");
-        } catch (Exception $exception) {
-            DB::rollBack();
-            $ErrMsg = $exception->getMessage();
-            warning('Error::Place@Api\BlogController@store - ' . $ErrMsg);
-            return $this->errorResponse($exception->getMessage(), "Failed to create blog!", 500);
-        }
-    }
 
     /**
      * @param Request $request
@@ -111,11 +62,36 @@ class LaborController extends Controller
             'project_labor_date_id' => 'required|integer|exists:project_labor_dates,id',
         ]);
 
-        $projectLaborDate = ProjectLaborDate::with(['labors.labor_designation', 'contractLabors.projectContract'])
+        $projectLaborDate = ProjectLaborDate::with(['labors.labor_designation', 'contractLabors.projectContract.user:name', 'contractLabors.projectContract.contract_type'])
             ->findOrFail($request->input('project_labor_date_id'));
         $projectLaborDate->count = $projectLaborDate->labor_count + $projectLaborDate->contract_count;
 
+        foreach ($projectLaborDate->contractLabors as $contractLabor) {
+            $user = optional($contractLabor->projectContract->user)->name;
+            $type = optional($contractLabor->projectContract->contract_type)->name;
+
+            // Add formatted string
+            $contractLabor->contractor_name = "$user - $type";
+
+            // Remove original nested objects
+            unset($contractLabor->projectContract->user);
+            unset($contractLabor->projectContract->contract_type);
+        }
+
+
         return $this->successResponse($projectLaborDate, "Labor data fetched successfully!");
+    }
+    public function getTodayLaborData(Request $request): JsonResponse
+    {
+        $request->validate([
+            'project_id' => 'required|integer|exists:projects,id',
+        ]);
+        $projectLaborDate = ProjectLaborDate::with(['labors.labor_designation'])
+            ->where('project_id', $request->input('project_id'))->where('date', now()->format('Y-m-d'))->first();
+        if ($projectLaborDate) {
+            return $this->successResponse($projectLaborDate, "Labor data fetched successfully!");
+        }
+        return $this->errorResponse([], "Labor data not found!");
     }
 
     public function storeMultipleLabors(Request $request): JsonResponse
@@ -217,8 +193,45 @@ class LaborController extends Controller
             ]);
         }
     }
+    public function deleteLabor(Request $request): JsonResponse
+    {
+        DB::beginTransaction();
+        try {
+            $request->validate([
+                'labor_type' => ['required', Rule::in(['Self', 'Contract'])],
+                'labor_id' => [
+                    'required',
+                    'integer',
+                    static function ($attribute, $value, $fail) use ($request) {
+                        if ($request->labor_type === 'Self' && !Labor::where('id', $value)->exists()) {
+                            return $fail('The selected labor ID is invalid for Self labor.');
+                        }
+                        if ($request->labor_type === 'Contract' && !ContractLabor::where('id', $value)->exists()) {
+                            return $fail('The selected labor ID is invalid for Contract labor.');
+                        }
+                    }
+                ],
+            ]);
 
-    public function getLaborsByProject(Request $request)
+            $model = $request->labor_type === 'Self' ? Labor::class : ContractLabor::class;
+            $labor = $model::find($request->labor_id);
+
+            if (!$labor) {
+                return $this->errorResponse([], 'Labor not found', 404);
+            }
+
+            $labor->delete();
+            DB::commit();
+            return $this->successResponse([], 'Labor deleted successfully');
+        } catch (Exception $exception) {
+            DB::rollBack();
+            $error = $exception->getMessage();
+            Log::error("Error in ProjectLaborDateController@deleteLabor: " .$error);
+            return $this->errorResponse([], 'Something went wrong: ' . $error);
+        }
+    }
+
+    public function getLaborsByProject(Request $request): JsonResponse
     {
         $request->validate(['project_id' => 'required|integer|exists:projects,id']);
 

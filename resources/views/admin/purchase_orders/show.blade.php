@@ -132,7 +132,7 @@
                     <div class="modal-body">
                         <div class="mb-15">
                             <label>Remarks (Optional)</label>
-                            <textarea class="form-control" name="remarks"></textarea>
+                            <textarea class="form-control" id="remarks" name="remarks"></textarea>
                         </div>
                         <div class="mb-3">
                             <label>Upload Image (Optional)</label>
@@ -153,6 +153,7 @@
         $(document).ready(function() {
             $('.mark-delivered-btn').on('click', function() {
                 const id = $(this).data('id');
+                $('#remarks').val('');
                 $('#detail_id').val(id);
                 $('#deliveryModal').modal('show');
             });

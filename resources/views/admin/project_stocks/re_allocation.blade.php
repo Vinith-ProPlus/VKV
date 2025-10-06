@@ -2,8 +2,8 @@
 
 @section('content')
     @php
-        $PageTitle = "Log Stock Usage";
-        $ActiveMenuName = 'Stock-Usage';
+        $PageTitle = "Stock Re-Allocation";
+        $ActiveMenuName = 'Project-Stock-Management';
     @endphp
 
     <div class="container-fluid">
@@ -12,8 +12,8 @@
                 <div class="col-sm-12">
                     <ol class="breadcrumb">
                         <li class="breadcrumb-item"><a href="{{ url('/') }}"><i class="f-16 fa fa-home"></i></a></li>
-                        <li class="breadcrumb-item">Manage Stock</li>
-                        <li class="breadcrumb-item"><a href="{{ route('stock-usages.index') }}">Stock Usage Logs</a></li>
+                        <li class="breadcrumb-item">Transactions</li>
+                        <li class="breadcrumb-item"><a href="{{ route('stock-logs.index') }}">Project Stock</a></li>
                         <li class="breadcrumb-item">{{ $PageTitle }}</li>
                     </ol>
                 </div>
@@ -26,7 +26,7 @@
             <div class="col-12 col-lg-8 mx-auto">
                 <div class="card">
                     <div class="card-header">
-                        <h5>Log New Stock Usage</h5>
+                        <h5>Stock Re-Allocation</h5>
                     </div>
                     <div class="card-body">
                         @if(session('error'))
@@ -35,18 +35,18 @@
                             </div>
                         @endif
 
-                        <form method="POST" action="{{ route('stock-usages.store') }}">
+                        <form method="POST" action="{{ route('project-stocks.re_allocation.store') }}">
                             @csrf
                             <div class="row mb-15">
                                 <div class="col-md-6">
-                                    <label class="form-label">Project <span class="text-danger">*</span></label>
-                                    <select name="project_id" id="project_id" class="form-control @error('project_id') is-invalid @enderror" required>
+                                    <label class="form-label">From Project <span class="text-danger">*</span></label>
+                                    <select name="from_project_id" id="from_project_id" class="form-control @error('from_project_id') is-invalid @enderror" required>
                                         <option value="">Select Project</option>
                                         @foreach($projects as $project)
-                                            <option value="{{ $project->id }}" {{ old('project_id') == $project->id ? 'selected' : '' }}>{{ $project->name }}</option>
+                                            <option value="{{ $project->id }}" {{ old('from_project_id') == $project->id ? 'selected' : '' }}>{{ $project->name }}</option>
                                         @endforeach
                                     </select>
-                                    @error('project_id')
+                                    @error('from_project_id')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>
@@ -67,11 +67,8 @@
                             <div class="row mb-15">
                                 <div class="col-md-6">
                                     <label class="form-label">Product <span class="text-danger">*</span></label>
-                                    <select name="product_id" id="product_id" class="form-control @error('product_id') is-invalid @enderror" required>
+                                    <select name="product_id" id="product_id" class="form-control @error('product_id') is-invalid @enderror" data-selected="{{ old('product_id') }}" required>
                                         <option value="">Select Product</option>
-                                        @foreach($products as $product)
-                                            <option value="{{ $product->id }}" {{ old('product_id') == $product->id ? 'selected' : '' }}>{{ $product->name }}</option>
-                                        @endforeach
                                     </select>
                                     @error('product_id')
                                     <div class="invalid-feedback">{{ $message }}</div>
@@ -92,28 +89,21 @@
                                     @enderror
                                 </div>
                                 <div class="col-md-6">
-                                    <label class="form-label">Taken By <span class="text-danger">*</span></label>
-                                    <select name="taken_by" class="form-control @error('taken_by') is-invalid @enderror" required>
-                                        <option value="">Select User</option>
-                                        @foreach(\App\Models\User::all() as $user)
-                                            <option value="{{ $user->id }}" {{ old('taken_by') == $user->id ? 'selected' : '' }}>{{ $user->name }}</option>
+                                    <label class="form-label">To Project <span class="text-danger">*</span></label>
+                                    <select name="to_project_id" id="to_project_id" class="form-control @error('to_project_id') is-invalid @enderror" required>
+                                        <option value="">Select Project</option>
+                                        @foreach($projects as $project)
+                                            <option value="{{ $project->id }}" {{ old('to_project_id') == $project->id ? 'selected' : '' }}>{{ $project->name }}</option>
                                         @endforeach
                                     </select>
-                                    @error('taken_by')
+                                    @error('to_project_id')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>
                             </div>
 
                             <div class="row mb-15">
-                                <div class="col-md-6">
-                                    <label class="form-label">Taken At <span class="text-danger">*</span></label>
-                                    <input type="datetime-local" name="taken_at" class="form-control @error('taken_at') is-invalid @enderror" value="{{ old('taken_at') ?? now()->format('Y-m-d\TH:i') }}" required>
-                                    @error('taken_at')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
-                                </div>
-                                <div class="col-md-6">
+                                <div class="col-md-12">
                                     <label class="form-label">Remarks</label>
                                     <textarea name="remarks" class="form-control @error('remarks') is-invalid @enderror" rows="3">{{ old('remarks') }}</textarea>
                                     @error('remarks')
@@ -132,12 +122,8 @@
 
                             <div class="row mt-4">
                                 <div class="col-12 text-center">
-                                    <button type="submit" class="btn btn-primary" id="submit_btn">
-                                        <i class="fa fa-save"></i> Log Stock Usage
-                                    </button>
-                                    <a href="{{ route('stock-usages.index') }}" class="btn btn-secondary">
-                                        <i class="fa fa-times"></i> Cancel
-                                    </a>
+                                    <button type="submit" class="btn btn-primary" id="submit_btn"><i class="fa fa-save"></i> Re-Allocate</button>
+                                    <a href="javascript:void(0)" onclick="window.history.back()" class="btn btn-warning"><i class="fa fa-times"></i> Cancel</a>
                                 </div>
                             </div>
                         </form>
@@ -151,22 +137,23 @@
 @section('script')
     <script>
         $(document).ready(function() {
-            $('#project_id, #category_id, #product_id').select2({
+            $('#from_project_id, #category_id, #product_id, #to_project_id').select2({
                 width: '100%',
                 placeholder: 'Select an option',
                 allowClear: true
             });
 
             // When project or category changes, update product dropdown
-            $('#project_id, #category_id').change(function() {
-                const projectId = $('#project_id').val();
+            $('#from_project_id, #category_id').change(function() {
+                const fromProjectId = $('#from_project_id').val();
                 const categoryId = $('#category_id').val();
+                const selectedProduct = $('#product_id').attr('data-selected');
 
-                if (projectId && categoryId) {
+                if (fromProjectId && categoryId) {
                     $.ajax({
-                        url: "{{ route('stock-usages.get-products-by-category') }}",
+                        url: "{{ route('stock-logs.get-products-by-category') }}",
                         data: {
-                            project_id: projectId,
+                            project_id: fromProjectId,
                             category_id: categoryId
                         },
                         success: function(data) {
@@ -174,7 +161,11 @@
 
                             if (data.length > 0) {
                                 $.each(data, function(key, product) {
-                                    options += '<option value="' + product.id + '">' + product.name + '</option>';
+                                    if(product.id === selectedProduct){
+                                        options += '<option value="' + product.id + '" selected>' + product.name + '</option>';
+                                    } else {
+                                        options += '<option value="' + product.id + '">' + product.name + '</option>';
+                                    }
                                 });
                                 $('#product_id').html(options);
                                 $('#product_id').prop('disabled', false);
@@ -198,16 +189,23 @@
                 }
             });
 
+            $('#to_project_id, #from_project_id').change(function () {
+                if ($('#to_project_id').val() && $('#to_project_id').val() === $('#from_project_id').val()) {
+                    alert('From and To Project cannot be the same.');
+                    $('#to_project_id').val(null).trigger('change');
+                }
+            });
+
             // When product changes, update available stock
             $('#product_id').change(function() {
-                const projectId = $('#project_id').val();
+                const fromProjectId = $('#from_project_id').val();
                 const productId = $(this).val();
 
-                if (projectId && productId) {
+                if (fromProjectId && productId) {
                     $.ajax({
-                        url: "{{ route('stock-usages.get-product-stock') }}",
+                        url: "{{ route('stock-logs.get-product-stock') }}",
                         data: {
-                            project_id: projectId,
+                            project_id: fromProjectId,
                             product_id: productId
                         },
                         success: function(data) {
@@ -257,13 +255,6 @@
                     $('#submit_btn').prop('disabled', true);
                 }
             });
-
-            // Set default date to today
-            if (!$('input[name="taken_at"]').val()) {
-                const now = new Date();
-                const localDatetime = now.toISOString().slice(0, 16);
-                $('input[name="taken_at"]').val(localDatetime);
-            }
         });
     </script>
 @endsection

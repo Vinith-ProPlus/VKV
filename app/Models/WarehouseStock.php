@@ -8,14 +8,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * @method static create(array $array)
- * @method static where(string $string, mixed $project_id)
+ * @method static where(string $string, mixed $warehouse_id)
  */
-class ProjectStock extends Model
+class WarehouseStock extends Model
 {
     use HasFactory;
 
     protected $fillable = [
-        'project_id',
+        'warehouse_id',
         'category_id',
         'product_id',
         'quantity',
@@ -23,9 +23,9 @@ class ProjectStock extends Model
         'last_transaction_type'
     ];
 
-    public function project(): BelongsTo
+    public function warehouse(): BelongsTo
     {
-        return $this->belongsTo(Project::class);
+        return $this->belongsTo(Warehouse::class);
     }
 
     public function product(): BelongsTo

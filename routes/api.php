@@ -5,10 +5,10 @@ use App\Http\Controllers\API\BlogController;
 use App\Http\Controllers\API\GeneralController;
 use App\Http\Controllers\API\LaborController;
 use App\Http\Controllers\API\MobileUserAttendanceController;
+use App\Http\Controllers\API\PurchaseOrderApiController;
+use App\Http\Controllers\API\PurchaseRequestApiController;
+use App\Http\Controllers\API\StockLogController;
 use App\Http\Controllers\API\SupportTicketController;
-use App\Models\Admin\Labor\LaborDesignation;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/register', [AuthController::class, 'register']);
@@ -40,12 +40,26 @@ Route::group(['prefix' => 'master', 'middleware' => 'auth:sanctum'], static func
     Route::post('/getDocuments', [GeneralController::class, 'getDocuments'])->name('getDocuments');
     Route::post('/getLaborDesignations', [GeneralController::class, 'getLaborDesignations'])->name('getLaborDesignations');
     Route::post('/getProjectContractors', [GeneralController::class, 'getProjectContractors'])->name('getProjectContractors');
+    Route::post('/mobile_version', [GeneralController::class, 'mobile_version'])->name('mobile_version');
+    Route::post('getWarehouses', [GeneralController::class, 'getWarehouses'])->name('getWarehouses');
 });
 
 Route::middleware('auth:sanctum')->group(static function () {
     // Attendance
     Route::post('attendance/record-attendance', [MobileUserAttendanceController::class, 'recordAttendance']);
     Route::post('attendance/history', [MobileUserAttendanceController::class, 'getAttendanceHistory']);
+
+    // Notification
+    Route::post('getNotifications', [GeneralController::class, 'getNotifications'])->name('getNotifications');
+    Route::post('markAsReadNotification', [GeneralController::class, 'markAsReadNotification'])->name('markAsReadNotification');
+
+    // Manage Project Stocks
+    Route::post('manage-stocks/getProjectStocks', [GeneralController::class, 'getProjectStocks'])->name('getProjectStocks');
+    Route::post('manage-stocks/adjustProductStock', [GeneralController::class, 'adjustProductStock'])->name('adjustProductStock');
+    Route::post('manage-stocks/stocksReAllocation', [GeneralController::class, 'stocksReAllocation'])->name('stocksReAllocation');
+    Route::post('manage-stocks/stocksReturn', [GeneralController::class, 'stocksReturn'])->name('stocksReturn');
+    Route::post('manage-stocks/getStockLogDates', [StockLogController::class, 'getStockLogDates'])->name('getStockLogDates');
+    Route::post('manage-stocks/getStockLogData', [StockLogController::class, 'getStockLogData'])->name('getStockLogData');
 
     // Manage Task
     Route::post('manage-task/get-projects', [GeneralController::class, 'getTaskProjects']);
@@ -74,18 +88,23 @@ Route::middleware('auth:sanctum')->group(static function () {
     Route::post('blog/getCompletedTaskData', [BlogController::class, 'getCompletedTaskData'])->name('getCompletedTaskData');
     Route::post('blog/createBlog', [BlogController::class, 'createBlog'])->name('createBlog');
 
-
-    // Blog
+    // Labor
     Route::post('labors/getLaborDates', [LaborController::class, 'getLaborDates'])->name('getLaborDates');
     Route::post('labors/getLaborData', [LaborController::class, 'getLaborData'])->name('getLaborData');
+    Route::post('labors/getTodayLaborData', [LaborController::class, 'getTodayLaborData'])->name('getTodayLaborData');
     Route::post('labors/create', [LaborController::class, 'storeMultipleLabors'])->name('storeMultipleLabors');
+    Route::post('labors/delete', [LaborController::class, 'deleteLabor'])->name('deleteLabor');
     Route::post('labors/getLaborsByProject', [LaborController::class, 'getLaborsByProject'])->name('getLaborsByProject');
     Route::post('labors/reallocateLabors', [LaborController::class, 'reallocateLabors'])->name('reallocateLabors');
 
+    Route::post('purchase-requests', [PurchaseRequestApiController::class, 'index']);
+    Route::post('purchase-requests/show', [PurchaseRequestApiController::class, 'show']);
+    Route::post('purchase-requests/store', [PurchaseRequestApiController::class, 'store']);
 
-
-
-
+    Route::post('purchase-orders', [PurchaseOrderApiController::class, 'index']);
+    Route::post('purchase-orders/show', [PurchaseOrderApiController::class, 'show']);
+    Route::post('purchase-orders/store', [PurchaseOrderApiController::class, 'store']);
+    Route::post('purchase-orders/mark-as-delivered', [PurchaseOrderApiController::class, 'markAsDelivered']);
 
 
 

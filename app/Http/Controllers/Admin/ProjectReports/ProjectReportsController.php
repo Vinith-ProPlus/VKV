@@ -4,12 +4,14 @@ namespace App\Http\Controllers\Admin\ProjectReports;
 
 use Illuminate\Http\Request;
 use App\Models\Project;
+use App\Models\PurchaseOrder;
 use App\Models\Admin\ManageProjects\ProjectStage;
 use App\Models\Admin\ManageProjects\ProjectTask;
 use App\Models\ProjectContract;
 use App\Http\Controllers\Controller;
 use Yajra\DataTables\Facades\DataTables;
 use Carbon\Carbon;
+use App\Models\Admin\Labor\ProjectLaborDate;
 
 class ProjectReportsController extends Controller
 {
@@ -27,9 +29,9 @@ class ProjectReportsController extends Controller
 
     public function create(Request $request){
         $project = $this->projects->where('id',$request->input('project'))->first();
-        $stages = $project->stages; 
-        $contracts = $project->contracts;
-        $amenities = $project->amenities; 
+        $stages = $project->stages ?? ''; 
+        $contracts = $project->contracts ?? '';
+        $amenities = $project->amenities ?? ''; 
         return view('report', compact('project','stages','contracts','amenities'));
     }
 
@@ -123,4 +125,78 @@ class ProjectReportsController extends Controller
 
     }
 
+
+    public function laborTableList(Request $request)
+    { 
+        if ($request->ajax()) {
+            $query = ProjectLaborDate::with(['project', 'labors', 'contractLabors'])->withTrashed();
+    
+            // Project
+            if ($request->filled('project_id')) {
+                $query->whereIn('project_id', $request->project_id);
+            }
+    
+            // From and To Date
+            if ($request->filled('from_date')) {
+                $query->whereDate('date', '>=', $request->from_date);
+            }
+    
+            if ($request->filled('to_date')) {
+                $query->whereDate('date', '<=', $request->to_date);
+            }
+    
+            // paid_status on related labors
+            if ($request->filled('paid_status')) {
+                $query->whereHas('labors', function ($q) use ($request) {
+                    $q->where('paid_status', $request->paid_status);
+                });
+            }
+            
+            return DataTables::eloquent($query)
+                ->addIndexColumn()
+                ->addColumn('project_name', fn($data) => $data->project->name ?? 'N/A')
+                ->addColumn('labor_count', fn($data) => $data->labors->count())
+                ->addColumn('contract_labor_count', fn($data) => $data->contractLabors->sum('count'))
+                ->addColumn('action', function ($data) {
+                    $button = '<div class="d-flex justify-content-center">';
+                    $button .= '<a href="' . route('labors.create', ['project_id' => $data->project_id, 'date' => $data->date]) . '" class="btn btn-outline-warning btn-sm m-1"><i class="fa fa-eye" aria-hidden="true"></i></a>';
+                    $button .= '</div>';
+                    return $button;
+                })
+                ->rawColumns(['action'])
+                ->make(true);
+        }
+    }
+
+    public function purchaseTableList(Request $request)
+    {
+        logger($request->project_id);
+        if ($request->ajax()) {
+            $data = PurchaseOrder::with(['supervisor', 'project', 'details'])->latest();
+
+            if ($request->filled('project_id')) {
+                $data->whereIn('project_id', $request->project_id);
+            }
+
+            return DataTables::of($data)
+                ->addIndexColumn()
+                ->editColumn('order_date', static fn($data): string => Carbon::parse($data->order_date)->format('d-m-Y'))
+                ->editColumn('product_count', static fn($data) => $data->details->count())
+                ->editColumn('status', static function ($data) {
+                    $deliveredCount = $data->details->where('status', 'Delivered')->count();
+                    $total = $data->details->count();
+                    $badgeClass = $deliveredCount === $total ? 'success' : 'warning';
+                    return '<span class="badge bg-' . $badgeClass . '">' . $deliveredCount . '/' . $total . ' Delivered</span>';
+                })
+                ->addColumn('action', static function ($data) {
+                    return '<div class="d-flex justify-content-center">
+                        <a href="' . route('purchase-orders.show', $data->id) . '" class="btn btn-outline-success btn-sm m-1">
+                            <i class="fa fa-pencil"></i>
+                        </a>
+                    </div>';
+                })
+                ->rawColumns(['status', 'action'])
+                ->make(true);
+        }
+    }
 }
