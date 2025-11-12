@@ -2,7 +2,7 @@
 
 @section('content')
     @php
-        $PageTitle="Site";
+        $PageTitle="Project";
         $ActiveMenuName='Projects';
     @endphp
     <div class="container-fluid">
@@ -30,7 +30,7 @@
                             <div class="col-sm-4 my-2 text-right text-md-right">
                                 @can('Create Projects')
                                     <a class="btn btn-sm btnPrimaryCustomizeBlue btn-primary add-btn"
-                                        href="{{ route('projects.create') }}">Add New Site</a>
+                                        href="{{ route('projects.create') }}">Add New Project</a>
                                 @endcan
                             </div>
                         </div>
@@ -43,8 +43,8 @@
                                         <thead class="thead-light">
                                         <tr>
                                             <th>S.No</th>
-                                            <th>Site ID</th>
-                                            <th>Site Name</th>
+                                            <th>Project ID</th>
+                                            <th>Project Name</th>
                                             <th>Location</th>
                                             <th>Range</th>
                                             <th>Sq.Feet</th>

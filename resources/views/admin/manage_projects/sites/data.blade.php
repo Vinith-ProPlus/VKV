@@ -2,8 +2,8 @@
 
 @section('content')
     @php
-        $PageTitle = "Project";
-        $ActiveMenuName = 'Sitess';
+        $PageTitle = "Sites";
+        $ActiveMenuName = 'Sites';
     @endphp
 
     <div class="container-fluid">
@@ -38,7 +38,7 @@
                             <div class="row">
                                 <div class="col-6">
                                     <div class="form-group">
-                                        <label>Project name</label>
+                                        <label>Site name</label>
                                         <input type="text" name="name" class="form-control" value="{{ old('name', $site->name ?? '') }}" required>
                                         @error('name')
                                         <div class="text-danger mt-1">{{ $message }}</div>

@@ -108,12 +108,12 @@
                             @endcan
                             @can('View Sites')
                                 <li class="">
-                                    <a href="{{ route('sites.index') }}" data-active-name="Sites" data-original-title="" title="">Projects</a>
+                                    <a href="{{ route('sites.index') }}" data-active-name="Sites" data-original-title="" title="">Sites</a>
                                 </li>
                             @endcan
                             @can('View Projects')
                                 <li class="">
-                                    <a href="{{ route('projects.index') }}" data-active-name="Projects" data-original-title="" title="">Sites</a>
+                                    <a href="{{ route('projects.index') }}" data-active-name="Projects" data-original-title="" title="">Projects</a>
                                 </li>
                             @endcan
                             @can('View Project Tasks')
