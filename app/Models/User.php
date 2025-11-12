@@ -4,7 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Models\Admin\ManageProjects\ProjectTask;
-use App\Models\Admin\ManageProjects\Site;
+use App\Models\Project;
 use App\Models\Admin\Master\City;
 use App\Models\Admin\Master\District;
 use App\Models\Admin\Master\Pincode;
@@ -106,9 +106,9 @@ class User extends Authenticatable
         return $this->belongsTo(Role::class);
     }
 
-    public function sites(): BelongsToMany
+    public function projects(): BelongsToMany
     {
-        return $this->belongsToMany(Site::class, 'site_supervisor', 'supervisor_id', 'site_id');
+        return $this->belongsToMany(Project::class, 'site_supervisor', 'supervisor_id', 'project_id');
     }
 
     public function tasks()

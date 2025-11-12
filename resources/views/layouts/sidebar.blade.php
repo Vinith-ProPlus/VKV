@@ -121,11 +121,11 @@
                                     <a href="{{ route('project_tasks.index') }}" data-active-name="Project Tasks" data-original-title="" title="">Project Tasks</a>
                                 </li>
                             @endcan
-                            @can('View Project Specifications')
+                            {{-- @can('View Project Specifications')
                                 <li class="">
                                     <a href="{{ route('project_specifications.index') }}" data-active-name="Project-Specifications" data-original-title="" title="">Project Specifications</a>
                                 </li>
-                            @endcan
+                            @endcan --}}
                         </ul>
                     </li>
                     <li class="dropdown CMenus"><a class="nav-link menu-title" href="#">

@@ -2,81 +2,33 @@
 
 namespace App\Models;
 
-use App\Models\Admin\ManageProjects\ProjectStage;
-use App\Models\ProjectContract;
-use App\Models\ProjectAmenity;
-use App\Models\Admin\ManageProjects\ProjectTask;
-use App\Models\Admin\ManageProjects\Site;
+use App\Models\Site;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo as BelongsToAlias;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * @method static findOrFail($id)
- * @method static create(array $all)
- * @method static find(mixed $from_project_id)
  */
 class Project extends Model
 {
     use HasFactory, SoftDeletes;
 
-    protected $fillable = [
-        'site_id',
-        'project_id',
-        'name',
-        'location',
-        'type',
-        'units',
-        'target_customers',
-        'range',
-        'engineer_id',
-        'area_sqft',
-        'status',
-        'investment_amount',
-        'sold_amount',
-    ];
+    protected $fillable = ['name', 'location', 'latitude', 'longitude', 'is_active'];
 
-    protected $appends = ['completion_percentage'];
-
-    public function stages(): HasMany
+    public function supervisors()
     {
-        return $this->HasMany(ProjectStage::class);
+        return $this->belongsToMany(User::class, 'site_supervisor', 'project_id', 'supervisor_id');
     }
 
-    public function contracts(): HasMany
+    public function sites()
     {
-        return $this->HasMany(ProjectContract::class);
+        return $this->hasMany(Site::class);
     }
-
-    public function amenities(): HasMany
+    
+    public function amenities()
     {
         return $this->HasMany(ProjectAmenity::class);
     }
-
-    public function tasks(): HasMany
-    {
-        return $this->hasMany(ProjectTask::class);
-    }
-    public function site(): BelongsToAlias
-    {
-        return $this->belongsTo(Site::class);
-    }
-    /**
-     * @return BelongsToAlias
-     */
-    public function engineer(): BelongsToAlias
-    {
-        return $this->BelongsTo(User::class);
-    }
-    public function getCompletionPercentageAttribute(): string
-    {
-        $totalTasks = $this->tasks()->whereIn('status', ['Created', 'In-progress', 'Completed'])->count();
-        $completedTasks = $this->tasks()->where('status', 'Completed')->count();
-
-        return ($totalTasks === 0 ? 0.0 : round(($completedTasks / $totalTasks) * 100, 2))."%";
-    }
-
 }
-
