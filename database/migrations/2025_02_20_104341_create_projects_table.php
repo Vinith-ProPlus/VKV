@@ -13,21 +13,13 @@ return new class extends Migration
     {
         Schema::create('projects', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('site_id')->constrained('sites')->cascadeOnUpdate()->restrictOnDelete();
-            $table->string('project_id')->unique();
             $table->string('name')->unique();
-            $table->string('location');
-            $table->string('type');
-            $table->bigInteger('units');
-            $table->string('target_customers');
-            $table->string('range');
-            $table->foreignId('engineer_id')->constrained('users')->cascadeOnUpdate()->restrictOnDelete();
-            $table->string('area_sqft');
-            $table->string('investment_amount')->nullable();
-            $table->string('sold_amount')->nullable();
-            $table->string('status')->default('In-progress');
-            $table->softDeletes();
+            $table->text('location');
+            $table->decimal('latitude', 10, 8);
+            $table->decimal('longitude', 11, 8);
+            $table->boolean('is_active')->default(1);
             $table->timestamps();
+            $table->softDeletes();
         });
     }
     /**
