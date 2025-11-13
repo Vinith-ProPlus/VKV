@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('purchase_orders', static function (Blueprint $table) {
             $table->id();
             $table->foreignId('purchase_request_id')->constrained('purchase_requests')->cascadeOnUpdate()->restrictOnDelete();
-            $table->foreignId('project_id')->constrained('projects')->cascadeOnUpdate()->restrictOnDelete();
+            $table->foreignId('site_id')->constrained('sites')->cascadeOnUpdate()->restrictOnDelete();
             $table->foreignId('supervisor_id')->constrained('users')->cascadeOnUpdate()->restrictOnDelete();
             $table->string('order_id')->unique();        // Unique human-readable order code
             $table->date('order_date');                  // Date of creation

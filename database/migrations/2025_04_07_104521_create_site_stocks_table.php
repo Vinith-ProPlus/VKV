@@ -11,9 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('project_stocks', static function (Blueprint $table) {
+        Schema::create('site_stocks', static function (Blueprint $table) {
             $table->id();
-            $table->foreignId('project_id')->constrained('projects')->cascadeOnUpdate()->restrictOnDelete();
+            $table->foreignId('site_id')->constrained('sites')->cascadeOnUpdate()->restrictOnDelete();
             $table->foreignId('category_id')->constrained('product_categories')->cascadeOnUpdate()->restrictOnDelete();
             $table->foreignId('product_id')->constrained('products')->cascadeOnUpdate()->restrictOnDelete();
             $table->decimal('quantity', 10, 2)->default(0);
@@ -21,8 +21,8 @@ return new class extends Migration
             $table->string('last_transaction_type')->nullable()->comment('PO Created, Stock Adjustment, etc.');
             $table->timestamps();
 
-            // Add unique constraint to prevent duplicate product entries for a project
-            $table->unique(['project_id', 'product_id']);
+            // Add unique constraint to prevent duplicate product entries for a site
+            $table->unique(['site_id', 'product_id']);
         });
     }
 
@@ -31,6 +31,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('project_stocks');
+        Schema::dropIfExists('site_stocks');
     }
 };

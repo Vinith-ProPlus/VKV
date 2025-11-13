@@ -16,7 +16,6 @@ return new class extends Migration
             $table->string('site_no')->nullable();
             $table->foreignId('project_id')->constrained('projects')->cascadeOnUpdate()->restrictOnDelete();
             $table->string('type')->nullable();
-            $table->bigInteger('units')->nullable();
             $table->string('range')->nullable();
             $table->foreignId('engineer_id')->constrained('users')->cascadeOnUpdate()->restrictOnDelete();
             $table->string('area_sqft');

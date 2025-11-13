@@ -2,10 +2,9 @@
 
 namespace App\Models;
 
-use App\Models\Admin\ManageProjects\ProjectStage;
-use App\Models\ProjectContract;
-use App\Models\ProjectAmenity;
-use App\Models\Admin\ManageProjects\ProjectTask;
+use App\Models\SiteContract;
+use App\Models\Admin\ManageProjects\SiteStage;
+use App\Models\Admin\ManageProjects\SiteTask;
 use App\Models\Project;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -39,17 +38,17 @@ class Site extends Model
 
     public function stages(): HasMany
     {
-        return $this->HasMany(ProjectStage::class);
+        return $this->HasMany(SiteStage::class);
     }
 
     public function contracts(): HasMany
     {
-        return $this->HasMany(ProjectContract::class);
+    return $this->HasMany(SiteContract::class);
     }
 
     public function tasks(): HasMany
     {
-        return $this->hasMany(ProjectTask::class);
+        return $this->hasMany(SiteTask::class);
     }
     public function project(): BelongsToAlias
     {

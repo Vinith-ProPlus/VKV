@@ -48,7 +48,7 @@ class PermissionSeeder extends Seeder
             ['guard_name' => 'web', 'model' => 'Amenities'],
             ['guard_name' => 'web', 'model' => 'Sites'],
             ['guard_name' => 'web', 'model' => 'Projects'],
-            ['guard_name' => 'web', 'model' => 'Project Tasks'],
+            ['guard_name' => 'web', 'model' => 'Site Tasks'],
             ['guard_name' => 'web', 'model' => 'Visitors'],
             ['guard_name' => 'web', 'model' => 'Support Tickets'],
             ['guard_name' => 'web', 'model' => 'Blogs'],

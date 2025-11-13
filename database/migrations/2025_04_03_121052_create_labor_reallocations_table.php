@@ -14,8 +14,8 @@ return new class extends Migration
         Schema::create('labor_reallocations', static function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('labor_id')->constrained('labors')->cascadeOnUpdate()->restrictOnDelete();
-                $table->foreignId('from_project_labor_date_id')->constrained('project_labor_dates')->cascadeOnUpdate()->restrictOnDelete();
-                $table->foreignId('to_project_labor_date_id')->constrained('project_labor_dates')->cascadeOnUpdate()->restrictOnDelete();
+                $table->foreignId('from_site_labor_date_id')->constrained('site_labor_dates')->cascadeOnUpdate()->restrictOnDelete();
+                $table->foreignId('to_site_labor_date_id')->constrained('site_labor_dates')->cascadeOnUpdate()->restrictOnDelete();
                 $table->string('remarks')->nullable();
                 $table->foreignId('reallocated_by')->constrained('users')->cascadeOnUpdate()->restrictOnDelete(); // Tracks who did the reallocation
                 $table->timestamps();

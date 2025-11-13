@@ -7,16 +7,15 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class ProjectContract extends Model
+class SiteContract extends Model
 {
-
     use HasFactory, SoftDeletes;
 
-    protected $fillable = ['project_id', 'contract_type_id', 'user_id', 'amount'];
+    protected $fillable = ['site_id', 'contract_type_id', 'user_id', 'amount'];
 
-    public function project(): BelongsTo
+    public function site(): BelongsTo
     {
-        return $this->belongsTo(Project::class);
+        return $this->belongsTo(Site::class);
     }
 
     public function user(): BelongsTo
@@ -29,4 +28,3 @@ class ProjectContract extends Model
         return $this->belongsTo(ContractType::class, 'contract_type_id');
     }
 }
-

@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('purchase_requests', static function (Blueprint $table) {
             $table->id();
             $table->foreignId('supervisor_id')->constrained('users')->cascadeOnUpdate()->restrictOnDelete();
-            $table->foreignId('project_id')->constrained('projects')->cascadeOnUpdate()->restrictOnDelete();
+            $table->foreignId('site_id')->constrained('sites')->cascadeOnUpdate()->restrictOnDelete();
             $table->integer('product_count')->default(0);
             $table->text('remarks')->nullable();
             $table->string('status');

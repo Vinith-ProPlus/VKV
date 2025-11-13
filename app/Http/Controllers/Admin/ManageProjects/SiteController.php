@@ -4,9 +4,10 @@ namespace App\Http\Controllers\Admin\ManageProjects;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\SiteRequest;
-use App\Models\Admin\ManageProjects\ProjectTask;
-use App\Models\Admin\ManageProjects\Site;
-use App\Models\User;
+use App\Models\Admin\ManageProjects\SiteStage;
+use App\Models\Document;
+use App\Models\Site;
+use App\Models\SiteContract;
 use Exception;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Routing\ResponseFactory;
@@ -18,7 +19,13 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Yajra\DataTables\Facades\DataTables;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Storage;
+use Carbon\Carbon;
 
 class SiteController extends Controller{
     use AuthorizesRequests;
@@ -28,22 +35,23 @@ class SiteController extends Controller{
     public function index(Request $request): Factory|Application|View|JsonResponse
     {
         $this->authorize('View Sites');
-
         if ($request->ajax()) {
-            $query = Site::all();
-
-            return DataTables::of($query)
+            $data = Site::with('project')->withTrashed()->get();
+            return DataTables::of($data)
                 ->addIndexColumn()
-                ->editColumn('status', static function ($data) {
+                ->addColumn('project_name', function ($data) {
+                    return $data->project->name ?? '-';
+                })
+                ->editColumn('is_active', function ($data) {
                     return $data->is_active ? 'Active' : 'Inactive';
                 })
-                ->addColumn('action', static function ($data) {
+                ->addColumn('action', function ($data) {
                     $button = '<div class="d-flex justify-content-center">';
                     if ($data->deleted_at) {
-                        $button .= '<a onclick="commonRestore(\'' . route('sites.restore', $data->id) . '\')" class="btn btn-outline-warning"><i class="fa fa-undo"></i></a>';
+                        $button = '<a onclick="commonRestore(\'' . route('sites.restore', $data->id) . '\')" class="btn btn-outline-warning"><i class="fa fa-undo"></i></a>';
                     } else {
                         $button .= '<a href="' . route('sites.edit', $data->id) . '" class="btn btn-outline-success btn-sm m-1"><i class="fa fa-pencil" aria-hidden="true"></i></a>';
-                        $button .= '<a onclick="commonDelete(\'' . route('sites.destroy', $data->id) . '\')"  class="btn btn-outline-danger btn-sm m-1"><i class="fa fa-trash" style="color: red"></i></a>';
+                        $button .= '<a onclick="commonDelete(\'' . route('sites.destroy', $data->id) . '\')"  class="btn btn-outline-danger btn-sm m-1"><i class="fa fa-trash" style="color: red"></i></i></a>';
                     }
                     $button .= '</div>';
                     return $button;
@@ -51,11 +59,8 @@ class SiteController extends Controller{
                 ->rawColumns(['action'])
                 ->make(true);
         }
-
         return view('admin.manage_projects.sites.index');
     }
-
-
 
     /**
      * @throws AuthorizationException
@@ -69,15 +74,44 @@ class SiteController extends Controller{
      * @throws AuthorizationException
      */
     public function store(SiteRequest $request): RedirectResponse
-    {
+    { 
         $this->authorize('Create Sites');
+        DB::beginTransaction();
         try {
-            $site = Site::create($request->only(['name', 'location', 'latitude', 'longitude', 'is_active']));
+            $site = Site::create($request->all());
 
-            $site->supervisors()->attach($request->site_supervisor_id);
+            // Save Stages
+            $stages = $request->stages ?? [];
 
-            return redirect()->route('sites.index')->with('success', 'Site created successfully!');
+            foreach ($stages as $stage) {
+                SiteStage::create([
+                    'site_id' => $site->id,
+                    'name' => $stage['name'],
+                    'order_no' => $stage['order_no'],
+                ]);
+            }
+            Document::where('module_name', 'User-Project')->where('module_id', Auth::id())
+                ->update(['module_name' => 'Site', 'module_id' => $site->id]);
+
+            $contracts = $request->contracts ?? [];
+
+            foreach ($contracts as $contract) {
+                SiteContract::updateOrCreate(
+                    [
+                        'site_id' => $site->id,
+                        'contract_type_id' => $contract['contract_type_id'],
+                        'user_id' => $contract['user_id']
+                    ],
+                    [
+                        'amount' => $contract['amount']
+                    ]
+                );
+            }
+
+            DB::commit();
+            return redirect()->route('sites.index')->with('success', 'Site created successfully.');
         } catch (Exception $exception) {
+            DB::rollBack();
             $ErrMsg = $exception->getMessage();
             info('Error::Place@SiteController@store - ' . $ErrMsg);
             return redirect()->back()->withInput()->with("warning", "Something went wrong" . $ErrMsg);
@@ -90,28 +124,77 @@ class SiteController extends Controller{
     public function edit(Site $site): View|Factory|Application
     {
         $this->authorize('Edit Sites');
-        $supervisors = User::whereHas('sites', function ($query) use ($site) {
-            $query->where('site_id', $site->id);
-        })->pluck('id')->toArray();
-
-        return view('admin.manage_projects.sites.data', compact('site', 'supervisors'));
+        return view('admin.manage_projects.sites.data', compact('site'));
     }
 
     /**
      * @throws AuthorizationException
      */
     public function update(SiteRequest $request, Site $site): RedirectResponse
-    {
+    { 
         $this->authorize('Edit Sites');
         try {
-            $site->update($request->only(['name', 'location', 'latitude', 'longitude']));
+            $site_id = $site->id;
+            $site->update($request->validated());
 
-            $site->supervisors()->sync($request->site_supervisor_id);
+            $existingStages = SiteStage::where('site_id', $site_id)->withTrashed()->get();
+
+            $newStages = collect($request->stages ?? []);
+            $existingStageIds = $existingStages->pluck('id')->toArray();
+
+            foreach ($newStages as $stageData) {
+                $stageId = $stageData['id'] ?? null;
+
+                if ($stageId && in_array($stageId, $existingStageIds)) {
+                    $stage = $existingStages->find($stageId);
+                    if ($stage && $stage->trashed()) {
+                        $stage->restore();
+                    }
+                    if ($stage) {
+                        $stage->update([
+                            'name' => $stageData['name'],
+                            'order_no' => $stageData['order_no'],
+                        ]);
+                        if (!empty($stageData['deleted'])) {
+                            $stage->delete();
+                        } else {
+                            $stage->restore();
+                        }
+                    }
+                } else {
+                    SiteStage::create([
+                        'site_id' => $site_id,
+                        'name' => $stageData['name'],
+                        'order_no' => $stageData['order_no'],
+                    ]);
+                }
+            }
+
+            $contracts = $request->contracts ?? [];
+
+            foreach ($contracts as $contract) {
+                SiteContract::updateOrCreate(
+                    [
+                        'site_id' => $site_id,
+                        'contract_type_id' => $contract['contract_type_id'],
+                        'user_id' => $contract['user_id']
+                    ],
+                    [
+                        'amount' => $contract['amount']
+                    ]
+                );
+            }
+            // Soft delete missing stages
+            foreach ($existingStages as $stage) {
+                if (!$newStages->pluck('id')->contains($stage->id)) {
+                    $stage->delete();
+                }
+            }
 
             return redirect()->route('sites.index')->with('success', 'Site updated successfully.');
         } catch (Exception $exception) {
             info('Error::Place@SiteController@update - ' . $exception->getMessage());
-            return redirect()->back()->withInput()->with("warning", "Something went wrong" . $exception->getMessage());
+            return redirect()->back()->with("warning", "Something went wrong" . $exception->getMessage());
         }
     }
     /**
@@ -121,8 +204,8 @@ class SiteController extends Controller{
     {
         $this->authorize('Delete Sites');
         try {
-            $site = Site::findOrFail($id);
-            $site->delete();
+            $category = Site::findOrFail($id);
+            $category->delete();
             return response(['status' => 'warning', 'message' => 'Site deleted Successfully!']);
         } catch (Exception $exception) {
             info('Error::Place@SiteController@destroy - ' . $exception->getMessage());
@@ -143,4 +226,5 @@ class SiteController extends Controller{
             return redirect()->back()->with("warning", "Something went wrong" . $exception->getMessage());
         }
     }
+
 }

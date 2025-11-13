@@ -2,7 +2,7 @@
 
 @section('content')
     @php
-        $PageTitle="Sites";
+        $PageTitle="Site";
         $ActiveMenuName='Sites';
     @endphp
     <div class="container-fluid">
@@ -30,7 +30,7 @@
                             <div class="col-sm-4 my-2 text-right text-md-right">
                                 @can('Create Sites')
                                     <a class="btn btn-sm btnPrimaryCustomizeBlue btn-primary add-btn"
-                                        href="{{ route('sites.create') }}">Add Site</a>
+                                        href="{{ route('sites.create') }}">Add New Site</a>
                                 @endcan
                             </div>
                         </div>
@@ -43,8 +43,10 @@
                                         <thead class="thead-light">
                                         <tr>
                                             <th>S.No</th>
-                                            <th>Name</th>
-                                            <th>Location</th>
+                                            <th>Site No</th>
+                                            <th>Project Name</th>
+                                            <th>Range</th>
+                                            <th>Sq.Feet</th>
                                             <th>Status</th>
                                             <th>Actions</th>
                                         </tr>
@@ -78,8 +80,10 @@
                     },
                     columns: [
                         {data: 'DT_RowIndex'},
-                        {data: 'name'},
-                        {data: 'location'},
+                        {data: 'site_no'},
+                        {data: 'project_name'},
+                        {data: 'range'},
+                        {data: 'area_sqft'},
                         {data: 'status'},
                         {data: 'action', orderable: false},
                     ]

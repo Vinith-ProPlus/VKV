@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('contract_labors', static function (Blueprint $table) {
             $table->id();
-            $table->foreignId('project_labor_date_id')->constrained('project_labor_dates')->cascadeOnUpdate()->restrictOnDelete();
-            $table->foreignId('project_contract_id')->constrained('project_contracts')->cascadeOnUpdate()->restrictOnDelete();
+            $table->foreignId('site_labor_date_id')->constrained('site_labor_dates')->cascadeOnUpdate()->restrictOnDelete();
+            $table->foreignId('site_contract_id')->constrained('site_contracts')->cascadeOnUpdate()->restrictOnDelete();
             $table->integer('count');
             $table->timestamps();
             $table->softDeletes();

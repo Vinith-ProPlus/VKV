@@ -12,7 +12,7 @@ class SiteRequest extends FormRequest
      *
      * @return bool
      */
-    public function authorize()
+    public function authorize(): bool
     {
         return true;
     }
@@ -23,18 +23,26 @@ class SiteRequest extends FormRequest
      * @return array
      */
     public function rules(): array
-    {
+    { 
+
         return [
-            'name' => [
-                'required', 'string', 'max:255',
-                Rule::unique('sites')->ignore($this->route('site'))
+            'site_no' => [
+                'required', 'string', 'max:100',
+                Rule::unique('sites')->ignore($this->route('site'))->where(function ($query) {
+                    return $query->where('project_id', $this->input('project_id'));
+                })
             ],
-            'location' => 'required|string',
-            'latitude' => 'required|numeric',
-            'longitude' => 'required|numeric',
-            'is_active' => 'required|boolean',
-            'site_supervisor_id' => 'required|array',
-            'site_supervisor_id.*' => 'exists:users,id',
+            'project_id'=>'required|integer|exists:projects,id',
+            'type'=>'required|string|max:255',
+            'range'=>'required|string|max:255',
+            'engineer_id'=>'required|integer|exists:users,id',
+            'area_sqft'=>'required',
+            'status' => ['required', 'string', Rule::in(SITE_STATUSES)],
+            'stages' => 'nullable|array',
+            'stages.*.name' => 'required|string',
+            'sold_amount' => [
+                Rule::requiredIf($this->input('status') === COMPLETED), 'numeric','regex:/^\d+(\.\d{1,2})?$/',
+            ],
         ];
     }
 }
