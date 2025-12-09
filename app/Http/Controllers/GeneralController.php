@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Admin\Labor\LaborDesignation;
 use App\Models\Admin\ManageProjects\ProjectStage;
-use App\Models\Admin\ManageProjects\Site;
+use App\Models\Site;
 use App\Models\Admin\Master\City;
 use App\Models\Admin\Master\District;
 use App\Models\Admin\Master\Pincode;
@@ -124,9 +124,13 @@ class GeneralController extends Controller
         return response()->json([]);
     }
 
-    public function getSites()
+    public function getSites(Request $request)
     {
-        return response()->json(Site::where('is_active', 1)->get());
+        $query = Site::query();
+        if ($request->filled('project_id')) {
+            $query->where('project_id', $request->project_id);
+        }
+        return response()->json($query->get());
     }
 
     public function getSupportTypes(): JsonResponse

@@ -2,8 +2,8 @@
 
 @section('content')
     @php
-        $PageTitle = "Project Task";
-        $ActiveMenuName = 'Project Tasks';
+        $PageTitle = "Site Task";
+        $ActiveMenuName = 'Site Tasks';
     @endphp
 
     <div class="container-fluid">
@@ -25,12 +25,12 @@
             <div class="col-12 col-lg-12">
                 <div class="card">
                     <div class="card-header text-center">
-                        <h5>{{ $project_task ? 'Edit' : 'Create' }} {{$PageTitle}}</h5>
+                        <h5>{{ $site_task ? 'Edit' : 'Create' }} {{$PageTitle}}</h5>
                     </div>
                     <div class="card-body">
-                        <form action="{{ $project_task ? route('project_tasks.update', $project_task->id) : route('project_tasks.store') }}" method="POST" enctype="multipart/form-data">
+                        <form action="{{ $site_task ? route('site_tasks.update', $site_task->id) : route('site_tasks.store') }}" method="POST" enctype="multipart/form-data">
                             @csrf
-                            @if($project_task)
+                            @if($site_task)
                                 @method('PUT')
                             @endif
 
@@ -51,23 +51,35 @@
                             </div>
 
                             <div class="row mt-10">
-                                <div class="col-6">
+                                <div class="col-md-6 col-12 mt-10">
                                     <div class="form-group">
-                                        <label>Site</label>
+                                        <label>Project</label>
                                         <select name="project_id" id="project_id" class="form-control select2 @error('project_id') is-invalid @enderror"
-                                                data-selected='{{ $project_task ? old('project_id', $project_task->project_id) : old('project_id') }}' required>
-                                            <option value="">Select a Site</option>
+                                                data-selected='{{ $site_task ? old('project_id', $site_task->project?->id) : old('project_id') }}' required>
+                                            <option value="">Select a Project</option>
                                         </select>
                                         @error('project_id')
                                         <div class="text-danger mt-1">{{ $message }}</div>
                                         @enderror
                                     </div>
                                 </div>
-                                <div class="col-6">
+                                <div class="col-md-6 col-12 mt-10">
+                                    <div class="form-group">
+                                        <label>Site</label>
+                                        <select name="site_id" id="site_id" class="form-control select2 @error('site_id') is-invalid @enderror"
+                                                data-selected='{{ $site_task ? old('site_id', $site_task->site_id) : old('site_id') }}' required>
+                                            <option value="">Select a Site</option>
+                                        </select>
+                                        @error('site_id')
+                                        <div class="text-danger mt-1">{{ $message }}</div>
+                                        @enderror
+                                    </div>
+                                </div>
+                                <div class="col-md-6 col-12 mt-10">
                                     <div class="form-group">
                                         <label>Stage</label>
                                         <select name="stage_id" id="stage_id" class="form-control select2 @error('stage_id') is-invalid @enderror"
-                                                data-selected='{{ $project_task ? old('stage_id', $project_task->stage_id) : old('stage_id') }}' required>
+                                                data-selected='{{ $site_task ? old('stage_id', $site_task->stage_id) : old('stage_id') }}' required>
                                             <option value="">Select a Stage</option>
                                         </select>
                                         @error('stage_id')
@@ -75,50 +87,45 @@
                                         @enderror
                                     </div>
                                 </div>
-                            </div>
-
-                            <div class="row mt-10">
-                                <div class="col-6">
+                                <div class="col-md-6 col-12 mt-10">
                                     <div class="form-group">
                                         <label>Task Name</label>
                                         <input type="text" name="name" class="form-control"
-                                               value="{{ old('name', $project_task->name ?? '') }}" required>
+                                            value="{{ old('name', $site_task->name ?? '') }}" required>
                                         @error('name')
                                         <div class="text-danger mt-1">{{ $message }}</div>
                                         @enderror
                                     </div>
                                 </div>
-                                <div class="col-6">
+                                <div class="col-md-6 col-12 mt-10">
                                     <div class="form-group">
                                         <label>Task Date</label>
                                         <input type="date" name="date" class="form-control" min="{{ now()->format('Y-m-d') }}"
-                                               value="{{ Carbon\Carbon::parse(old('date', $project_task->date ?? ''))->format('Y-m-d') }}" required>
+                                            value="{{ Carbon\Carbon::parse(old('date', $site_task->date ?? ''))->format('Y-m-d') }}" required>
                                         @error('date')
                                         <div class="text-danger mt-1">{{ $message }}</div>
                                         @enderror
                                     </div>
                                 </div>
-                            </div>
-                            <div class="row mt-10">
-                                <div class="col-12">
+                                <div class="col-6 mt-10">
                                     <div class="form-group">
-                                        <label>Task Description</label>
-                                        <textarea name="description" class="form-control">{{ old('description', $project_task->description ?? '') }}</textarea>
-                                        @error('description')
+                                        <label>Status</label>
+                                        <select name="status" id="status" class="form-control select2 @error('status') is-invalid @enderror" required>
+                                            <option value="">Select a Status</option>
+                                            @foreach(SITE_TASK_STATUSES as $status)
+                                                <option value="{{ $status }}" {{ $status == ($site_task ? old('status', $site_task->status) : old('status')) ? 'selected' : '' }}>{{ $status }}</option>
+                                            @endforeach
+                                        </select>
+                                        @error('status')
                                         <div class="text-danger mt-1">{{ $message }}</div>
                                         @enderror
                                     </div>
                                 </div>
                                 <div class="col-12 mt-10">
                                     <div class="form-group">
-                                        <label>Status</label>
-                                        <select name="status" id="status" class="form-control select2 @error('status') is-invalid @enderror" required>
-                                            <option value="">Select a Status</option>
-                                            @foreach(PROJECT_TASK_STATUSES as $status)
-                                                <option value="{{ $status }}" {{ $status == ($project_task ? old('status', $project_task->status) : old('status')) ? 'selected' : '' }}>{{ $status }}</option>
-                                            @endforeach
-                                        </select>
-                                        @error('status')
+                                        <label>Task Description</label>
+                                        <textarea name="description" class="form-control">{{ old('description', $site_task->description ?? '') }}</textarea>
+                                        @error('description')
                                         <div class="text-danger mt-1">{{ $message }}</div>
                                         @enderror
                                     </div>
@@ -128,7 +135,7 @@
                             <div class="row mt-15 text-end">
                                 <div>
                                     <a href="javascript:void(0)" onclick="window.history.back()" class="btn btn-warning">Back</a>
-                                    <button type="submit" class="btn btn-primary">{{ $project_task ? 'Update' : 'Save' }}</button>
+                                    <button type="submit" class="btn btn-primary">{{ $site_task ? 'Update' : 'Save' }}</button>
                                 </div>
                             </div>
                         </form>
@@ -143,33 +150,28 @@
 @section('script')
     <script>
         $(document).ready(function () {
-            @if($project_task && $project_task->image)
-                $("#image-preview").removeClass("d-none").attr("src", "{{ Storage::url($project_task->image) }}");
+            @if($site_task && $site_task->image)
+                $("#image-preview").removeClass("d-none").attr("src", "{{ Storage::url($site_task->image) }}");
                 $("#image-dropzone i, #image-dropzone p").hide();
             @endif
 
-            $('#project_id').change(() => getProjectStages());
-            $('#status').select2();
-
-            const getProjects = () =>{
+            // Load projects on page load
+            const getProjects = () => {
                 let ProjectID = $('#project_id');
                 let SelectedProject = ProjectID.attr('data-selected');
                 ProjectID.select2('destroy');
                 $('#project_id option').remove();
-                ProjectID.append('<option value="">Select a Site</option>');
-
+                ProjectID.append('<option value="">Select a Project</option>');
                 $.ajax({
-                    url:"{{route('getProjects')}}",
+                    url: "{{ route('getProjects') }}",
                     type: 'GET',
                     dataType: 'json',
                     success: function(response) {
                         response.forEach(function(item) {
                             if ((item.id == SelectedProject)) {
-                                ProjectID.append('<option selected value="' + item.id
-                                    + '">' + item.name + '</option>');
+                                ProjectID.append('<option selected value="' + item.id + '">' + item.name + '</option>');
                             } else {
-                                ProjectID.append('<option value="' + item.id
-                                    + '">'  + item.name + '</option>');
+                                ProjectID.append('<option value="' + item.id + '">'  + item.name + '</option>');
                             }
                         });
                     },
@@ -178,8 +180,50 @@
                     },
                 });
                 ProjectID.select2();
-                getProjectStages();
             }
+
+            // Load sites for selected project
+            const getSites = () => {
+                let SiteID = $('#site_id');
+                let ProjectID = $('#project_id');
+                let SelectedProjectID = ProjectID.val() ? ProjectID.val() : ProjectID.attr('data-selected');
+                let SelectedSite = SiteID.attr('data-selected');
+                SiteID.select2('destroy');
+                SiteID.empty().append('<option value="">Select a Site</option>');
+                if (SelectedProjectID) {
+                    $.ajax({
+                        url: "{{ route('getSites') }}",
+                        type: 'GET',
+                        dataType: 'json',
+                        data: { 'project_id': SelectedProjectID },
+                        success: function(response) {
+                            response.forEach(function(item) {
+                                SiteID.append('<option value="' + item.id + '" ' + (item.id == SelectedSite ? 'selected' : '') + '>' + item.site_no + '</option>');
+                            });
+                        },
+                        error: function(e, x, settings, exception) {
+                            // ajaxErrors(e, x, settings, exception);
+                        },
+                    });
+                }
+                SiteID.select2();
+            }
+
+            // When project changes, load sites
+            $('#project_id').change(function() {
+                getSites();
+                // Optionally clear stage dropdown
+                $('#stage_id').empty().append('<option value="">Select a Stage</option>').select2();
+            });
+
+            // When site changes, you may want to load stages for that site
+            // $('#site_id').change(function() { ... });
+
+            // If a project is already selected (edit mode), load sites
+            if ($('#project_id').val()) {
+                getSites();
+            }
+            $('#status').select2();
 
             const getProjectStages = () => {
                 let StageID = $('#stage_id');

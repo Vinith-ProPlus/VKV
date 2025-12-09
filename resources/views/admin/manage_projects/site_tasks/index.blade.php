@@ -2,8 +2,8 @@
 
 @section('content')
     @php
-        $PageTitle="Project Task";
-        $ActiveMenuName='Project Tasks';
+        $PageTitle="Site Task";
+        $ActiveMenuName='Site Tasks';
     @endphp
     <div class="container-fluid">
         <div class="page-header">
@@ -28,19 +28,19 @@
                             <div class="col-sm-4"></div>
                             <div class="col-sm-4 my-2"><h5>{{$PageTitle}}</h5></div>
                             <div class="col-sm-4 my-2 text-right text-md-right">
-                                @can('Create Project Tasks')
+                                @can('Create Site Tasks')
                                     <a class="btn btn-sm btnPrimaryCustomizeBlue btn-primary add-btn"
-                                       href="{{ route('project_tasks.create') }}">Add New Project Task</a>
+                                       href="{{ route('site_tasks.create') }}">Add New Site Task</a>
                                 @endcan
                             </div>
                         </div>
                         <div class="row align-items-center justify-content-center">
                             <div class="col-sm-2">
                                 <div class="form-group text-center mh-60">
-                                    <label style="margin-bottom: 0px;">Projects</label>
-                                    <div id="divProject">
-                                        <select class="form-control form-control-sm text-center" id="project_id">
-                                            <option value="">Select a Project</option>
+                                    <label style="margin-bottom: 0px;">Sites</label>
+                                    <div id="divSite">
+                                        <select class="form-control form-control-sm text-center" id="site_id">
+                                            <option value="">Select a Site</option>
                                         </select>
                                     </div>
                                 </div>
@@ -111,13 +111,13 @@
 @endsection
 @section('script')
     <script>
-        @can('View Project Tasks')
+        @can('View Site Tasks')
         $(document).ready(function () {
-            $('#project_id').change(() => getProjectStages());
+            $('#site_id').change(() => getSiteStages());
             $('#clearFilters').click(clearFilter);
 
             function initMultiSelect() {
-                $('#project_id, #stage_id, #status, #lstReportStatus').multiselect({
+                $('#site_id, #stage_id, #status, #lstReportStatus').multiselect({
                     buttonClass: 'btn btn-link',
                     enableFiltering: true,
                     maxHeight: 250,
@@ -135,10 +135,10 @@
                 iDisplayLength: 10,
                 lengthMenu: [[10, 25, 50, -1], [10, 25, 50, "All"]],
                 ajax: {
-                    url: '{{ route("project_tasks.index") }}',
+                    url: '{{ route("site_tasks.index") }}',
                     type: 'GET',
                     data: function (d) {
-                        d.project_id = $('#project_id').val();
+                        d.site_id = $('#site_id').val();
                         d.stage_id = $('#stage_id').val();
                         d.status = $('#status').val();
                         d.date = $('#date_filter').val();
@@ -146,7 +146,7 @@
                 },
                 columns: [
                     {data: 'DT_RowIndex', orderable: false, searchable: false},
-                    {data: 'name'},
+                    {data: 'site_no'},
                     {data: 'project_name'},
                     {data: 'date'},
                     {data: 'stage_name'},
@@ -180,7 +180,7 @@
 
             function getProjectStages() {
                 let StageID = $('#stage_id');
-                let ProjectID = $('#project_id');
+                let ProjectID = $('#site_id');
                 let SelectedProjectID = ProjectID.val() || ProjectID.attr('data-selected');
                 let SelectedStage = StageID.attr('data-selected');
 
@@ -204,10 +204,10 @@
                 }
             }
 
-            $('#project_id, #stage_id, #status, #date_filter, #lstReportStatus').on('change', reloadTable);
+            $('#site_id, #stage_id, #status, #date_filter, #lstReportStatus').on('change', reloadTable);
 
             function clearFilter() {
-                $('#project_id').val('').multiselect('refresh');
+                $('#site_id').val('').multiselect('refresh');
                 $('#stage_id').val('').multiselect('refresh');
                 $('#status').val('').multiselect('refresh');
                 $('#date_filter').val('');

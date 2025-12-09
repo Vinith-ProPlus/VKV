@@ -11,10 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('project_tasks', function (Blueprint $table) {
+        Schema::create('site_tasks', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('project_id')->constrained('projects')->cascadeOnUpdate()->restrictOnDelete();
-            $table->foreignId('stage_id')->constrained('project_stages')->cascadeOnUpdate()->restrictOnDelete();
+            $table->foreignId('site_id')->constrained('sites')->cascadeOnUpdate()->restrictOnDelete();
+            $table->foreignId('stage_id')->constrained('site_stages')->cascadeOnUpdate()->restrictOnDelete();
             $table->string('name');
             $table->timestamp('date');
             $table->string('image')->nullable();
@@ -25,7 +25,7 @@ return new class extends Migration
             $table->softDeletes();
             $table->timestamps();
 
-            $table->index(['project_id', 'stage_id']);
+            $table->index(['site_id', 'stage_id']);
         });
     }
 
@@ -34,6 +34,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('project_tasks');
+        Schema::dropIfExists('site_tasks');
     }
 };

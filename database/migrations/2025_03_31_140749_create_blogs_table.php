@@ -14,8 +14,8 @@ return new class extends Migration
         Schema::create('blogs', static function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained('users')->cascadeOnUpdate()->restrictOnDelete();
-            $table->foreignId('project_id')->constrained('projects')->cascadeOnUpdate()->restrictOnDelete();
-            $table->foreignId('project_stage_id')->constrained('project_stages')->cascadeOnUpdate()->restrictOnDelete();
+            $table->foreignId('site_id')->constrained('sites')->cascadeOnUpdate()->restrictOnDelete();
+            $table->foreignId('site_stage_id')->constrained('site_stages')->cascadeOnUpdate()->restrictOnDelete();
             $table->text('remarks');
             $table->boolean('is_damaged')->default(false);
             $table->timestamps();
