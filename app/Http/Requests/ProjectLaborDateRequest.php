@@ -24,7 +24,7 @@ class ProjectLaborDateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'project_id' => 'required|exists:projects,id',
+            'site_id' => 'required|exists:sites,id',
             'date' => 'required|date|date_format:Y-m-d',
         ];
     }

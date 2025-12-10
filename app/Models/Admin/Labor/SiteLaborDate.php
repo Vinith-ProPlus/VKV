@@ -4,7 +4,7 @@ namespace App\Models\Admin\Labor;
 
 use App\Models\ContractLabor;
 use App\Models\Labor;
-use App\Models\Project;
+use App\Models\Site;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -14,20 +14,20 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 /**
  * @method static updateOrCreate(array $array)
  * @method static firstOrCreate(array $array)
- * @method static where(string $string, mixed $projectId)
+ * @method static where(string $string, mixed $siteId)
  */
-class ProjectLaborDate extends Model
+class SiteLaborDate extends Model
 {
     use HasFactory, SoftDeletes;
 
-    protected $fillable = ['project_id', 'date'];
+    protected $fillable = ['site_id', 'date'];
 
     /**
      * @return BelongsTo
      */
-    public function project(): BelongsTo
+    public function site(): BelongsTo
     {
-        return $this->belongsTo(Project::class);
+        return $this->belongsTo(Site::class);
     }
 
     /**

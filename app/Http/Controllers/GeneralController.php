@@ -2,42 +2,42 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Admin\Labor\LaborDesignation;
-use App\Models\Admin\ManageProjects\ProjectStage;
 use App\Models\Site;
-use App\Models\Admin\Master\City;
-use App\Models\Admin\Master\District;
-use App\Models\Admin\Master\Pincode;
-use App\Models\Admin\Master\State;
-use App\Models\ContractType;
+use App\Models\User;
+use App\Models\Labor;
 use App\Models\Amenity;
+use App\Models\Product;
+use App\Models\Project;
 use App\Models\Document;
 use App\Models\LeadSource;
 use App\Models\LeadStatus;
-use App\Models\Product;
-use App\Models\ProductCategory;
-use App\Models\Project;
-use App\Models\ProjectContract;
 use App\Models\SupportType;
-use App\Models\User;
-use App\Models\Labor;
-use App\Models\MobileUserAttendance;
-use App\Models\Admin\ManageProjects\ProjectTask;
-use Illuminate\Http\JsonResponse;
+use App\Models\ContractType;
+use App\Models\SiteContract;
 use Illuminate\Http\Request;
+use App\Models\ProductCategory;
+use App\Models\Admin\Master\City;
+use Illuminate\Http\JsonResponse;
+use App\Models\Admin\Master\State;
 use Illuminate\Support\Facades\DB;
+use Spatie\Permission\Models\Role;
 use Illuminate\Support\Facades\Log;
+use App\Models\Admin\Master\Pincode;
+use App\Models\MobileUserAttendance;
+use App\Models\Admin\Master\District;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
-use Spatie\Permission\Models\Role;
+use App\Models\Admin\Labor\LaborDesignation;
+use App\Models\Admin\ManageProjects\ProjectTask;
+use App\Models\Admin\ManageProjects\ProjectStage;
 
 class GeneralController extends Controller
 {
     public function getCities(Request $req)
     {
-        $cities = City::where('is_active','1');
+        $cities = City::where('is_active', '1');
 
-        if($req->filled('district_id')){
+        if ($req->filled('district_id')) {
             $cities->where('district_id', $req->district_id);
         }
 
@@ -46,15 +46,15 @@ class GeneralController extends Controller
 
     public function getStates(): JsonResponse
     {
-        $state = State::where('is_active','1')->get();
+        $state = State::where('is_active', '1')->get();
         return response()->json($state);
     }
 
     public function getPinCodes(Request $request): JsonResponse
     {
-        $pincode = Pincode::where('is_active','1');
+        $pincode = Pincode::where('is_active', '1');
 
-        if($request->filled('city_id')){
+        if ($request->filled('city_id')) {
             $pincode->where('city_id', $request->city_id);
         }
 
@@ -63,17 +63,17 @@ class GeneralController extends Controller
 
     public function getLeadSource(): JsonResponse
     {
-        return response()->json(LeadSource::where('is_active','1')->get());
+        return response()->json(LeadSource::where('is_active', '1')->get());
     }
 
     public function getLeadStatus(): JsonResponse
     {
-        return response()->json(LeadStatus::where('is_active','1')->get());
+        return response()->json(LeadStatus::where('is_active', '1')->get());
     }
 
     public function getUsers(): JsonResponse
     {
-        return response()->json(User::where('active_status','Active')->get());
+        return response()->json(User::where('active_status', 'Active')->get());
     }
     public function getSiteSupervisors(): JsonResponse
     {
@@ -132,6 +132,24 @@ class GeneralController extends Controller
         }
         return response()->json($query->get());
     }
+
+    public function getSitesByProjectID(Request $request)
+    {
+        $query = Site::query();
+
+        if ($request->filled('project_id')) {
+            $projectIds = $request->project_id;
+
+            if (!is_array($projectIds)) {
+                $projectIds = [$projectIds];
+            }
+
+            $query->whereIn('project_id', $projectIds);
+        }
+
+        return response()->json($query->get());
+    }
+
 
     public function getSupportTypes(): JsonResponse
     {
@@ -218,7 +236,8 @@ class GeneralController extends Controller
         } catch (\Throwable $exception) {
             Log::error("Error::Place@GeneralController@documentHandler - " . $exception->getMessage());
             return response()->json([
-                'success' => false,'message' => 'An error occurred during upload',
+                'success' => false,
+                'message' => 'An error occurred during upload',
                 'error' => $exception->getMessage()
             ], 500);
         }
@@ -257,7 +276,8 @@ class GeneralController extends Controller
             DB::rollBack();
             Log::error('Error::GeneralController@updateDocuments - ' . $exception->getMessage());
             return response()->json([
-                'success' => false,'message' => 'An error occurred during update',
+                'success' => false,
+                'message' => 'An error occurred during update',
                 'error' => $exception->getMessage(),
             ], 500);
         }
@@ -286,7 +306,8 @@ class GeneralController extends Controller
             DB::rollBack();
             Log::error("Error::Place@GeneralController@deleteDocuments - " . $exception->getMessage());
             return response()->json([
-                'success' => false, 'message' => 'An error occurred during delete',
+                'success' => false,
+                'message' => 'An error occurred during delete',
                 'error' => $exception->getMessage()
             ], 500);
         }
@@ -294,25 +315,25 @@ class GeneralController extends Controller
 
     public function getContractTypes(Request $request): JsonResponse
     {
-        return response()->json(ContractType::where('is_active','1')->get());
+        return response()->json(ContractType::where('is_active', '1')->get());
     }
 
     public function getVendors(): JsonResponse
     {
         $vendor_role_id = Role::where('name', VENDOR_ROLE_NAME)->pluck('id')->first();
-        return response()->json(User::where('role_id',$vendor_role_id)->get());
+        return response()->json(User::where('role_id', $vendor_role_id)->get());
     }
     public function getContractors(): JsonResponse
     {
         $contractor_role_id = Role::where('name', CONTRACTOR_ROLE_NAME)->pluck('id')->first();
-        return response()->json(User::where('role_id',$contractor_role_id)->get());
+        return response()->json(User::where('role_id', $contractor_role_id)->get());
     }
-    public function getProjectContractors(Request $request): JsonResponse
+    public function getSiteContractors(Request $request): JsonResponse
     {
         $request->validate([
-           'project_id' => 'required|exists:projects,id'
+            'site_id' => 'required|exists:sites,id'
         ]);
-        return response()->json(ProjectContract::with('user:id,name', 'contract_type:id,name')->where('project_id', $request->project_id)->get());
+        return response()->json(SiteContract::with('user:id,name', 'contract_type:id,name')->where('site_id', $request->site_id)->get());
     }
     public function getLaborDesignations(Request $request): JsonResponse
     {
@@ -321,29 +342,33 @@ class GeneralController extends Controller
 
     public function getAmenities(Request $request): JsonResponse
     {
-        return response()->json(Amenity::where('is_active','1')->get());
+        return response()->json(Amenity::where('is_active', '1')->get());
     }
 
-    public function getAllProjects(){
+    public function getAllProjects()
+    {
         return Project::whereNull('deleted_at')->get();
     }
 
-    public function getProjectTasks(Request $req){
+    public function getProjectTasks(Request $req)
+    {
         return ProjectTask::where('project_id', $req->id)->whereDate('created_at', now())->with('project:id,name')->get();
     }
 
-    public function getSupervisors(){
-        return User::where('role_id',4)->where('active_status','Active')->get();
+    public function getSupervisors()
+    {
+        return User::where('role_id', 4)->where('active_status', 'Active')->get();
     }
 
-    public function getCheckedInSupervisors(){
+    public function getCheckedInSupervisors()
+    {
         $checkedInUsers = MobileUserAttendance::whereDate('time', now())
-        ->orderBy('time', 'desc')
-        ->get()
-        ->unique('user_id')
-        ->filter(function ($record) {
-            return $record->type === 'check_in';
-        });
+            ->orderBy('time', 'desc')
+            ->get()
+            ->unique('user_id')
+            ->filter(function ($record) {
+                return $record->type === 'check_in';
+            });
 
         return $checkedInUsers;
     }

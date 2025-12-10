@@ -151,7 +151,7 @@ class ProjectReportsController extends Controller
                     $q->where('paid_status', $request->paid_status);
                 });
             }
-            
+
             return DataTables::eloquent($query)
                 ->addIndexColumn()
                 ->addColumn('project_name', fn($data) => $data->project->name ?? 'N/A')

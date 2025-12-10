@@ -32,8 +32,8 @@
             <div class="col-4 text-right"><h5>Date: <strong>{{ $labor->date }}</strong></h5></div>
         </div>
         <div class="card-body">
-            <input type="hidden" id="project_labor_date_id" value="{{ $labor->id }}">
-            <input type="hidden" id="project_id" value="{{ $labor->project_id }}">
+            <input type="hidden" id="site_labor_date_id" value="{{ $labor->id }}">
+            <input type="hidden" id="site_id" value="{{ $labor->site_id }}">
             <input type="hidden" id="date" value="{{ $labor->date }}">
             <div class="text-center mt-20 mb-20">
                 <button class="btn btn-success my-2" id="openLaborModelBtn">Add Labor</button>
@@ -147,7 +147,7 @@
                         url: '{{ route("laborsList") }}',
                         type: 'GET',
                         data: function (d) {
-                            d.project_labor_date_id = $('#project_labor_date_id').val();
+                            d.site_labor_date_id = $('#site_labor_date_id').val();
                         }
                     },
                     columns: [
@@ -171,7 +171,7 @@
                         url: '{{ route("contractLaborsList") }}',
                         type: 'GET',
                         data: function (d) {
-                            d.project_labor_date_id = $('#project_labor_date_id').val();
+                            d.site_labor_date_id = $('#site_labor_date_id').val();
                         }
                     },
                     columns: [
@@ -204,8 +204,8 @@
 
             const getContracts = () => {
                 let ContractorID = $('#project_contract_id');
-                let ProjectID = $('#project_id');
-                let SelectedProjectID = ProjectID.val();
+                let ProjectID = $('#site_id');
+                let SelectedSiteID = ProjectID.val();
                 let SelectedContractor = ContractorID.attr('data-selected');
 
                 if (ContractorID.length) {
@@ -214,12 +214,12 @@
                     }
                     ContractorID.empty().append('<option value="">Select a Contractor</option>');
 
-                    if (SelectedProjectID) {
+                    if (SelectedSiteID) {
                         $.ajax({
-                            url: "{{ route('getProjectContractors') }}",
+                            url: "{{ route('getSiteContractors') }}",
                             type: 'GET',
                             dataType: 'json',
-                            data: { 'project_id': SelectedProjectID },
+                            data: { 'site_id': SelectedSiteID },
                             success: function (response) {
                                 response.forEach(function (item) {
                                     ContractorID.append(
@@ -274,13 +274,13 @@
                 e.preventDefault();
 
                 let laborType = $('#labor_type').val();
-                let projectLaborDateId = $('#project_labor_date_id').val();
+                let projectLaborDateId = $('#site_labor_date_id').val();
                 let isValid = true;
 
                 $('.error-message').remove(); // Remove previous validation messages
 
                 if (!projectLaborDateId) {
-                    $('#project_labor_date_id').after('<span class="text-danger error-message">This field is required</span>');
+                    $('#site_labor_date_id').after('<span class="text-danger error-message">This field is required</span>');
                     isValid = false;
                 }
 
@@ -310,7 +310,7 @@
                     }
 
                     data = {
-                        project_labor_date_id: projectLaborDateId,
+                        site_labor_date_id: projectLaborDateId,
                         name: name,
                         labor_designation_id: designation,
                         mobile: mobile,
@@ -331,7 +331,7 @@
                     }
 
                     data = {
-                        project_labor_date_id: projectLaborDateId,
+                        site_labor_date_id: projectLaborDateId,
                         project_contract_id: projectContractId,
                         count: count,
                         labor_type: laborType
@@ -405,7 +405,7 @@
                         $('#saveLaborBtn').text('Update'); // Change button
                         $('#submitLaborForm').attr('action', '{{ route("labors.update", ":id") }}'.replace(':id', id));
 
-                        $('#project_labor_date_id').val(response.project_labor_date_id);
+                        $('#site_labor_date_id').val(response.site_labor_date_id);
                         if (type === 'Self') {
                             $('#name').val(response.name);
                             $('#designation_id').val(response.labor_designation_id).trigger('change');

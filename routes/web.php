@@ -200,6 +200,7 @@ Route::get('/getRoles', [GeneralController::class, 'getRoles'])->name('getRoles'
 Route::get('/getProjects', [GeneralController::class, 'getProjects'])->name('getProjects');
 Route::get('/getStages', [GeneralController::class, 'getStages'])->name('getStages');
 Route::get('/getSites', [GeneralController::class, 'getSites'])->name('getSites');
+Route::get('/getSitesByProjectID', [GeneralController::class, 'getSitesByProjectID'])->name('getSitesByProjectID');
 Route::get('/getSupportTypes', [GeneralController::class, 'getSupportTypes'])->name('getSupportTypes');
 Route::post('/getDocuments', [GeneralController::class, 'getDocuments'])->name('getDocuments');
 Route::post('/documentHandler', [GeneralController::class, 'documentHandler'])->name('documentHandler');
@@ -209,7 +210,7 @@ Route::get('/getContractTypes', [GeneralController::class,'getContractTypes'])->
 Route::get('/getVendors', [GeneralController::class, 'getVendors'])->name('getVendors');
 Route::get('/getContractors', [GeneralController::class, 'getContractors'])->name('getContractors');
 Route::get('/getAmenities', [GeneralController::class, 'getAmenities'])->name('getAmenities');
-Route::get('/getProjectContractors', [GeneralController::class, 'getProjectContractors'])->name('getProjectContractors');
+Route::get('/getSiteContractors', [GeneralController::class, 'getSiteContractors'])->name('getSiteContractors');
 Route::get('/getLaborDesignations', [GeneralController::class, 'getLaborDesignations'])->name('getLaborDesignations');
 Route::get('/getCategories', [GeneralController::class, 'getCategories'])->name('getCategories');
 Route::get('/getProductsByCategory', [GeneralController::class, 'getProductsByCategory'])->name('getProductsByCategory');

@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
-use App\Models\Admin\Labor\ProjectLaborDate;
+use App\Models\Admin\Labor\SiteLaborDate;
 use App\Models\Admin\ManageProjects\ProjectTask;
 use App\Models\Blog;
 use App\Models\ContractLabor;
@@ -32,17 +32,17 @@ class LaborController extends Controller
     public function getLaborDates(Request $request): JsonResponse
     {
         $request->validate([
-            'project_id' => 'required|integer|exists:projects,id'
+            'site_id' => 'required|integer|exists:sites,id'
         ]);
 
-        $projectId = $request->input('project_id');
+        $siteId = $request->input('site_id');
 
-        ProjectLaborDate::firstOrCreate([
-            'project_id' => $projectId,
+        SiteLaborDate::firstOrCreate([
+            'site_id' => $siteId,
             'date' => today()->format('Y-m-d'),
         ]);
 
-        $query = ProjectLaborDate::where('project_id', $projectId)
+        $query = SiteLaborDate::where('site_id', $siteId)
             ->withCount(['labors as labor_count']);
         $query = dataFilter($query, $request);
         $query->getCollection()->transform(function ($date) {
@@ -62,7 +62,7 @@ class LaborController extends Controller
             'project_labor_date_id' => 'required|integer|exists:project_labor_dates,id',
         ]);
 
-        $projectLaborDate = ProjectLaborDate::with(['labors.labor_designation', 'contractLabors.projectContract.user:name', 'contractLabors.projectContract.contract_type'])
+        $projectLaborDate = SiteLaborDate::with(['labors.labor_designation', 'contractLabors.projectContract.user:name', 'contractLabors.projectContract.contract_type'])
             ->findOrFail($request->input('project_labor_date_id'));
         $projectLaborDate->count = $projectLaborDate->labor_count + $projectLaborDate->contract_count;
 
@@ -86,7 +86,7 @@ class LaborController extends Controller
         $request->validate([
             'project_id' => 'required|integer|exists:projects,id',
         ]);
-        $projectLaborDate = ProjectLaborDate::with(['labors.labor_designation'])
+        $projectLaborDate = SiteLaborDate::with(['labors.labor_designation'])
             ->where('project_id', $request->input('project_id'))->where('date', now()->format('Y-m-d'))->first();
         if ($projectLaborDate) {
             return $this->successResponse($projectLaborDate, "Labor data fetched successfully!");
@@ -237,7 +237,7 @@ class LaborController extends Controller
 
         $projectId = $request->input('project_id');
 
-        $projectLaborDate = ProjectLaborDate::firstOrCreate([
+        $projectLaborDate = SiteLaborDate::firstOrCreate([
             'project_id' => $projectId,
             'date' => today()->format('Y-m-d'),
         ]);
@@ -261,13 +261,13 @@ class LaborController extends Controller
             ]);
 
             $fromProjectId = $request->from_project_id;
-            $fromProjectLaborDate = ProjectLaborDate::firstOrCreate([
+            $fromProjectLaborDate = SiteLaborDate::firstOrCreate([
                 'project_id' => $fromProjectId,
                 'date' => today()->format('Y-m-d'),
             ]);
             $fromProjectLaborDateId = $fromProjectLaborDate->id;
             $toProjectId = $request->to_project_id;
-            $toProjectLaborDate = ProjectLaborDate::firstOrCreate([
+            $toProjectLaborDate = SiteLaborDate::firstOrCreate([
                 'project_id' => $toProjectId,
                 'date' => today()->format('Y-m-d'),
             ]);

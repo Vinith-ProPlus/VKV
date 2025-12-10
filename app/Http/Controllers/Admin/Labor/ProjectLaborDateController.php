@@ -4,10 +4,11 @@ namespace App\Http\Controllers\Admin\Labor;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ProjectLaborDateRequest;
-use App\Models\Admin\Labor\ProjectLaborDate;
+use App\Models\Admin\Labor\SiteLaborDate;
 use App\Models\ContractLabor;
 use App\Models\Labor;
 use App\Models\LaborReallocation;
+use App\Models\Site;
 use Exception;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Routing\ResponseFactory;
@@ -36,11 +37,18 @@ class ProjectLaborDateController extends Controller
         $this->authorize('View Labors');
 
         if ($request->ajax()) {
-            $query = ProjectLaborDate::with(['project', 'labors', 'contractLabors'])->withTrashed();
+            $query = SiteLaborDate::with(['site', 'labors', 'contractLabors'])->withTrashed();
 
-            // Project
+            // Get site IDs by project_id
             if ($request->filled('project_id')) {
-                $query->whereIn('project_id', $request->project_id);
+                $projectIds = is_array($request->project_id) ? $request->project_id : [$request->project_id];
+                $siteIds = Site::whereIn('project_id', $projectIds)->pluck('id')->toArray();
+                $query->whereIn('site_id', $siteIds);
+            }
+            
+            // Filter by site_id (this takes precedence if both are provided)
+            if ($request->filled('site_id')) {
+                $query->whereIn('site_id', $request->site_id);
             }
 
             // From and To Date
@@ -61,7 +69,8 @@ class ProjectLaborDateController extends Controller
 
             return DataTables::eloquent($query)
                 ->addIndexColumn()
-                ->addColumn('project_name', fn($data) => $data->project->name ?? 'N/A')
+                ->addColumn('project_name', fn($data) => $data->site->project->name ?? 'N/A')
+                ->addColumn('site_id', fn($data) => $data->site->site_no ?? 'N/A')
                 ->addColumn('labor_count', fn($data) => $data->labors->count())
                 ->addColumn('contract_labor_count', fn($data) => $data->contractLabors->sum('count'))
                 ->addColumn('action', function ($data) {
@@ -72,7 +81,7 @@ class ProjectLaborDateController extends Controller
                         if(\Carbon\Carbon::parse($data->date)->isToday()) {
                             $button .= '<a href="' . route('labors.reallocate', $data->id) . '" class="btn btn-outline-secondary">Re-Allocate</a>';
                         }
-                        $button .= '<a href="' . route('labors.create', ['project_id' => $data->project_id, 'date' => $data->date]) . '" class="btn btn-outline-success btn-sm m-1"><i class="fa fa-pencil" aria-hidden="true"></i></a>';
+                        $button .= '<a href="' . route('labors.create', ['site_id' => $data->site_id, 'date' => $data->date]) . '" class="btn btn-outline-success btn-sm m-1"><i class="fa fa-pencil" aria-hidden="true"></i></a>';
                         $button .= '<a onclick="commonDelete(\'' . route('labors.destroy', $data->id) . '\')"  class="btn btn-outline-danger btn-sm m-1"><i class="fa fa-trash" style="color: red"></i></a>';
                     }
                     $button .= '</div>';
@@ -114,20 +123,20 @@ class ProjectLaborDateController extends Controller
     {
         if ($request->ajax()) {
             $this->authorize('View Labors');
-            $project_labor_date_id = $request->project_labor_date_id;
-            if (!$project_labor_date_id) {
+            $site_labor_date_id = $request->site_labor_date_id;
+            if (!$site_labor_date_id) {
                 return response()->json(['error' => 'Invalid request: Missing project labor date ID.'], 400);
             }
-            $project_labor_date = ProjectLaborDate::find($project_labor_date_id);
-            if (!$project_labor_date) {
+            $site_labor_date = SiteLaborDate::find($site_labor_date_id);
+            if (!$site_labor_date) {
                 return response()->json(['error' => 'Project labor date not found.'], 404);
             }
-            $data = Labor::with('labor_designation')->where('project_labor_date_id', $project_labor_date_id)->get();
+            $data = Labor::with('labor_designation')->where('site_labor_date_id', $site_labor_date_id)->get();
             return DataTables::of($data)
                 ->addIndexColumn()
                 ->editColumn('designation', static fn($data) => optional($data->labor_designation)->name ?? 'N/A')
                 ->addColumn('salary', static fn($data) => $data->salary ?? 'N/A')
-                ->addColumn('action', static function ($data) use ($project_labor_date) {
+                ->addColumn('action', static function ($data) use ($site_labor_date) {
                     $button = '<div class="d-flex justify-content-center">';
                     if (!$data->paid_status) {
                         $button .= '<button data-id="' . $data->id . '" data-type="Self" class="btn btn-outline-success btn-sm m-1 editLabor">
@@ -155,18 +164,18 @@ class ProjectLaborDateController extends Controller
     {
         if ($request->ajax()) {
             $this->authorize('View Labors');
-            $project_labor_date_id = $request->project_labor_date_id;
-            if (!$project_labor_date_id) {
+            $site_labor_date_id = $request->site_labor_date_id;
+            if (!$site_labor_date_id) {
                 return response()->json(['error' => 'Invalid request: Missing project labor date ID.'], 400);
             }
 
-            $project_labor_date = ProjectLaborDate::find($project_labor_date_id);
-            if (!$project_labor_date) {
+            $site_labor_date = SiteLaborDate::find($site_labor_date_id);
+            if (!$site_labor_date) {
                 return response()->json(['error' => 'Project labor date not found.'], 404);
             }
 
             $data = ContractLabor::with('projectContract.user', 'projectContract.contract_type')
-                ->where('project_labor_date_id', $project_labor_date_id)
+                ->where('site_labor_date_id', $site_labor_date_id)
                 ->get();
 
             return DataTables::of($data)
@@ -176,9 +185,9 @@ class ProjectLaborDateController extends Controller
                     $contractType = $data->projectContract?->contract_type?->name ?? 'Unknown Type';
                     return "$contractorName - $contractType";
                 })
-                ->addColumn('action', static function ($data) use ($project_labor_date) {
+                ->addColumn('action', static function ($data) use ($site_labor_date) {
                     $button = '<div class="d-flex justify-content-center">';
-//                    if ($project_labor_date->date->isToday()) {
+//                    if ($site_labor_date->date->isToday()) {
                         $button .= '<button data-id="' . $data->id . '" data-type="Contract" class="btn btn-outline-success btn-sm m-1 editLabor">
                                     <i class="fa fa-pencil" aria-hidden="true"></i>
                                 </button>';
@@ -202,8 +211,8 @@ class ProjectLaborDateController extends Controller
     public function create(ProjectLaborDateRequest $request): Response
     {
         $this->authorize('Create Labors');
-        $labor = ProjectLaborDate::firstOrCreate(
-            ['project_id' => $request->project_id, 'date' => $request->date]
+        $labor = SiteLaborDate::firstOrCreate(
+            ['site_id' => $request->site_id, 'date' => $request->date]
         );
         return response()->view('admin.labors.data', compact('labor'));
     }
@@ -214,7 +223,7 @@ class ProjectLaborDateController extends Controller
     public function reallocate($ProjectLabourDate)
     {
         $this->authorize('Edit Labors');
-        $ProjectLabourDate = ProjectLaborDate::with('labors')->find($ProjectLabourDate);
+        $ProjectLabourDate = SiteLaborDate::with('labors')->find($ProjectLabourDate);
         return response()->view('admin.labors.reallocate', compact('ProjectLabourDate'));
     }
 
@@ -228,30 +237,30 @@ class ProjectLaborDateController extends Controller
 
         try {
             $request->validate([
-                'project_labor_date_id' => 'required|exists:project_labor_dates,id',
-                'project_id' => 'required|exists:projects,id',
+                'site_labor_date_id' => 'required|exists:site_labor_dates,id',
+                'site_id' => 'required|exists:projects,id',
                 'labors' => 'required|array',
                 'labors.*' => 'exists:labors,id',
             ]);
 
-            $toProjectId = $request->project_id;
-            $fromProjectLaborDateId = $request->project_labor_date_id;
+            $toProjectId = $request->site_id;
+            $fromProjectLaborDateId = $request->site_labor_date_id;
             $date = $request->date;
 
-            // Ensure project_labor_date_id exists for the selected date and project
-            $projectLaborDate = ProjectLaborDate::firstOrCreate([
-                'project_id' => $toProjectId,
+            // Ensure site_labor_date_id exists for the selected date and project
+            $siteLaborDate = SiteLaborDate::firstOrCreate([
+                'site_id' => $toProjectId,
                 'date' => $date,
             ]);
 
-            $toProjectLaborDateId = $projectLaborDate->id;
+            $toSiteLaborDateId = $siteLaborDate->id;
             $selectedLaborIds = $request->labors;
 
             // Fetch labor records based on selected labor IDs
             $labors = Labor::whereIn('id', $selectedLaborIds)->get();
 
             // Check for duplicate labor entries based on mobile number
-            $existingLabors = Labor::where('project_labor_date_id', $toProjectLaborDateId)
+            $existingLabors = Labor::where('site_labor_date_id', $toSiteLaborDateId)
                 ->whereIn('mobile', $labors->pluck('mobile'))
                 ->pluck('name')
                 ->toArray();
@@ -265,12 +274,12 @@ class ProjectLaborDateController extends Controller
             foreach ($labors as $labor) {
                 LaborReallocation::create([
                     'labor_id' => $labor->id,
-                    'from_project_labor_date_id' => $fromProjectLaborDateId,
-                    'to_project_labor_date_id' => $toProjectLaborDateId,
+                    'from_site_labor_date_id' => $fromProjectLaborDateId,
+                    'to_site_labor_date_id' => $toSiteLaborDateId,
                     'remarks' => $request->remarks,
                     'reallocated_by' => Auth::id(),
                 ]);
-                $labor->update(['project_labor_date_id' => $toProjectLaborDateId]);
+                $labor->update(['site_labor_date_id' => $toSiteLaborDateId]);
             }
 
             DB::commit();
@@ -291,12 +300,12 @@ class ProjectLaborDateController extends Controller
         DB::beginTransaction();
         try {
             $request->validate([
-                'project_labor_date_id' => 'required|exists:project_labor_dates,id',
+                'site_labor_date_id' => 'required|exists:site_labor_dates,id',
                 'labor_type' => 'required|in:Self,Contract',
                 'project_contract_id' => [
                     'required_if:labor_type,Contract',
                     static function ($attribute, $value, $fail) use ($request) {
-                        $exists = ContractLabor::where('project_labor_date_id', $request->project_labor_date_id)
+                        $exists = ContractLabor::where('site_labor_date_id', $request->site_labor_date_id)
                             ->where('project_contract_id', $value)
                             ->exists();
 
@@ -310,7 +319,7 @@ class ProjectLaborDateController extends Controller
                     'required_if:labor_type,Self',
                     'digits:10',
                     static function ($attribute, $value, $fail) use ($request) {
-                        $exists = Labor::where('project_labor_date_id', $request->project_labor_date_id)
+                        $exists = Labor::where('site_labor_date_id', $request->site_labor_date_id)
                             ->where('mobile', $value)
                             ->exists();
 
@@ -323,8 +332,8 @@ class ProjectLaborDateController extends Controller
                 'salary' => 'required_if:labor_type,Self|numeric',
                 'count' => 'required_if:labor_type,Contract|numeric|min:1',
             ], [
-                'project_labor_date_id.required' => 'Please select a valid project labor date.',
-                'project_labor_date_id.exists' => 'The selected project labor date does not exist.',
+                'site_labor_date_id.required' => 'Please select a valid project labor date.',
+                'site_labor_date_id.exists' => 'The selected project labor date does not exist.',
                 'labor_type.required' => 'Please select a labor type.',
                 'labor_type.in' => 'Invalid labor type selected.',
                 'project_contract_id.required_if' => 'Please select a contractor for contract labor.',
@@ -340,9 +349,9 @@ class ProjectLaborDateController extends Controller
             ]);
 
             if ($request->labor_type === 'Self') {
-                $labor = Labor::create($request->only(['project_labor_date_id', 'name', 'labor_designation_id', 'mobile', 'salary']));
+                $labor = Labor::create($request->only(['site_labor_date_id', 'name', 'labor_designation_id', 'mobile', 'salary']));
             } else {
-                $labor = ContractLabor::create($request->only(['project_labor_date_id', 'project_contract_id', 'count']));
+                $labor = ContractLabor::create($request->only(['site_labor_date_id', 'project_contract_id', 'count']));
             }
             DB::commit();
             return response()->json(['success' => true, 'message' => 'Labor added successfully!', 'data' => $labor]);
@@ -387,12 +396,12 @@ class ProjectLaborDateController extends Controller
             }
 
             $request->validate([
-                'project_labor_date_id' => 'required|exists:project_labor_dates,id',
+                'site_labor_date_id' => 'required|exists:site_labor_dates,id',
                 'labor_type' => 'required|in:Self,Contract',
                 'project_contract_id' => [
                     'required_if:labor_type,Contract',
                     static function ($attribute, $value, $fail) use ($request, $laborModel) {
-                        $exists = ContractLabor::where('project_labor_date_id', $request->project_labor_date_id)
+                        $exists = ContractLabor::where('site_labor_date_id', $request->site_labor_date_id)
                             ->where('project_contract_id', $value)
                             ->where('id', '!=', $laborModel->id)
                             ->exists();
@@ -406,7 +415,7 @@ class ProjectLaborDateController extends Controller
                     'required_if:labor_type,Self',
                     'digits:10',
                     static function ($attribute, $value, $fail) use ($request, $laborModel) {
-                        $exists = Labor::where('project_labor_date_id', $request->project_labor_date_id)
+                        $exists = Labor::where('site_labor_date_id', $request->site_labor_date_id)
                             ->where('mobile', $value)
                             ->where('id', '!=', $laborModel->id)
                             ->exists();
@@ -419,8 +428,8 @@ class ProjectLaborDateController extends Controller
                 'salary' => 'required_if:labor_type,Self|numeric',
                 'count' => 'required_if:labor_type,Contract|numeric|min:1',
             ], [
-                'project_labor_date_id.required' => 'Please select a valid project labor date.',
-                'project_labor_date_id.exists' => 'The selected project labor date does not exist.',
+                'site_labor_date_id.required' => 'Please select a valid project labor date.',
+                'site_labor_date_id.exists' => 'The selected project labor date does not exist.',
                 'labor_type.required' => 'Please select a labor type.',
                 'labor_type.in' => 'Invalid labor type selected.',
                 'project_contract_id.required_if' => 'Please select a contractor for contract labor.',
@@ -467,7 +476,7 @@ class ProjectLaborDateController extends Controller
     {
         $this->authorize('Delete Labors');
         try {
-            $labor = ProjectLaborDate::find($labor);
+            $labor = SiteLaborDate::find($labor);
             if ($labor) {
                 $labor->delete();
                 return response(['status' => 'warning', 'message' => 'Labor deleted successfully']);
@@ -515,7 +524,7 @@ class ProjectLaborDateController extends Controller
     {
         $this->authorize('Restore Labors');
         try {
-            ProjectLaborDate::withTrashed()->findOrFail($id)?->restore();
+            SiteLaborDate::withTrashed()->findOrFail($id)?->restore();
             return response(['status' => 'success', 'message' => 'Labour date restored Successfully!']);
         } catch (Exception $exception) {
             info('Error::Place@ProjectLaborDateController@restore - ' . $exception->getMessage());
@@ -527,9 +536,9 @@ class ProjectLaborDateController extends Controller
     {
         try {
             if ($request->labor_type === 'Self') {
-                $labor = Labor::create($request->only(['project_labor_date_id', 'name', 'designation', 'mobile', 'salary']));
+                $labor = Labor::create($request->only(['site_labor_date_id', 'name', 'designation', 'mobile', 'salary']));
             } else {
-                $labor = ContractLabor::create($request->only(['project_labor_date_id', 'project_contract_id', 'count']));
+                $labor = ContractLabor::create($request->only(['site_labor_date_id', 'project_contract_id', 'count']));
             }
             return response()->json(['status' => 'success', 'message' => 'Labor added successfully!', 'data' => $labor]);
         } catch (Exception $exception) {

@@ -61,7 +61,7 @@
                                     <div id="divStatus">
                                         <select class="form-control form-control-sm text-center" id="status">
                                             <option value="">Select a Status</option>
-                                            @foreach(PROJECT_TASK_STATUSES as $status)
+                                            @foreach(SITE_TASK_STATUSES as $status)
                                                 <option value="{{ $status }}">{{ $status }}</option>
                                             @endforeach
                                         </select>
