@@ -2,8 +2,8 @@
 
 @section('content')
     @php
-        $PageTitle="Lead";
-        $ActiveMenuName='Lead';
+        $PageTitle="Users";
+        $ActiveMenuName='Users';
     @endphp
     <div class="container-fluid">
         <div class="page-header">
@@ -26,19 +26,19 @@
                     <div class="card-header text-center">
                         <div class="row">
                             <div class="col-sm-4"></div>
-                            <div class="col-sm-4 my-2"><h5>{{ $lead  ? 'Edit' : 'Create' }} {{$PageTitle}}</h5></div>
+                            <div class="col-sm-4 my-2"><h5>{{ $user  ? 'Edit' : 'Create' }} {{$PageTitle}}</h5></div>
                             <div class="col-sm-4 my-2 text-right text-md-right"></div>
                         </div>
                     </div>
                     <div class="card-body">
                         <div class="row">
                             <div class="col-12 col-sm-12 col-lg-12">
-                                <form class="row" action="{{ $lead ? route('leads.update', $lead->id) : route('leads.store') }}" method="POST" enctype="multipart/form-data">
+                                <form class="row" action="{{ $user ? route('users.update', $user->id) : route('users.store') }}" method="POST" enctype="multipart/form-data">
                                     @csrf
-                                    @if($lead) @method('PUT') @endif
+                                    @if($user) @method('PUT') @endif
                                     <div class="d-flex justify-content-center align-items-center">
                                         <div class="text-center">
-                                            <label class="d-block">Lead Image <span class="text-danger">*</span></label>
+                                            <label class="d-block">Profile Image</label>
                                             <div id="image-dropzone" class="image-box border rounded d-flex align-items-center justify-content-center flex-column text-center"
                                                  style="width: 200px; height: 200px; cursor: pointer; background: #f8f9fa; border: 2px dashed #ccc;">
                                                 <i class="fa fa-upload fa-2x text-secondary"></i>
@@ -46,31 +46,59 @@
                                                 <img id="image-preview" src="" class="img-fluid d-none" style="max-width: 100%; max-height: 100%;" alt="">
                                             </div>
                                             <input type="file" id="image-input" name="image" class="d-none" accept="image/*">
-                                            @error('image')
-                                            <span class="error invalid-feedback">{{$message}}</span>
-                                            @enderror
                                         </div>
+                                        @error('image')
+                                            <span class="error invalid-feedback">{{$message}}</span>
+                                        @enderror
                                     </div>
-                                    <div class="form-group col-sm-12 col-lg-12 mt-15">
-                                        <label>Name <span class="text-danger">*</span></label>
+                                    <div class="form-group col-sm-6 col-lg-6 mt-10">
+                                        <label>Full Name <span class="text-danger">*</span></label>
                                         <input type="text" name="name" class="form-control @error('name') is-invalid @enderror"
-                                               value="{{ $lead ? old('name', $lead->name) : old('name') }}" required>
+                                               value="{{ $user ? old('name', $user->name) : old('name') }}" required>
                                         @error('name')
                                         <span class="error invalid-feedback">{{$message}}</span>
                                         @enderror
                                     </div>
 
+                                    <div class="form-group col-sm-6 col-lg-6 mt-10">
+                                        <label>Email Address <span class="text-danger">*</span></label>
+                                        <input type="email" name="email" class="form-control @error('email') is-invalid @enderror"
+                                               value="{{ $user ? old('email', $user->email) : old('email') }}" required>
+                                        @error('email')
+                                        <span class="error invalid-feedback">{{$message}}</span>
+                                        @enderror
+                                    </div>
+
+                                    <div class="form-group col-sm-6 col-lg-6 mt-15">
+                                        <label>Date of Birth <span class="text-danger">*</span></label>
+                                        <input type="date" name="dob" class="form-control @error('dob') is-invalid @enderror"
+                                               value="{{ $user ? old('dob', $user->dob) : old('dob') }}" max="{{ \Carbon\Carbon::today()->toDateString() }}" required>
+                                        @error('dob')
+                                        <span class="error invalid-feedback">{{$message}}</span>
+                                        @enderror
+                                    </div>
+
+                                    <div class="form-group col-sm-6 col-lg-6 mt-15">
+                                        <label>Mobile <span class="text-danger">*</span></label>
+                                        <input type="tel" name="mobile" class="form-control @error('mobile') is-invalid @enderror"
+                                               value="{{ $user ? old('mobile', $user->mobile) : old('mobile') }}" required>
+                                        @error('mobile')
+                                        <span class="error invalid-feedback">{{$message}}</span>
+                                        @enderror
+                                    </div>
+
                                     <div class="form-group col-sm-12 col-lg-12 mt-15">
-                                        <label>Address</label>
-                                        <textarea name="address" class="form-control @error('address') is-invalid @enderror" >{{ $lead ? old('address', $lead->address) : old('address') }}</textarea>
+                                        <label>Address <span class="text-danger">*</span></label>
+                                        <textarea name="address" class="form-control @error('address') is-invalid @enderror" required>{{ $user ? old('address', $user->address) : old('address') }}</textarea>
                                         @error('address')
                                         <span class="error invalid-feedback">{{$message}}</span>
                                         @enderror
                                     </div>
+
                                     <div class="form-group col-sm-6 col-lg-6 mt-15">
-                                        <label>State</label>
+                                        <label>State <span class="text-danger">*</span></label>
                                         <select name="state_id" id="state" class="form-control select2 @error('state_id') is-invalid @enderror"
-                                                data-selected='{{ $lead ? old('state_id', $lead->state_id) : old('state_id') }}'>
+                                                data-selected='{{ $user ? old('state_id', $user->state_id) : old('state_id') }}' required>
                                             <option value="">Select a State</option>
                                         </select>
                                         @error('state_id')
@@ -79,9 +107,9 @@
                                     </div>
 
                                     <div class="form-group col-sm-6 col-lg-6 mt-15">
-                                        <label>District</label>
+                                        <label>District <span class="text-danger">*</span></label>
                                         <select name="district_id" id="district" class="form-control select2 @error('district_id') is-invalid @enderror"
-                                                data-selected='{{ $lead ? old('district_id', $lead->district_id) : old('district_id') }}'>
+                                                data-selected='{{ $user ? old('district_id', $user->district_id) : old('district_id') }}' required>
                                             <option value="">Select a District</option>
                                         </select>
                                         @error('district_id')
@@ -90,9 +118,9 @@
                                     </div>
 
                                     <div class="form-group col-sm-6 col-lg-6 mt-15">
-                                        <label>Area</label>
+                                        <label>Area <span class="text-danger">*</span></label>
                                         <select name="area_id" id="area" class="form-control select2 @error('area_id') is-invalid @enderror"
-                                                data-selected='{{ $lead ? old('area_id', $lead->area_id) : old('area_id') }}'>
+                                                data-selected='{{ $user ? old('area_id', $user->area_id) : old('area_id') }}' required>
                                             <option value="">Select a Area</option>
                                         </select>
                                         @error('area_id')
@@ -101,9 +129,9 @@
                                     </div>
 
                                     <div class="form-group col-sm-6 col-lg-6 mt-15">
-                                        <label>PinCode</label>
+                                        <label>Pincode <span class="text-danger">*</span></label>
                                         <select name="pincode_id" id="pincode" class="form-control select2 @error('pincode_id') is-invalid @enderror"
-                                                data-selected='{{ $lead ? old('pincode_id', $lead->pincode_id) : old('pincode_id') }}'>
+                                                data-selected='{{ $user ? old('pincode_id', $user->pincode_id) : old('pincode_id') }}' required>
                                             <option value="">Select a Pincode</option>
                                         </select>
                                         @error('pincode_id')
@@ -112,30 +140,31 @@
                                     </div>
 
                                     <div class="form-group col-sm-6 col-lg-6 mt-15">
-                                        <label>Email</label>
-                                        <input type="email" name="email" class="form-control @error('email') is-invalid @enderror"
-                                               value="{{ $lead ? old('email', $lead->email) : old('email') }}">
-                                        @error('email')
-                                        <span class="error invalid-feedback">{{$message}}</span>
-                                        @enderror
-                                    </div>
-
-                                    <div class="form-group col-sm-6 col-lg-6 mt-15">
-                                        <label>Mobile Number <span class="text-danger">*</span></label>
-                                        <input type="tel" name="mobile_number" class="form-control @error('mobile_number') is-invalid @enderror"
-                                               value="{{ $lead ? old('mobile_number', $lead->mobile_number) : old('mobile_number') }}" required>
-                                        @error('mobile_number')
-                                        <span class="error invalid-feedback">{{$message}}</span>
-                                        @enderror
-                                    </div>
-
-                                    <div class="form-group col-sm-6 col-lg-6 mt-15">
-                                        <label>Lead Source</label>
-                                        <select name="lead_source_id" id="lead_source_id" class="form-control select2 @error('lead_source_id') is-invalid @enderror"
-                                                data-selected='{{ $lead ? old('lead_source_id', $lead->lead_source_id) : old('lead_source_id') }}'>
-                                            <option value="">Select a Lead Source</option>
+                                        <label>Role <span class="text-danger">*</span></label>
+                                        <select name="role_id" id="role_id" class="form-control select2 @error('role_id') is-invalid @enderror"
+                                                data-selected='{{ $user ? old('role_id', $user->role_id) : old('role_id') }}' required>
+                                            <option value="">Select a Role</option>
                                         </select>
-                                        @error('lead_source_id')
+                                        @error('role_id')
+                                        <span class="error invalid-feedback">{{$message}}</span>
+                                        @enderror
+                                    </div>
+
+                                    <div class="form-group col-sm-6 col-lg-6 mt-15">
+                                        <label>Password @if(!$user)<span class="text-danger">*</span>@endif</label>
+                                        <input type="password" name="password" class="form-control @error('password') is-invalid @enderror" {{ $user ? '' : 'required' }}>
+                                        @error('password')
+                                        <span class="error invalid-feedback">{{$message}}</span>
+                                        @enderror
+                                    </div>
+
+                                    <div class="form-group col-sm-6 col-lg-6 mt-15">
+                                        <label>Active Status <span class="text-danger">*</span></label>
+                                        <select name="active_status" class="form-control @error('active_status') is-invalid @enderror" required>
+                                            <option value="1" {{ $user && $user->active_status ? 'selected' : '' }}>Active</option>
+                                            <option value="0" {{ $user && !$user->active_status ? 'selected' : '' }}>Inactive</option>
+                                        </select>
+                                        @error('active_status')
                                         <span class="error invalid-feedback">{{$message}}</span>
                                         @enderror
                                     </div>
@@ -143,12 +172,12 @@
                                     <div class="row mt-15 text-end">
                                         <div>
                                             <a href="javascript:void(0)" onclick="window.history.back()" type="button" class="btn btn-warning">Back</a>
-                                            @if(!$lead)
-                                                @can('Create Lead')
+                                            @if(!$user)
+                                                @can('Create Users')
                                                     <button type="submit" class="btn btn-primary">Save</button>
                                                 @endcan
                                             @else
-                                                @can('Edit Lead')
+                                                @can('Edit Users')
                                                     <button type="submit" class="btn btn-primary">Update</button>
                                                 @endcan
                                             @endif
@@ -165,7 +194,11 @@
 @endsection
 @section('script')
 <script>
-    $(document).ready(function(){
+    $(document).ready(function () {
+        @if($user && $user->image)
+        $("#image-preview").removeClass("d-none").attr("src", "{{ Storage::url($user->image) }}");
+        $("#image-dropzone i, #image-dropzone p").hide();
+        @endif
 
         // --------------------------------- event listners
 
@@ -175,44 +208,9 @@
 
         $('#area').change(() => getPincodes());
 
-        @if($lead && $lead->image)
-            console.log("{{ Storage::url($lead->image) }}");
-            $("#image-preview").removeClass("d-none").attr("src", "{{ Storage::url($lead->image) }}");
-            $("#image-dropzone i, #image-dropzone p").hide();
-        @endif
-
         // ------------------------------- get dropdowns
 
-        const getLeadSource = () =>{
-            let LeadSourceID = $('#lead_source_id').attr('data-selected');
-            $('#lead_source_id').select2('destroy');
-            $('#lead_source_id option').remove();
-            $('#lead_source_id').append('<option value="">Select a Lead Source</option>');
-
-            $.ajax({
-                url:"{{route('getLeadSource')}}",
-                type: 'GET',
-                dataType: 'json',
-                success: function(response) {
-                    response.forEach(function(item) {
-                        if ((item.id == LeadSourceID)) {
-                            $('#lead_source_id').append('<option selected value="' + item.id
-                                + '">' + item.name + '</option>');
-                        } else {
-                            $('#lead_source_id').append('<option value="' + item.id
-                                + '">'  + item.name + '</option>');
-                        }
-                    });
-                },
-                error: function(e, x, settings, exception) {
-                    // ajaxErrors(e, x, settings, exception);
-                },
-            });
-            $('#lead_source_id').select2();
-        }
-
         const getStates = () =>{
-
             let StateID = $('#state').attr('data-selected');
             $('#state').select2('destroy');
             $('#state option').remove();
@@ -225,11 +223,9 @@
                 success: function(response) {
                     response.forEach(function(item) {
                         if ((item.id == StateID)) {
-                            $('#state').append('<option selected value="' + item.id
-                                + '">' + item.name + '</option>');
+                            $('#state').append('<option selected value="' + item.id + '">' + item.name + '</option>');
                         } else {
-                            $('#state').append('<option value="' + item.id
-                                + '">'  + item.name + '</option>');
+                            $('#state').append('<option value="' + item.id + '">'  + item.name + '</option>');
                         }
                     });
                 },
@@ -240,9 +236,34 @@
             $('#state').select2();
             getDistricts();
         }
+        const getRoles = () =>{
+            let RoleID = $('#role_id');
+            let SelectedRoleID = RoleID.attr('data-selected');
+            RoleID.select2('destroy');
+            $('#role_id option').remove();
+            RoleID.append('<option value="">Select a Role</option>');
+
+            $.ajax({
+                url:"{{route('getRoles')}}",
+                type: 'GET',
+                dataType: 'json',
+                success: function(response) {
+                    response.forEach(function(item) {
+                        if ((item.id == SelectedRoleID)) {
+                            RoleID.append('<option selected value="' + item.id + '">' + item.name + '</option>');
+                        } else {
+                            RoleID.append('<option value="' + item.id + '">'  + item.name + '</option>');
+                        }
+                    });
+                },
+                error: function(e, x, settings, exception) {
+                    // ajaxErrors(e, x, settings, exception);
+                },
+            });
+            RoleID.select2();
+        }
 
         const getDistricts = () =>{
-
             let districtID = $('#district').attr('data-selected');
             let stateID = $('#state').val();
             $('#district').select2('destroy');
@@ -257,11 +278,9 @@
                 success: function(response) {
                     response.forEach(function(item) {
                         if ((item.id == districtID)) {
-                            $('#district').append('<option selected value="' + item.id
-                                + '">' + item.name + '</option>');
+                            $('#district').append('<option selected value="' + item.id + '">' + item.name + '</option>');
                         } else {
-                            $('#district').append('<option value="' + item.id
-                                + '">'  + item.name + '</option>');
+                            $('#district').append('<option value="' + item.id + '">'  + item.name + '</option>');
                         }
                     });
                 },
@@ -274,7 +293,6 @@
         }
 
         const getAreas = () =>{
-
             let areaID = $('#area').attr('data-selected');
             let districtID = $('#district').val();
             $('#area').select2('destroy');
@@ -289,11 +307,9 @@
                 success: function(response) {
                     response.forEach(function(item) {
                         if ((item.id == areaID)) {
-                            $('#area').append('<option selected value="' + item.id
-                                + '">' + item.name + '</option>');
+                            $('#area').append('<option selected value="' + item.id + '">' + item.name + '</option>');
                         } else {
-                            $('#area').append('<option value="' + item.id
-                                + '">'  + item.name + '</option>');
+                            $('#area').append('<option value="' + item.id + '">'  + item.name + '</option>');
                         }
                     });
                 },
@@ -306,9 +322,8 @@
         }
 
         const getPincodes = () =>{
-
-            let StateID = $('#pincode').attr('data-selected');
-            let districtID = $('#district').val();
+            let SelectedPincode = $('#pincode').attr('data-selected');
+            let AreaID = $('#area').val();
             $('#pincode').select2('destroy');
             $('#pincode option').remove();
             $('#pincode').append('<option value="">Select a Pincode</option>');
@@ -317,15 +332,13 @@
                 url:"{{route('getPinCodes')}}",
                 type: 'GET',
                 dataType: 'json',
-                data: { 'district_id':districtID },
+                data: { 'area_id': AreaID },
                 success: function(response) {
                     response.forEach(function(item) {
-                        if ((item.id == StateID)) {
-                            $('#pincode').append('<option selected value="' + item.id
-                                + '">' + item.pincode + '</option>');
+                        if ((item.id == SelectedPincode)) {
+                            $('#pincode').append('<option selected value="' + item.id + '">' + item.pincode + '</option>');
                         } else {
-                            $('#pincode').append('<option value="' + item.id
-                                + '">'  + item.pincode + '</option>');
+                            $('#pincode').append('<option value="' + item.id + '">'  + item.pincode + '</option>');
                         }
                     });
                 },
@@ -335,9 +348,52 @@
             });
             $('#pincode').select2();
         }
+        
+        console.log('this');
+
+        $('#pincode').on('select2:open', function () {
+            let SelectedPincode = $('#pincode').attr('data-selected');
+
+            let searchField = document.querySelector('.select2-container--open .select2-search__field');
+
+            $(searchField).on('input', function () {
+                let pincode = $(this).val();
+                console.log(pincode);
+
+                $.ajax({
+                    url:"{{route('getPinCodes')}}",
+                    type: 'GET',
+                    dataType: 'json',
+                    data: { 'pincode': pincode },
+                    success: function(response) {
+                        // Clear existing options (except the default one)
+                        $('#pincode').find('option:not(:first)').remove();
+                        // Handle the response data structure
+                        let pincodes = response.data || response;
+                        
+                        pincodes.forEach(function(item) {
+                            console.log(item);
+                            if ((item.id == SelectedPincode)) {
+                                $('#pincode').append('<option selected value="' + item.id + '">' + item.pincode + '</option>');
+                            } else {
+                                $('#pincode').append('<option value="' + item.id + '">'  + item.pincode + '</option>');
+                            }
+                        });
+                        
+                        // $('#pincode').select2();
+                    },
+                    error: function(e, x, settings, exception) {
+                        // ajaxErrors(e, x, settings, exception);
+                    },
+                });
+            });
+
+        });
+
+
 
         getStates();
-        getLeadSource();
+        getRoles();
 
     });
 </script>

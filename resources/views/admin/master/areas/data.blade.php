@@ -2,8 +2,8 @@
 
 @section('content')
     @php
-        $PageTitle="Cities";
-        $ActiveMenuName='Cities';
+        $PageTitle="Areas";
+        $ActiveMenuName='Areas';
     @endphp
     <div class="container-fluid">
         <div class="page-header">
@@ -26,20 +26,20 @@
                     <div class="card-header text-center">
                         <div class="row">
                             <div class="col-sm-4"></div>
-                            <div class="col-sm-4 my-2"><h5>{{ $city  ? 'Edit' : 'Create' }} {{$PageTitle}}</h5></div>
+                            <div class="col-sm-4 my-2"><h5>{{ $area  ? 'Edit' : 'Create' }} {{$PageTitle}}</h5></div>
                             <div class="col-sm-4 my-2 text-right text-md-right"></div>
                         </div>
                     </div>
                     <div class="card-body">
                         <div class="row">
                             <div class="col-12 col-sm-12 col-lg-12">
-                                <form action="{{ $city ? route('cities.update', $city->id) : route('cities.store') }}" method="POST">
+                                <form action="{{ $area ? route('areas.update', $area->id) : route('areas.store') }}" method="POST">
                                     @csrf
-                                    @if($city) @method('PUT') @endif
+                                    @if($area) @method('PUT') @endif
                                     <div class="form-group">
-                                        <label>City Name</label>
+                                        <label>Area Name</label>
                                         <input type="text" name="name" class="form-control @error('name') is-invalid @enderror"
-                                               value="{{ $city ? old('name', $city->name) : old('name') }}" required>
+                                               value="{{ $area ? old('name', $area->name) : old('name') }}" required>
                                         @error('name')
                                         <span class="error invalid-feedback">{{$message}}</span>
                                         @enderror
@@ -56,7 +56,7 @@
                                     <div class="form-group mt-15">
                                         <label>District</label>
                                         <select id="district_id" name="district_id" class="form-control select2 @error('district_id') is-invalid @enderror"
-                                        data-selected='{{ $city ? old('district_id', $city->district_id) : old('district_id') }}' required>
+                                        data-selected='{{ $area ? old('district_id', $area->district_id) : old('district_id') }}' required>
                                             <option value="">--Select a District--</option>
                                         </select>
                                         @error('district_id')
@@ -68,8 +68,8 @@
                                         <label>Active Status</label>
                                         <select name="is_active"
                                                 class="form-control @error('is_active') is-invalid @enderror">
-                                            <option value="1" {{ $city && $city->is_active ? 'selected' : '' }}>Active</option>
-                                            <option value="0" {{ $city && !$city->is_active ? 'selected' : '' }}>Inactive</option>
+                                            <option value="1" {{ $area && $area->is_active ? 'selected' : '' }}>Active</option>
+                                            <option value="0" {{ $area && !$area->is_active ? 'selected' : '' }}>Inactive</option>
                                         </select>
                                         @error('is_active')
                                         <span class="error invalid-feedback">{{$message}}</span>
@@ -79,12 +79,12 @@
                                     <div class="row mt-15 text-end">
                                         <div>
                                             <a href="javascript:void(0)" onclick="window.history.back()" type="button" class="btn btn-warning">Back</a>
-                                            @if(!$city)
-                                                @can('Create Cities')
+                                            @if(!$area)
+                                                @can('Create Areas')
                                                     <button type="submit" class="btn btn-primary">Save</button>
                                                 @endcan
                                             @else
-                                                @can('Edit Cities')
+                                                @can('Edit Areas')
                                                     <button type="submit" class="btn btn-primary">Update</button>
                                                 @endcan
                                             @endif

@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('phone_number', 15);
             $table->date('date_of_birth')->nullable();
             $table->string('street_address', 255);
-            $table->foreignId('city_id')->constrained('cities')->cascadeOnUpdate()->restrictOnDelete();
+            $table->foreignId('area_id')->constrained('areas')->cascadeOnUpdate()->restrictOnDelete();
             $table->foreignId('state_id')->constrained('states')->cascadeOnUpdate()->restrictOnDelete();
             $table->foreignId('pincode_id')->constrained('pincodes')->cascadeOnUpdate()->restrictOnDelete();
             $table->enum('property_type', ['Residential', 'Commercial', 'Land']);

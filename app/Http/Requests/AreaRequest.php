@@ -5,7 +5,7 @@ namespace App\Http\Requests;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-class CityRequest extends FormRequest
+class AreaRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -25,7 +25,7 @@ class CityRequest extends FormRequest
         return [
             'name' => [
                 'required', 'string', 'max:100',
-                Rule::unique('cities')->ignore($this->route('city'))
+                Rule::unique('areas')->ignore($this->route('area'))
             ],
             'district_id' => [
                 'required', 'integer', 'exists:districts,id',

@@ -113,7 +113,7 @@
                         <div id="contractLaborFields" style="display: none;">
                             <div class="mb-3">
                                 <label>Contractor</label>
-                                <select class="form-control" id="project_contract_id">
+                                <select class="form-control" id="site_contract_id">
                                     <option value="">Select Contractor</option>
                                 </select>
                             </div>
@@ -197,13 +197,13 @@
                 $('#modalTitle').text('Add Labor');
                 $('#saveLaborBtn').text('Save');
                 $('#labor_type').val('Self').trigger('change').attr('disabled', false);
-                $('#project_contract_id').attr('disabled', false).trigger('change');
+                $('#site_contract_id').attr('disabled', false).trigger('change');
                 $('#designation_id').val('').trigger('change');
                 $('#submitLaborForm').attr('action', '{{ route("labors.store") }}');
             }
 
             const getContracts = () => {
-                let ContractorID = $('#project_contract_id');
+                let ContractorID = $('#site_contract_id');
                 let ProjectID = $('#site_id');
                 let SelectedSiteID = ProjectID.val();
                 let SelectedContractor = ContractorID.attr('data-selected');
@@ -318,11 +318,11 @@
                         labor_type: laborType
                     };
                 } else {
-                    let projectContractId = $('#project_contract_id').val();
+                    let projectContractId = $('#site_contract_id').val();
                     let count = $('#count').val();
 
                     if (!projectContractId) {
-                        $('#project_contract_id').after('<span class="text-danger error-message">This field is required</span>');
+                        $('#site_contract_id').after('<span class="text-danger error-message">This field is required</span>');
                         isValid = false;
                     }
                     if (!count) {
@@ -332,7 +332,7 @@
 
                     data = {
                         site_labor_date_id: projectLaborDateId,
-                        project_contract_id: projectContractId,
+                        site_contract_id: projectContractId,
                         count: count,
                         labor_type: laborType
                     };
@@ -412,7 +412,7 @@
                             $('#mobile').val(response.mobile);
                             $('#salary').val(response.salary);
                         } else {
-                            $('#project_contract_id').val(response.project_contract_id).trigger('change').attr('disabled', true);
+                            $('#site_contract_id').val(response.site_contract_id).trigger('change').attr('disabled', true);
                             $('#count').val(response.count);
                         }
                         $('#addLaborModal').modal('show');

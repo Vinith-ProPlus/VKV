@@ -78,7 +78,6 @@ class LaborController extends Controller
             unset($contractLabor->projectContract->contract_type);
         }
 
-
         return $this->successResponse($projectLaborDate, "Labor data fetched successfully!");
     }
     public function getTodayLaborData(Request $request): JsonResponse
@@ -92,6 +91,25 @@ class LaborController extends Controller
             return $this->successResponse($projectLaborDate, "Labor data fetched successfully!");
         }
         return $this->errorResponse([], "Labor data not found!");
+    }
+
+
+    public function getLabors(Request $request): JsonResponse
+    {
+
+        if ($request->ajax()) {
+            $labors = Labor::select('id', 'name')->orderBy('name')->get();
+
+            return response()->json([
+                'status' => true,
+                'data' => $labors
+            ]);
+        }
+
+        return response()->json([
+            'status' => false,
+            'message' => 'Invalid request'
+        ], 400);
     }
 
     public function storeMultipleLabors(Request $request): JsonResponse

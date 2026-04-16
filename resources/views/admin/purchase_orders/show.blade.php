@@ -39,7 +39,7 @@
                                     </tr>
                                     <tr>
                                         <th>Project:</th>
-                                        <td>{{ $order->project->name ?? 'N/A' }}</td>
+                                        <td>{{ $order->site->site_no ?? 'N/A' }}</td>
                                     </tr>
                                     <tr>
                                         <th>Created By:</th>

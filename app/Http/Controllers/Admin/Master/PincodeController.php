@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\PincodeRequest;
 use App\Models\Admin\Master\District;
 use App\Models\Admin\Master\Pincode;
-use App\Models\Admin\Master\City;
+use App\Models\Admin\Master\Area;
 use App\Models\Admin\Master\State;
 use Exception;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -38,7 +38,7 @@ class PincodeController extends Controller
             ->editColumn('is_active', static function ($data) {
                 return $data->is_active ? 'Active' : 'Inactive';
             })
-            ->addColumn('city_name', static fn($data) => $data->city ? $data->city->name : 'N/A')
+            ->addColumn('area_name', static fn($data) => $data->area ? $data->area->name : 'N/A')
             ->addColumn('action', static function ($data) {
                 $button = '<div class="d-flex justify-content-center">';
                 if ($data->deleted_at) {
@@ -62,7 +62,7 @@ class PincodeController extends Controller
     public function create(): View|Factory|Application
     {
         $this->authorize('Create Pincodes');
-        return view('admin.master.pincodes.data', ['pincode' => '', 'city'=>'', 'district'=>'', 'state'=>'']);
+        return view('admin.master.pincodes.data', ['pincode' => '', 'area'=>'', 'district'=>'', 'state'=>'']);
     }
 
     /**
@@ -88,11 +88,11 @@ class PincodeController extends Controller
     {
         $this->authorize('Edit Pincodes');
 
-        $city = $pincode->city_id ? City::find($pincode->city_id) : null;
-        $district = $city && $city->district_id ? District::find($city->district_id) : null;
+        $area = $pincode->area_id ? Area::find($pincode->area_id) : null;
+        $district = $area && $area->district_id ? District::find($area->district_id) : null;
         $state = $district && $district->id ? State::find($district->id) : null;
 
-        return view('admin.master.pincodes.data', compact('pincode', 'city', 'district', 'state'));
+        return view('admin.master.pincodes.data', compact('pincode', 'area', 'district', 'state'));
     }
 
     /**

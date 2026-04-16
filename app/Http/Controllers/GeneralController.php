@@ -2,46 +2,69 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Site;
-use App\Models\User;
-use App\Models\Labor;
+use App\Models\Admin\Labor\LaborDesignation;
+use App\Models\Admin\ManageProjects\ProjectStage;
+use App\Models\Admin\ManageProjects\ProjectTask;
+use App\Models\Admin\ManageProjects\SiteStage;
+use App\Models\Admin\Master\Area;
+use App\Models\Admin\Master\District;
+use App\Models\Admin\Master\Pincode;
+use App\Models\Admin\Master\State;
 use App\Models\Amenity;
-use App\Models\Product;
-use App\Models\Project;
+use App\Models\ContractType;
 use App\Models\Document;
+use App\Models\Labor;
 use App\Models\LeadSource;
 use App\Models\LeadStatus;
-use App\Models\SupportType;
-use App\Models\ContractType;
-use App\Models\SiteContract;
-use Illuminate\Http\Request;
-use App\Models\ProductCategory;
-use App\Models\Admin\Master\City;
-use Illuminate\Http\JsonResponse;
-use App\Models\Admin\Master\State;
-use Illuminate\Support\Facades\DB;
-use Spatie\Permission\Models\Role;
-use Illuminate\Support\Facades\Log;
-use App\Models\Admin\Master\Pincode;
 use App\Models\MobileUserAttendance;
-use App\Models\Admin\Master\District;
+use App\Models\Product;
+use App\Models\ProductCategory;
+use App\Models\Project;
+use App\Models\Site;
+use App\Models\SiteContract;
+use App\Models\SupportType;
+use App\Models\User;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
-use App\Models\Admin\Labor\LaborDesignation;
-use App\Models\Admin\ManageProjects\ProjectTask;
-use App\Models\Admin\ManageProjects\ProjectStage;
+use Spatie\Permission\Models\Role;
 
 class GeneralController extends Controller
 {
-    public function getCities(Request $req)
+    public function getAreas(Request $req)
     {
-        $cities = City::where('is_active', '1');
+        $areas = Area::where('is_active', '1');
 
-        if ($req->filled('district_id')) {
-            $cities->where('district_id', $req->district_id);
+        if ($req->filled('area')) {
+            $areas->where('id', $req->area);
         }
 
-        return response()->json($cities->get());
+        if ($req->filled('district_id')) {
+            $areas->where('district_id', $req->district_id);
+        }
+
+        return response()->json($areas->get());
+    }
+
+    public function getAreaDetails(Request $request): JsonResponse
+    {
+        if ($request->filled('area_id')) {
+            $area = Area::find($request->area_id);
+            return response()->json($area);
+        }
+        return response()->json(null);
+    }
+
+    public function getDistrictDetails(Request $request): JsonResponse
+    {
+        if ($request->filled('district_id')) {
+            $district = District::find($request->district_id);
+            return response()->json($district);
+        }
+        return response()->json(null);
     }
 
     public function getStates(): JsonResponse
@@ -54,10 +77,21 @@ class GeneralController extends Controller
     {
         $pincode = Pincode::where('is_active', '1');
 
-        if ($request->filled('city_id')) {
-            $pincode->where('city_id', $request->city_id);
+        if ($request->filled('pincode_id')) {
+            return response()->json($pincode->where('id', $request->pincode_id)->get());
+        }
+        
+        if ($request->filled('pincode')) {
+            $pincode->where('pincode', 'LIKE', '%' . $request->pincode . '%');
         }
 
+        if ($request->filled('area_id')) {
+            $pincode->where('area_id', $request->area_id);
+        }
+
+        if ($request->filled('pincode')) {
+            $pincode->limit(10);
+        }
         return response()->json($pincode->get());
     }
 
@@ -117,8 +151,8 @@ class GeneralController extends Controller
     }
     public function getStages(Request $request)
     {
-        if ($request->filled('ProjectID')) {
-            return response()->json(ProjectStage::where('project_id', $request->ProjectID)->get());
+        if ($request->filled('SiteID')) {
+            return response()->json(SiteStage::where('site_id', $request->SiteID)->get());
         }
 
         return response()->json([]);
@@ -387,7 +421,6 @@ class GeneralController extends Controller
 
     public function getLaborStatus(Request $request): JsonResponse
     {
-        logger($request);
         return response()->json(Labor::wherePaidStatus($request->status)->get());
     }
 

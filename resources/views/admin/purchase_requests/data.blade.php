@@ -44,13 +44,13 @@
                             @endif
 
                             <div class="row">
-                                <div class="col-md-4">
+                                <div class="col-md-4 mt-4">
                                     <label for="project_id">Project <span class="text-danger">*</span></label>
                                     <select class="form-control select2 @error('project_id') is-invalid @enderror" name="project_id" id="project_id" required {{ $isConverted ? 'disabled' : '' }}>
                                         <option value="">Select Project</option>
                                         @foreach($projects as $project)
                                             <option
-                                                value="{{ $project->id }}" {{ $isEdit && $purchaseRequest->project_id == $project->id ? 'selected' : '' }}>
+                                                value="{{ $project->id }}" {{ $isEdit && $purchaseRequest->site?->project_id == $project->id ? 'selected' : '' }}>
                                                 {{ $project->name }}
                                             </option>
                                         @endforeach
@@ -59,14 +59,24 @@
                                     <div class="text-danger">{{ $message }}</div>
                                     @enderror
                                 </div>
+                                <div class="col-md-4 mt-4">
+                                    <label for="site_id">Site <span class="text-danger">*</span></label>
+                                    <select class="form-control select2 @error('site_id') is-invalid @enderror" name="site_id" id="site_id" required 
+                                    {{ $isConverted ? 'disabled' : '' }} data-selected="{{ $isEdit ? $purchaseRequest->site_id : '' }}">
+                                        <option value="">Select Site</option>
+                                    </select>
+                                    @error('site_id')
+                                    <div class="text-danger">{{ $message }}</div>
+                                    @enderror
+                                </div>
 
                                 @if($isEdit)
-                                    <div class="col-md-4">
+                                    <div class="col-md-4 mt-4">
                                         <label>Status</label>
                                         <div class="form-control">{{ ucfirst($purchaseRequest->status) }}</div>
                                     </div>
 
-                                    <div class="col-md-4">
+                                    <div class="col-md-4 mt-4">
                                         <label>Created By</label>
                                         <div class="form-control">{{ $purchaseRequest->supervisor->name ?? 'N/A' }}</div>
                                     </div>
@@ -218,6 +228,42 @@
                     }
                 });
             });
+
+
+            // Load sites for selected project
+            const getSites = () => {
+                let SiteID = $('#site_id');
+                let ProjectID = $('#project_id');
+                let SelectedProjectID = ProjectID.val() ? ProjectID.val() : ProjectID.attr('data-selected');
+                let SelectedSite = SiteID.attr('data-selected');
+                SiteID.select2('destroy');
+                SiteID.empty().append('<option value="">Select a Site</option>');
+                if (SelectedProjectID) {
+                    $.ajax({
+                        url: "{{ route('getSites') }}",
+                        type: 'GET',
+                        dataType: 'json',
+                        data: { 'project_id': SelectedProjectID },
+                        success: function(response) {
+                            response.forEach(function(item) {
+                                SiteID.append('<option value="' + item.id + '" ' + (item.id == SelectedSite ? 'selected' : '') + '>' + item.site_no + '</option>');
+                            });
+                        },
+                        error: function(e, x, settings, exception) {
+                            // ajaxErrors(e, x, settings, exception);
+                        },
+                    });
+                }
+                SiteID.select2();
+            }
+
+            $('#project_id').change(function() {
+                getSites();
+            });
+            
+            @if($isEdit)
+                getSites();
+            @endif
 
             // Function to get product categories
             const getCategories = () => {

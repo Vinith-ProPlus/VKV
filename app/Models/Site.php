@@ -2,10 +2,12 @@
 
 namespace App\Models;
 
-use App\Models\SiteContract;
 use App\Models\Admin\ManageProjects\SiteStage;
 use App\Models\Admin\ManageProjects\SiteTask;
+use App\Models\Lead;
 use App\Models\Project;
+use App\Models\SiteContract;
+use App\Models\SiteLeadMapping;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo as BelongsToAlias;
@@ -68,6 +70,21 @@ class Site extends Model
 
         return ($totalTasks === 0 ? 0.0 : round(($completedTasks / $totalTasks) * 100, 2))."%";
     }
+    public function siteLeadMapping()
+    {
+        return $this->hasOne(SiteLeadMapping::class);
+    }
 
+    public function lead()
+    {
+        return $this->hasOneThrough(
+            Lead::class,
+            SiteLeadMapping::class,
+            'site_id',   // Foreign key on mapping table
+            'id',        // Foreign key on leads table
+            'id',        // Local key on sites table
+            'lead_id'    // Local key on mapping table
+        );
+    }
 }
 

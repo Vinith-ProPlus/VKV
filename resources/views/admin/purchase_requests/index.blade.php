@@ -42,7 +42,7 @@
                                 <tr>
                                     <th>S.No</th>
                                     <th>Supervisor</th>
-                                    <th>Project</th>
+                                    <th>Site</th>
                                     <th>Product Count</th>
                                     <th>Status</th>
                                     <th>Actions</th>
@@ -74,7 +74,7 @@
                 columns: [
                     { data: 'DT_RowIndex', orderable: false, searchable: false },
                     { data: 'supervisor.name', defaultContent: '-' },
-                    { data: 'project.name', defaultContent: '-' },
+                    { data: 'site.site_no', defaultContent: '-' },
                     { data: 'product_count' },
                     { data: 'status' },
                     { data: 'action', orderable: false },

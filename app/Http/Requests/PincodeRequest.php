@@ -27,8 +27,8 @@ class PincodeRequest extends FormRequest
                 'required', 'string', 'max:100',
                 Rule::unique('pincodes')->ignore($this->route('pincode'))
             ],
-            'city_id' => [
-                'required', 'integer', 'exists:cities,id',
+            'area_id' => [
+                'required', 'integer', 'exists:areas,id',
             ],
             'is_active' => 'required|boolean',
         ];

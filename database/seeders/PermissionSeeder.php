@@ -27,7 +27,7 @@ class PermissionSeeder extends Seeder
             ['guard_name' => 'web', 'model' => 'States'],
             ['guard_name' => 'web', 'model' => 'Districts'],
             ['guard_name' => 'web', 'model' => 'Pincodes'],
-            ['guard_name' => 'web', 'model' => 'Cities'],
+            ['guard_name' => 'web', 'model' => 'Areas'],
             ['guard_name' => 'web', 'model' => 'Stages'],
             ['guard_name' => 'web', 'model' => 'Tax'],
             ['guard_name' => 'web', 'model' => 'Unit of Measurement'],
@@ -35,6 +35,7 @@ class PermissionSeeder extends Seeder
             ['guard_name' => 'web', 'model' => 'Users', 'SplPermission' => 1],
             ['guard_name' => 'web', 'model' => 'Lead Source', 'SplPermission' => 1],
             ['guard_name' => 'web', 'model' => 'Lead', 'SplPermission' => 1],
+            ['guard_name' => 'web', 'model' => 'Followups', 'SplPermission' => 1],
             ['guard_name' => 'web', 'model' => 'Contents', 'SplPermission' => 1],
             ['guard_name' => 'web', 'model' => 'Mobile Versions', 'SplPermission' => 1],
 

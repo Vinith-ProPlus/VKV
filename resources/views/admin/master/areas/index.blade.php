@@ -2,8 +2,8 @@
 
 @section('content')
     @php
-        $PageTitle="Cities";
-        $ActiveMenuName='Cities';
+        $PageTitle="Areas";
+        $ActiveMenuName='Areas';
     @endphp
     <div class="container-fluid">
         <div class="page-header">
@@ -28,9 +28,9 @@
                             <div class="col-sm-4"></div>
                             <div class="col-sm-4 my-2"><h5>{{$PageTitle}}</h5></div>
                             <div class="col-sm-4 my-2 text-right text-md-right">
-                                @can('Create Cities')
+                                @can('Create Areas')
                                     <a class="btn btn-sm btnPrimaryCustomizeBlue btn-primary add-btn"
-                                        href="{{ route('cities.create') }}">Add New City</a>
+                                        href="{{ route('areas.create') }}">Add New Area</a>
                                 @endcan
                             </div>
                         </div>
@@ -43,7 +43,7 @@
                                         <thead class="thead-light">
                                         <tr>
                                             <th>S.No</th>
-                                            <th>City Name</th>
+                                            <th>Area Name</th>
                                             <th>District</th>
                                             <th>Status</th>
                                             <th>Actions</th>
@@ -63,7 +63,7 @@
 @endsection
 @section('script')
     <script>
-        @can('View Cities')
+        @can(abilities: 'View Areas')
             $(function () {
                 $('#list_table').DataTable({
                     "columnDefs": [
@@ -73,7 +73,7 @@
                     iDisplayLength: 10,
                     lengthMenu: [[10, 25, 50, -1], [10, 25, 50, "All"]],
                     ajax: {
-                        url: '{{ route("cities.index") }}',
+                        url: '{{ route("areas.index") }}',
                         type: 'GET'
                     },
                     columns: [

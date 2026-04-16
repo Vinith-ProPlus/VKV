@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers\Admin\ProjectReports;
 
+use App\Models\Admin\ManageProjects\SiteTask;
+use App\Models\Site;
+use App\Models\SiteContract;
 use Illuminate\Http\Request;
 use App\Models\Project;
 use App\Models\PurchaseOrder;
@@ -16,23 +19,27 @@ use App\Models\Admin\Labor\ProjectLaborDate;
 class ProjectReportsController extends Controller
 {
     private $projects; 
+    private $sites; 
 
     public function __construct()
     {
         $this->projects = Project::withoutTrashed(); 
+        $this->sites = Site::withoutTrashed(); 
     }
-    
+     
     public function index(){
-        $projects = $this->projects->get();
+        $projects = $this->projects->with('sites')->get();
         return view('admin.project_reports.index', compact('projects'));
     }
 
     public function create(Request $request){
-        $project = $this->projects->where('id',$request->input('project'))->first();
-        $stages = $project->stages ?? ''; 
-        $contracts = $project->contracts ?? '';
-        $amenities = $project->amenities ?? ''; 
-        return view('report', compact('project','stages','contracts','amenities'));
+        $site = $this->sites->where('id',$request->input('site'))->with(['project','stages','contracts','engineer'])->first();
+        $project = $site->project ?? '';
+        $stages = $site->stages ?? ''; 
+        $contracts = $site->contracts ?? '';
+        $amenities = $site->project?->amenities ?? '';
+        logger('stages --'.$stages); 
+        return view('report', compact('site', 'project','stages','contracts','amenities'));
     }
 
     public function getProjectTasks(Request $request){
@@ -49,7 +56,7 @@ class ProjectReportsController extends Controller
     { 
 
         if ($request->ajax()) {
-            $query = ProjectTask::with('project', 'stage')->withTrashed()
+            $query = SiteTask::with('project', 'stage')->withTrashed()
             
                 ->when($request->get('stage_id'), static function ($q) use ($request) {
                     $q->where('stage_id', $request->stage_id);
@@ -93,10 +100,10 @@ class ProjectReportsController extends Controller
     { 
 
         if ($request->ajax()) {
-            $query = ProjectContract::with('project', 'user', 'contract_type','user.city', 'user.state', 'user.role')->withTrashed()
+            $query = SiteContract::with('site.project', 'user', 'contract_type','user.area', 'user.state', 'user.role')->withTrashed()
             
-                ->when($request->get('project_id'), static function ($q) use ($request) {
-                    $q->where('project_id', $request->project_id);
+                ->when($request->get('site_id'), static function ($q) use ($request) {
+                    $q->where('site_id', $request->site_id);
                 });
 
             return DataTables::of($query)
@@ -111,7 +118,7 @@ class ProjectReportsController extends Controller
                     return $data->amount;
                 }) 
                 ->addColumn('action', static function ($data) {
-                    $jsonData = htmlspecialchars(json_encode($data->user->load('city', 'state', 'roles')), ENT_QUOTES, 'UTF-8');
+                    $jsonData = htmlspecialchars(json_encode($data->user->load('area', 'state', 'roles')), ENT_QUOTES, 'UTF-8');
 
                     $button  = '<div class="d-flex justify-content-center">';
                     $button .= '<a class="btn btn-outline-warning btnTaskView" data-tdata="' . $jsonData . '" id="openContractsModal"><i class="fa fa-eye"></i></a>';
@@ -198,5 +205,15 @@ class ProjectReportsController extends Controller
                 ->rawColumns(['status', 'action'])
                 ->make(true);
         }
+    }
+
+    public function getSitesByProject(Request $request){
+        $sites = $this->sites;
+
+        if($request->filled('project_id')){
+            $sites->where('project_id', $request->project_id);
+        }
+
+        return response()->json($sites->get());
     }
 }

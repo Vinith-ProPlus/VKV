@@ -63,7 +63,7 @@ class TestDataSeeder extends Seeder
         ];
 
         foreach ($projects as $projectData) {
-            $project = \App\Models\Project::create([
+            $project = \App\Models\Project::firstOrCreate([
                 'name' => $projectData['name'],
                 'location' => $projectData['location'],
                 'latitude' => $projectData['latitude'],

@@ -11,14 +11,15 @@ use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderDetail;
 use App\Models\PurchaseRequest;
 use App\Models\PurchaseRequestDetail;
+use App\Models\SiteStock;
 use App\Models\StockLog;
 use App\Models\User;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Auth\Access\AuthorizationException;
-use Illuminate\Contracts\View\View;
-use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Contracts\View\Factory;
+use Illuminate\Contracts\View\View;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -42,7 +43,7 @@ class PurchaseOrderController extends Controller
         $this->authorize('View Purchase Orders');
 
         if ($request->ajax()) {
-            $data = PurchaseOrder::withTrashed()->with(['supervisor', 'project', 'details'])->latest()->get();
+            $data = PurchaseOrder::withTrashed()->with(['supervisor', 'site', 'details'])->latest()->get();
 
             return DataTables::of($data)
                 ->addIndexColumn()
@@ -90,20 +91,20 @@ class PurchaseOrderController extends Controller
         $this->authorize('Create Purchase Orders');
         $purchaseRequest = null;
         $products = collect();
-        $project = null;
+        $site = null;
         $gst = $request->has('gst') ? $request->gst : false;
 
         if ($request->has('request_id')) {
-            $purchaseRequest = PurchaseRequest::with(['project', 'details.product.category'])->findOrFail($request->request_id);
+            $purchaseRequest = PurchaseRequest::with(['site', 'details.product.category'])->findOrFail($request->request_id);
             $products = $purchaseRequest->details;
-            $project = $purchaseRequest->project;
+            $site = $purchaseRequest->site;
         }
 
         $projects = Project::all(); // For dropdown if manual create
         $categories = ProductCategory::with('products')->get();
 
         return view('admin.purchase_orders.create', compact(
-            'purchaseRequest', 'products', 'project', 'projects', 'categories', 'gst'
+            'purchaseRequest', 'products', 'site', 'projects', 'categories', 'gst'
         ));
     }
 
@@ -114,7 +115,7 @@ class PurchaseOrderController extends Controller
     {
         $this->authorize('Create Purchase Orders');
         $request->validate([
-            'project_id' => 'required|exists:projects,id',
+            'site_id' => 'required|exists:sites,id',
             'products' => 'required|array|min:1',
             'products.*.product_id' => 'required|exists:products,id',
             'products.*.category_id' => 'required|exists:product_categories,id',
@@ -132,7 +133,7 @@ class PurchaseOrderController extends Controller
                 // Create a new purchase request since this is a direct PO creation
                 $purchaseRequest = PurchaseRequest::create([
                     'supervisor_id' => $currentUserId, // Use current user as supervisor for new POs
-                    'project_id' => $request->project_id,
+                    'site_id' => $request->site_id,
                     'product_count' => count($request->products),
                     'remarks' => $request->remarks,
                     'status' => 'Approved', // Auto-approve since we're creating a PO directly
@@ -163,7 +164,7 @@ class PurchaseOrderController extends Controller
             // Create purchase order with current date
             $order = PurchaseOrder::create([
                 'purchase_request_id' => $purchaseRequestId,
-                'project_id' => $request->project_id,
+                'site_id' => $request->site_id,
                 'supervisor_id' => $supervisorId,
                 'remarks' => $request->remarks,
                 ]);
@@ -217,10 +218,10 @@ class PurchaseOrderController extends Controller
     /**
      * Update project stock - add new stock or update existing
      */
-    private function updateProjectStock($projectId, $productId, $categoryId, $quantity, $updatedBy, $transactionType, $remarks = ""): void
+    private function updateSiteStock($siteId, $productId, $categoryId, $quantity, $updatedBy, $transactionType, $remarks = ""): void
     {
         // Try to find existing stock record
-        $stock = ProjectStock::where('project_id', $projectId)
+        $stock = SiteStock::where( 'site_id', $siteId)
             ->where('product_id', $productId)
             ->first();
         $previousQuantity = 0;
@@ -234,8 +235,8 @@ class PurchaseOrderController extends Controller
             $stock->save();
         } else {
             // Create new stock record
-            $stock = ProjectStock::create([
-                'project_id' => $projectId,
+            $stock = SiteStock::create([
+                'site_id' => $siteId,
                 'product_id' => $productId,
                 'category_id' => $categoryId,
                 'quantity' => $quantity,
@@ -244,7 +245,7 @@ class PurchaseOrderController extends Controller
             ]);
         }
         StockLog::create([
-            'project_id' => $projectId,
+            'site_id' => $siteId,
             'category_id' => $categoryId,
             'product_id' => $productId,
             'previous_quantity' => $previousQuantity,
@@ -295,8 +296,8 @@ class PurchaseOrderController extends Controller
                 $purchaseOrder = $detail->purchaseOrder;
 
                 // Update project stock when item is delivered
-                $this->updateProjectStock(
-                    $purchaseOrder->project_id,
+                $this->updateSiteStock(
+                    $purchaseOrder->site_id,
                     $detail->product_id,
                     $detail->category_id,
                     $detail->quantity,

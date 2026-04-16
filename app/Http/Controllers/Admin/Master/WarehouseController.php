@@ -20,7 +20,7 @@ class WarehouseController extends Controller
             $data = Warehouse::withTrashed()->get();
             return DataTables::of($data)
                 ->addIndexColumn()
-                ->editColumn('city_name', fn($data) => $data->city ? $data->city->name : 'N/A')
+                ->editColumn('area_name', fn($data) => $data->area ? $data->area->name : 'N/A')
                 ->editColumn('district_name', fn($data) => $data->district ? $data->district->name : 'N/A')
                 ->editColumn('is_active', function ($data) {
                     return $data->is_active ? 'Active' : 'Inactive';

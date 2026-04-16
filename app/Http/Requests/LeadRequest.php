@@ -26,25 +26,19 @@ class LeadRequest extends FormRequest
     {
         return [
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
-            'lead_title' => [
-                'required', 'string', 'max:100',
+            'name' => 'required|string|max:100',
+            'address' => 'nullable|string|max:255',
+            'state_id' => 'nullable|exists:states,id',
+            'district_id' => 'nullable|exists:districts,id',
+            'area_id' => 'nullable|exists:areas,id',
+            'pincode_id' => 'nullable|exists:pincodes,id',
+            'email' => 'nullable|email',
+            'mobile_number' => [
+                'required',
+                'digits_between:7,12',
                 Rule::unique('leads')->ignore($this->route('lead'))
             ],
-            'first_name' => 'required|string|max:50',
-            'last_name' => 'nullable|string|max:50',
-            'address' => 'required|string|max:255',
-            'state_id' => 'required|exists:states,id',
-            'district_id' => 'required|exists:districts,id',
-            'city_id' => 'required|exists:cities,id',
-            'pincode_id' => 'required|exists:pincodes,id',
-            'gst_number' => 'nullable|string|max:18',
-            'email' => 'nullable|email',
-            'mobile_number' => 'required|digits_between:7,12',
-            'whatsapp_number' => 'required|digits_between:7,12',
-            'lead_source_id' => 'required|exists:lead_sources,id',
-            'lead_status_id' => 'required|exists:lead_statuses,id',
-            'lead_owner_id' => 'required|exists:users,id',
-            'lead_follow_by_id' => 'required|exists:users,id'
+            'lead_source_id' => 'nullable|exists:lead_sources,id',
         ];
     }
 }

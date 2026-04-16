@@ -44,7 +44,7 @@
                                         <tr>
                                             <th>S.No</th>
                                             <th>Warehouse Name</th>
-                                            <th>City</th>
+                                            <th>Area</th>
                                             <th>District</th>
                                             <th>Status</th>
                                             <th>Actions</th>
@@ -80,7 +80,7 @@
                     columns: [
                         {data: 'DT_RowIndex'},
                         {data: 'name'},
-                        {data: 'city_name'},
+                        {data: 'area_name'},
                         {data: 'district_name'},
                         {data: 'is_active'},
                         {data: 'action', orderable: false},

@@ -2,20 +2,21 @@
 
 namespace App\Models;
 
+use App\Models\Site;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * @method static create(array $array)
- * @method static where(string $string, mixed $project_id)
+ * @method static where(string $string, mixed $site_id)
  */
-class ProjectStock extends Model
+class SiteStock extends Model
 {
     use HasFactory;
 
     protected $fillable = [
-        'project_id',
+        'site_id',
         'category_id',
         'product_id',
         'quantity',
@@ -26,6 +27,10 @@ class ProjectStock extends Model
     public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);
+    }
+    public function site(): BelongsTo
+    {
+        return $this->belongsTo(Site::class);
     }
 
     public function product(): BelongsTo

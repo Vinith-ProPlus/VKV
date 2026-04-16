@@ -14,7 +14,7 @@ class SiteStage extends Model
 {
     use SoftDeletes;
 
-    protected $fillable = ['site_id', 'name', 'order_no'];
+    protected $fillable = ['site_id', 'name', 'order_no'    ];
 
     public function site()
     {
@@ -23,6 +23,6 @@ class SiteStage extends Model
 
     public function tasks()
     {
-        return $this->hasMany(ProjectTask::class, 'stage_id');
+        return $this->hasMany(SiteTask::class, 'stage_id');
     }
 }

@@ -5,7 +5,7 @@ use App\Http\Controllers\Admin\Master\ProductController;
 use App\Http\Controllers\Admin\Master\UnitOfMeasurementController;
 use App\Http\Controllers\Admin\Master\WarehouseController;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Admin\Master\CityController;
+use App\Http\Controllers\Admin\Master\AreaController;
 use App\Http\Controllers\Admin\Master\DistrictController;
 use App\Http\Controllers\Admin\Master\PincodeController;
 use App\Http\Controllers\Admin\Master\StatesController;
@@ -22,8 +22,8 @@ Route::put('districts/restore/{id}', [DistrictController::class, 'restore'])->na
 Route::resource('pincodes', PincodeController::class);
 Route::put('pincodes/restore/{id}', [PincodeController::class, 'restore'])->name('pincodes.restore')->middleware('can:Restore Pincodes');
 
-Route::resource('cities', CityController::class);
-Route::put('cities/restore/{id}', [CityController::class, 'restore'])->name('cities.restore')->middleware('can:Restore Pincodes');
+Route::resource('areas', AreaController::class);
+Route::put('areas/restore/{id}', [AreaController::class, 'restore'])->name('areas.restore')->middleware('can:Restore Areas');
 
 Route::resource('product_categories', ProductCategoryController::class);
 Route::put('product_categories/restore/{id}', [ProductCategoryController::class, 'restore'])->name('product_categories.restore')->middleware('can:Restore Product Category');

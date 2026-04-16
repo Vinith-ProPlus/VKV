@@ -17,7 +17,7 @@ return new class extends Migration
             $table->longText('address')->nullable();
             $table->foreignId('state_id')->constrained('states')->cascadeOnUpdate()->restrictOnDelete();
             $table->foreignId('district_id')->constrained('districts')->cascadeOnUpdate()->restrictOnDelete();
-            $table->foreignId('city_id')->constrained('cities')->cascadeOnUpdate()->restrictOnDelete();
+            $table->foreignId('area_id')->constrained('areas')->cascadeOnUpdate()->restrictOnDelete();
             $table->foreignId('pincode_id')->constrained('pincodes')->cascadeOnUpdate()->restrictOnDelete();
             $table->boolean('is_active')->default(1);
             $table->softDeletes();

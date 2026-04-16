@@ -35,7 +35,7 @@ class UserRequest extends FormRequest
             'address' => 'required|string|max:255',
             'state_id' => 'required|exists:states,id',
             'district_id' => 'required|exists:districts,id',
-            'city_id' => 'required|exists:cities,id',
+            'area_id' => 'required|exists:areas,id',
             'pincode_id' => 'required|exists:pincodes,id',
             'role_id' => 'required|exists:roles,id',
             'password' => 'nullable|string|min:6',

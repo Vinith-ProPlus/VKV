@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @method static create(array $all)
  * @method static findOrFail($id)
  */
-class City extends Model
+class Area extends Model
 {
     use HasFactory, SoftDeletes;
 

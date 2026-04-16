@@ -46,17 +46,34 @@
                                 <div class="mb-5">
                                     <label for="project_id" class="form-label">Project</label>
                                     @if($purchaseRequest)
-                                        <input type="text" class="form-control" value="{{ $project->name ?? 'N/A' }}" readonly>
-                                        <input type="hidden" name="project_id" value="{{ $project->id }}">
+                                        <input type="text" class="form-control" value="{{ $purchaseRequest->site->project->name ?? 'N/A' }}" readonly>
+                                        <input type="hidden" name="project_id" value="{{ $purchaseRequest->site->project->id }}">
                                     @else
                                         <select id="project_id" name="project_id" class="form-control" required>
                                             <option value="">Select Project</option>
                                             @foreach($projects as $proj)
-                                                <option value="{{ $proj->id }}" {{ (old('project_id', $purchaseRequest->project_id ?? '') == $proj->id) ? 'selected' : '' }}>{{ $proj->name }}</option>
+                                                <option value="{{ $proj->id }}" {{ (old('project_id', $purchaseRequest->site->project_id ?? '') == $proj->id) ? 'selected' : '' }}>{{ $proj->name }}</option>
                                             @endforeach
                                         </select>
                                     @endif
                                     @error('project_id')
+                                    <div class="text-danger">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
+
+                            <div class="col-md-12">
+                                <div class="mb-5">
+                                    <label for="site_id" class="form-label">Site</label>
+                                    @if($purchaseRequest)
+                                        <input type="text" class="form-control" value="{{ $site->site_no ?? 'N/A' }}" readonly>
+                                        <input type="hidden" name="site_id" value="{{ $site->id }}">
+                                    @else
+                                        <select id="site_id" name="site_id" class="form-control" required>
+                                            <option value="">Select Site</option>
+                                        </select>
+                                    @endif
+                                    @error('site_id')
                                     <div class="text-danger">{{ $message }}</div>
                                     @enderror
                                 </div>
@@ -246,6 +263,12 @@
             $('#project_id').select2({
                 width: '100%',
                 placeholder: 'Select a Project',
+                allowClear: true
+            });
+
+            $('#site_id').select2({
+                width: '100%',
+                placeholder: 'Select a Site',
                 allowClear: true
             });
 
@@ -493,6 +516,39 @@
             $('#productsList tr').each(function() {
                 calculateRowTotals($(this));
             });
+
+            // Load sites for selected project
+            const getSites = () => {
+                console.log('getSites');
+                let SiteID = $('#site_id');
+                let ProjectID = $('#project_id');
+                let SelectedProjectID = ProjectID.val() ? ProjectID.val() : ProjectID.attr('data-selected');
+                let SelectedSite = SiteID.attr('data-selected');
+                SiteID.select2('destroy');
+                SiteID.empty().append('<option value="">Select a Site</option>');
+                if (SelectedProjectID) {
+                    $.ajax({
+                        url: "{{ route('getSites') }}",
+                        type: 'GET',
+                        dataType: 'json',
+                        data: { 'project_id': SelectedProjectID },
+                        success: function(response) {
+                            response.forEach(function(item) {
+                                SiteID.append('<option value="' + item.id + '" ' + (item.id == SelectedSite ? 'selected' : '') + '>' + item.site_no + '</option>');
+                            });
+                        },
+                        error: function(e, x, settings, exception) {
+                            // ajaxErrors(e, x, settings, exception);
+                        },
+                    });
+                }
+                SiteID.select2();
+            }
+
+            $('#project_id').change(function() {
+                getSites();
+            });
+            
 
             // Initialize order summary
             updateOrderSummary();

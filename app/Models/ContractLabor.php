@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Models\Admin\Labor\ProjectLaborDate;
+use App\Models\Admin\Labor\SiteLaborDate;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -17,14 +17,14 @@ class ContractLabor extends Model
 {
     use HasFactory, SoftDeletes;
 
-    protected $fillable = ['project_labor_date_id', 'project_contract_id', 'count'];
+    protected $fillable = ['site_labor_date_id', 'site_contract_id', 'count'];
 
     /**
      * @return BelongsTo
      */
     public function projectLaborDate(): BelongsTo
     {
-        return $this->belongsTo(ProjectLaborDate::class);
+        return $this->belongsTo(SiteLaborDate::class);
     }
 
     /**
@@ -32,7 +32,7 @@ class ContractLabor extends Model
      */
     public function projectContract(): BelongsTo
     {
-        return $this->belongsTo(ProjectContract::class, 'project_contract_id');
+        return $this->belongsTo(SiteContract::class, 'site_contract_id');
     }
 }
 

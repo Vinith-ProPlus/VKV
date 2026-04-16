@@ -1,37 +1,39 @@
 <?php
 
-use App\Http\Controllers\Admin\CRM\LeadController;
-use App\Http\Controllers\Admin\CRM\LeadSourceController;
-use App\Http\Controllers\Admin\CRM\VisitorController;
-use App\Http\Controllers\Admin\RoleController;
-use App\Http\Controllers\Admin\Settings\ContentController;
-use App\Http\Controllers\Admin\Settings\MobileVersionController;
-use App\Http\Controllers\Admin\Users\BlogController;
-use App\Http\Controllers\Admin\Users\SupportTicketController;
-use App\Http\Controllers\Admin\Users\SupportTicketMessageController;
-use App\Http\Controllers\Admin\Users\UserController;
-use App\Http\Controllers\Auth\SocialLoginController;
+use App\Models\Tax;
+use App\Models\Product;
+use Illuminate\Http\Request;
+use App\Models\ProductCategory;
+use App\Models\Admin\Master\Area;
+use App\Models\UnitOfMeasurement;
+use App\Models\Admin\Master\State;
+use App\Models\Admin\Master\Pincode;
+use App\Models\Admin\Master\District;
+use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Artisan;
 use App\Http\Controllers\GeneralController;
 use App\Http\Controllers\PayrollController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\StockLogController;
+use App\Http\Controllers\API\LaborController;
+use App\Http\Controllers\SqlImportController;
+use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\ProjectStockController;
 use App\Http\Controllers\PurchaseOrderController;
-use App\Http\Controllers\PurchaseRequestController;
-use App\Http\Controllers\SqlImportController;
-use App\Http\Controllers\StockLogController;
-use App\Http\Controllers\Admin\ProjectReports\ProjectReportsController;
+use App\Http\Controllers\Admin\CRM\LeadController;
+use App\Http\Controllers\Admin\CRM\FollowupsController;
 use App\Http\Controllers\WarehouseStockController;
-use App\Models\Admin\Master\City;
-use App\Models\Admin\Master\District;
-use App\Models\Admin\Master\Pincode;
-use App\Models\Admin\Master\State;
-use App\Models\Product;
-use App\Models\ProductCategory;
-use App\Models\Tax;
-use App\Models\UnitOfMeasurement;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\PurchaseRequestController;
+use App\Http\Controllers\Admin\Users\BlogController;
+use App\Http\Controllers\Admin\Users\UserController;
+use App\Http\Controllers\Auth\SocialLoginController;
+use App\Http\Controllers\Admin\CRM\VisitorController;
+use App\Http\Controllers\Admin\CRM\LeadSourceController;
+use App\Http\Controllers\Admin\Settings\ContentController;
+use App\Http\Controllers\Admin\Users\SupportTicketController;
+use App\Http\Controllers\Admin\Settings\MobileVersionController;
+use App\Http\Controllers\Admin\Users\SupportTicketMessageController;
+use App\Http\Controllers\Admin\ProjectReports\ProjectReportsController;
 
 
 Route::get('/clear', static function() {
@@ -95,9 +97,9 @@ Route::group(['prefix'=>'admin'], static function (){
                 logger("districts: ".$request);
                 return response()->json(District::select('id', 'name')->where('is_active', 1)->get());
             })->name('districts.list');
-            Route::get('cities/list', static function () {
-                return response()->json(City::select('id', 'name')->where('is_active', 1)->get());
-            })->name('cities.list');
+            Route::get('areas/list', static function () {
+                return response()->json(Area::select('id', 'name')->where('is_active', 1)->get());
+            })->name('areas.list');
             Route::get('pincodes/list', static function () {
                 return response()->json(Pincode::select('id', 'name')->where('is_active', 1)->get());
             })->name('pincodes.list');
@@ -121,6 +123,10 @@ Route::group(['prefix'=>'admin'], static function (){
 
         Route::resource('leads', LeadController::class);
         Route::put('leads/restore/{id}', [LeadController::class, 'restore'])->name('leads.restore')->middleware('can:Restore Lead');
+
+        Route::resource('followups', FollowupsController::class)->except('show');
+        Route::put('followups/restore/{id}', [FollowupsController::class, 'restore'])->name('followups.restore')->middleware('can:Restore Followups');
+        Route::get('followups/last', [FollowupsController::class, 'getLastFollowup'])->name('followups.getLastFollowup')->middleware('can:View Followups');
 
         Route::resource('visitors', VisitorController::class);
         Route::put('visitors/restore/{id}', [VisitorController::class, 'restore'])->name('visitors.restore')->middleware('can:Restore Visitors');
@@ -182,13 +188,17 @@ Route::group(['prefix'=>'admin'], static function (){
             Route::get('/payroll/history', [PayrollController::class, 'payrollHistory'])->name('payroll.history');
         });
 
+        Route::get('/get-labour', [LaborController::class, 'getLabors'])->name('labors.list');
+
         Route::get('/mobile-version', [MobileVersionController::class, 'index'])->name('mobile_version.index');
         Route::put('/mobile-version', [MobileVersionController::class, 'update'])->name('mobile_version.update');
     });
 });
 
 Route::get('/getDistricts', [GeneralController::class, 'getDistricts'])->name('getDistricts');
-Route::get('/getCities', [GeneralController::class, 'getCities'])->name('getCities');
+Route::get('/getAreas', [GeneralController::class, 'getAreas'])->name('getAreas');
+Route::get('/getAreaDetails', [GeneralController::class, 'getAreaDetails'])->name('getAreaDetails');
+Route::get('/getDistrictDetails', [GeneralController::class, 'getDistrictDetails'])->name('getDistrictDetails');
 Route::get('/getStates', [GeneralController::class, 'getStates'])->name('getStates');
 Route::get('/getPinCodes', [GeneralController::class, 'getPinCodes'])->name('getPinCodes');
 Route::get('/getLeadSource', [GeneralController::class, 'getLeadSource'])->name('getLeadSource');
@@ -237,6 +247,7 @@ Route::group(['prefix' => 'project_reports'], static function () {
     Route::get('/contractsTableLists', [ProjectReportsController::class, 'contractsTableLists'])->name('contractsTableLists');
     Route::get('/laborTableList', [ProjectReportsController::class, 'laborTableList'])->name('laborTableList');
     Route::get('/purchaseTableList', [ProjectReportsController::class, 'purchaseTableList'])->name('purchaseTableList');
+    Route::get('/sitesList', [ProjectReportsController::class, 'getSitesByProject'])->name('project_reports.sitesList');
 });
 
 require __DIR__.'/auth.php';

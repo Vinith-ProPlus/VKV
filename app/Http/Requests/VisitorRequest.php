@@ -27,24 +27,13 @@ class VisitorRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => 'required|string|max:255',
-            'mobile' => [
-                'required',
-                'digits_between:7,12',
-                static function ($attribute, $value, $fail) {
-                    $exists = Visitor::whereMobile($value)
-                        ->whereProjectId(request('project_id'))
-                        ->whereDate('created_at', Carbon::today())
-                        ->exists();
-
-                    if ($exists) {
-                        $fail('The mobile number has already been registered for this project today.');
-                    }
-                },
-            ],
-            'rating' => 'required|integer|min:1|max:5',
-            'feedback' => 'nullable|string',
-            'project_id' => 'required|exists:projects,id'
+            'customer_id' => 'required|string',
+            'new_customer_name' => 'nullable|string|required_if:new_customer_flag,true',
+            'new_customer_flag' => 'nullable|string',
+            'project_id' => 'required|exists:projects,id',
+            'site_id' => 'nullable|exists:sites,id',
+            'status' => 'required|in:visited',
+            'remarks' => 'nullable|string',
         ];
     }
 }

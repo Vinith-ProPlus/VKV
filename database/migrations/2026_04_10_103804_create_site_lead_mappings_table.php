@@ -11,13 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('pincodes', function (Blueprint $table) {
+        Schema::create('site_lead_mappings', function (Blueprint $table) {
             $table->id();
-            $table->string('pincode')->unique();
-            $table->foreignId('area_id')->constrained('areas')->cascadeOnUpdate()->restrictOnDelete();
-            $table->boolean('is_active')->default(1);
-            $table->softDeletes();
+            $table->foreignId('site_id')->constrained('sites')->onDelete('cascade');
+            $table->foreignId('lead_id')->constrained('leads')->onDelete('cascade');
+            $table->enum('status', ['open', 'booked', 'sold'])->default('open');
             $table->timestamps();
+
+            $table->unique('site_id');
         });
     }
 
@@ -26,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('pincodes');
+        Schema::dropIfExists('site_lead_mappings');
     }
 };

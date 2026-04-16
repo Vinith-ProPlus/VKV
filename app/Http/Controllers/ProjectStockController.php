@@ -6,6 +6,7 @@ use App\Models\Product;
 use App\Models\ProductCategory;
 use App\Models\Project;
 use App\Models\ProjectStock;
+use App\Models\SiteStock;
 use App\Models\StockLog;
 use Exception;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -33,7 +34,7 @@ class ProjectStockController extends Controller
         $projects = Project::all();
 
         if ($request->ajax()) {
-            $query = ProjectStock::with(['project', 'product', 'category']);
+            $query = SiteStock::with(['project', 'product', 'category']);
 
             if ($request->has('project_id') && !empty($request->project_id)) {
                 $query->where('project_id', $request->project_id);
@@ -90,11 +91,11 @@ class ProjectStockController extends Controller
 
         try {
             // Fetch From and To project stock
-            $from_project_stock = ProjectStock::with('project')->where('project_id', $request->from_project_id)
+            $from_project_stock = SiteStock::with('project')->where('project_id', $request->from_project_id)
                 ->where('product_id', $request->product_id)
                 ->first();
 
-            $to_project_stock = ProjectStock::with('project')->where('project_id', $request->to_project_id)
+            $to_project_stock = SiteStock::with('project')->where('project_id', $request->to_project_id)
                 ->where('product_id', $request->product_id)
                 ->first();
 
@@ -209,7 +210,7 @@ class ProjectStockController extends Controller
         $projectId = $request->project_id;
         $productId = $request->product_id;
 
-        $stock = ProjectStock::where('project_id', $projectId)
+        $stock = SiteStock::where('project_id', $projectId)
             ->where('product_id', $productId)
             ->first();
 
@@ -235,7 +236,7 @@ class ProjectStockController extends Controller
 
         DB::beginTransaction();
         try {
-            $stock = ProjectStock::where('project_id', $request->project_id)
+            $stock = SiteStock::where('project_id', $request->project_id)
                 ->where('product_id', $request->product_id)
                 ->first();
 

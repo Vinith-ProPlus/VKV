@@ -2,7 +2,7 @@
 
 @section('content')
     @php
-        $PageTitle = "Payroll Management";
+        $PageTitle = 'Payroll Management';
         $ActiveMenuName = 'Payroll';
     @endphp
     <div class="container-fluid">
@@ -22,25 +22,33 @@
         <div class="row d-flex justify-content-center">
             <div class="col-12 col-sm-12 col-lg-8">
                 <div class="card">
-                    <div class="row card-header text-center">
-                        <div class="col-sm-4"></div>
-                        <div class="col-sm-4 my-2"><h5>{{$PageTitle}}</h5></div>
-                        <div class="col-sm-4 my-2 text-right text-md-right">
-                            @can('View Payrolls')
-                                <a class="btn btn-sm btnPrimaryCustomizeBlue btn-primary add-btn"
-                                   href="{{ route('payroll.history') }}">History</a>
-                            @endcan
+                    <div class="card-header text-center">
+                        <div class="row">
+                            <div class="col-sm-4"></div>
+                            <div class="col-sm-4 my-2">
+                                <h5>{{ $PageTitle }}</h5>
+                            </div>
+                            <div class="col-sm-4 my-2 text-right text-md-right">
+                                @can('View Payrolls')
+                                    <a class="btn btn-sm btnPrimaryCustomizeBlue btn-primary add-btn"
+                                        href="{{ route('payroll.history') }}">History</a>
+                                @endcan
+                            </div>
                         </div>
                     </div>
                     <div class="card-body">
-                        <div class="row">
-                            <div class="col-12">
+                        <div class="row align-items-center justify-content-center">
+                            <div class="col-12 col-md-6">
                                 <form id="payrollSearchForm">
                                     <div class="form-group">
                                         <div class="text-center">
-                                        <label>Enter Labor Mobile Number</label>
+                                            <label>Enter Labor Name or Mobile Number</label>
                                         </div>
-                                        <input type="text" id="mobile" name="mobile" class="form-control" required>
+                                        <select name="name" id="name" class="select2 form-control mb-5">
+                                            <option value="">Select Labor</option>
+                                        </select>
+                                        <input type="text" id="mobile" name="mobile" class="mt-15 form-control"
+                                            placeholder="Enter mobile number">
                                     </div>
                                     <div class="mt-15 text-center">
                                         <button type="button" id="payrollBtn" class="btn btn-primary w-25">Search</button>
@@ -50,11 +58,11 @@
                                     <h5><b>Unpaid Records</b></h5>
                                     <table class="table table-bordered">
                                         <thead>
-                                        <tr>
-                                            <th>Select</th>
-                                            <th>Date</th>
-                                            <th>Salary</th>
-                                        </tr>
+                                            <tr>
+                                                <th>Select</th>
+                                                <th>Date</th>
+                                                <th>Salary</th>
+                                            </tr>
                                         </thead>
                                         <tbody id="laborRecords"></tbody>
                                     </table>
@@ -63,7 +71,8 @@
                                             <strong>Total Amount: </strong> <span id="totalAmount">0</span>
                                         </div>
                                         <div class="col-md-6 text-end">
-                                            <button class="btn btn-success" id="confirmPayment" data-bs-toggle="modal" data-bs-target="#paymentModal" disabled>Proceed to Payment</button>
+                                            <button class="btn btn-success" id="confirmPayment" data-bs-toggle="modal"
+                                                data-bs-target="#paymentModal" disabled>Proceed to Payment</button>
                                         </div>
                                     </div>
                                 </div>
@@ -97,37 +106,55 @@
 
 @section('script')
     <script>
-        $(document).ready(function () {
-            $('#payrollBtn').on('click', function (e) {
+        $(document).ready(function() {
+            $('#payrollBtn').on('click', function(e) {
                 e.preventDefault();
+                let id = $('#name').val();
                 let mobile = $('#mobile').val();
 
-                $.ajax({
-                    url: "{{ route('payroll.getUnpaidLabor') }}",
-                    method: 'POST',
-                    data: { mobile: mobile, _token: "{{ csrf_token() }}" },
-                    success: function (response) {
-                        let tableBody = '';
-                        response.labor_records.forEach(record => {
-                            tableBody += `<tr>
+                if (id || mobile) {
+
+                    $.ajax({
+                        url: "{{ route('payroll.getUnpaidLabor') }}",
+                        method: 'POST',
+                        data: {
+                            id: id,
+                            mobile: mobile,
+                            _token: "{{ csrf_token() }}"
+                        },
+                        success: function(response) {
+                            let tableBody = '';
+                            response.labor_records.forEach(record => {
+                                tableBody += `<tr>
                             <td><input type="checkbox" class="select-labor" data-id="${record.id}" data-salary="${record.salary}"></td>
                             <td>${record.date}</td>
                             <td>${record.salary}</td>
                         </tr>`;
-                        });
-                        $('#laborRecords').html(tableBody);
-                        $('#payrollData').show();
-                    },
-                    error: function () {
-                        alert('No unpaid records found');
-                    }
-                });
+                            });
+                            $('#laborRecords').html(tableBody);
+                            $('#payrollData').show();
+                        },
+                        error: function() {
+                            $('#payrollData').hide();
+                            Swal.fire({
+                                icon: 'warning',
+                                title: 'No Unpaid Records',
+                                confirmButtonText: 'Okay',
+                            });
+                        }
+                    });
+                } else {
+                    toast.fire({
+                        icon: 'error',
+                        title: 'Select labour name or mobile number'
+                    });
+                }
             });
 
-            $(document).on('change', '.select-labor', function () {
+            $(document).on('change', '.select-labor', function() {
                 let totalAmount = 0;
                 let selectedIds = [];
-                $('.select-labor:checked').each(function () {
+                $('.select-labor:checked').each(function() {
                     totalAmount += parseFloat($(this).data('salary'));
                     selectedIds.push($(this).data('id'));
                 });
@@ -136,22 +163,72 @@
                 $('#confirmPayment').prop('disabled', selectedIds.length === 0);
             });
 
-            $('#processPayment').on('click', function () {
+            $('#processPayment').on('click', function() {
                 let selectedIds = $('#selectedLaborIds').val().split(',');
 
                 $.ajax({
                     url: "{{ route('payroll.processPayment') }}",
                     method: 'POST',
-                    data: { selected_labor_ids: selectedIds, _token: "{{ csrf_token() }}" },
-                    success: function () {
+                    data: {
+                        selected_labor_ids: selectedIds,
+                        _token: "{{ csrf_token() }}"
+                    },
+                    success: function() {
                         alert('Payment processed successfully');
                         location.reload();
                     },
-                    error: function () {
+                    error: function() {
                         alert('Error processing payment');
                     }
                 });
             });
+
+            function getLabour() {
+                $.ajax({
+                    url: "{{ route('labors.list') }}",
+                    type: "GET",
+                    dataType: "json",
+                    success: function(response) {
+                        if (response.status) {
+                            let options = '<option value="">Select Labor</option>';
+
+                            $.each(response.data, function(key, labor) {
+                                options += `<option value="${labor.id}">${labor.name}</option>`;
+                            });
+
+                            $('#name').html(options);
+
+                            if ($.fn.select2) {
+                                $('#name').trigger('change');
+                            }
+                        }
+                    },
+                    error: function() {
+                        console.log('Something broke. Probably not your fault. Probably.');
+                    }
+                });
+            }
+
+            // Initialize Select2 only for the labor dropdown if Select2 is loaded
+            if ($.fn.select2) {
+                $('#name').select2({
+                    width: '100%',
+                    placeholder: 'Select Labor',
+                    allowClear: true
+                });
+            }
+
+            const toast = Swal.mixin({
+                toast: true,
+                position: 'top-end',
+                background: '#fee2e2',
+                color: '#991b1b',
+                showConfirmButton: false,
+                timer: 3000,
+                timerProgressBar: true
+            });
+
+            getLabour();
         });
     </script>
 @endsection

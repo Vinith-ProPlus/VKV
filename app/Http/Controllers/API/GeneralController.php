@@ -8,7 +8,7 @@ use App\Http\Requests\VisitorRequest;
 use App\Models\Admin\Labor\LaborDesignation;
 use App\Models\Admin\ManageProjects\ProjectStage;
 use App\Models\Admin\ManageProjects\ProjectTask;
-use App\Models\Admin\Master\City;
+use App\Models\Admin\Master\Area;
 use App\Models\Admin\Master\District;
 use App\Models\Admin\Master\Pincode;
 use App\Models\Admin\Master\State;
@@ -51,17 +51,17 @@ class GeneralController extends Controller
 {
     use ApiResponse;
 
-    public function getCities(Request $request): JsonResponse
+    public function getAreas(Request $request): JsonResponse
     {
-        $query = City::where('is_active', 1);
+        $query = Area::where('is_active', 1);
 
         $query->when($request->filled('district_id'), function ($q) use ($request) {
             $q->where('district_id', $request->district_id);
         });
 
-        $cities = dataFilter($query, $request, ['name']);
+        $areas = dataFilter($query, $request, ['name']);
 
-        return $this->successResponse(dataFormatter($cities), "Cities fetched successfully!");
+        return $this->successResponse(dataFormatter($areas), "Areas fetched successfully!");
     }
 
     public function getStates(Request $request): JsonResponse
@@ -77,8 +77,8 @@ class GeneralController extends Controller
     {
         $query = Pincode::where('is_active', 1);
 
-        $query->when($request->filled('city_id'), function ($q) use ($request) {
-            $q->where('city_id', $request->city_id);
+        $query->when($request->filled('area_id'), function ($q) use ($request) {
+            $q->where('area_id', $request->area_id);
         });
 
         $pinCodes = dataFilter($query, $request, ['pincode']);

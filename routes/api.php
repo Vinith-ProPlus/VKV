@@ -27,7 +27,7 @@ Route::group(['prefix' => 'master', 'middleware' => 'auth:sanctum'], static func
     Route::post('/getProducts', [GeneralController::class, 'getProducts'])->name('getProducts');
     Route::post('/getStates', [GeneralController::class, 'getStates'])->name('getStates');
     Route::post('/getDistricts', [GeneralController::class, 'getDistricts'])->name('getDistricts');
-    Route::post('/getCities', [GeneralController::class, 'getCities'])->name('getCities');
+    Route::post('/getAreas', [GeneralController::class, 'getAreas'])->name('getAreas');
     Route::post('/getPinCodes', [GeneralController::class, 'getPinCodes'])->name('getPinCodes');
     Route::post('/getLeadSource', [GeneralController::class, 'getLeadSource'])->name('getLeadSource');
     Route::post('/getLeadStatus', [GeneralController::class, 'getLeadStatus'])->name('getLeadStatus');

@@ -15,7 +15,7 @@ INSERT INTO `tbl_menus` (`MID`, `Slug`, `MenuName`, `ActiveName`, `Icon`, `PageU
 ('M2023-0000014', 'states', 'States', 'States', NULL, 'admin/master/general/states', 'M2023-0000009', 'L002', 0, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0),
 ('M2023-0000015', 'districts', 'Districts', 'Districts', NULL, 'admin/master/general/districts', 'M2023-0000009', 'L002', 0, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0),
 ('M2023-0000016', 'taluks', 'Taluks', 'Taluks', NULL, 'admin/master/general/taluks', 'M2023-0000009', 'L002', 0, 4, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
-('M2023-0000017', 'city', 'City', 'City', NULL, 'admin/master/general/city', 'M2023-0000009', 'L002', 0, 6, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0),
+('M2023-0000017', 'area', 'Area', 'Area', NULL, 'admin/master/general/area', 'M2023-0000009', 'L002', 0, 6, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0),
 ('M2023-0000018', 'postal-codes', 'Postal Codes', 'Postal-Codes', NULL, 'admin/master/general/postal-codes', 'M2023-0000009', 'L002', 0, 5, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0),
 ('M2023-0000019', 'manage-customers', 'Manage Customers', 'Manage-Customers', NULL, 'admin/users-and-permissions/manage-customers/', 'M2023-0000006', 'L002', 0, 4, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
 ('M2023-0000020', 'vendor-category', 'Category', 'Vendor-Category', NULL, 'admin/master/vendor/category', 'M2023-0000010', 'L002', 0, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),

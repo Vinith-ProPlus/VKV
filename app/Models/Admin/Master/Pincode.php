@@ -14,10 +14,10 @@ class Pincode extends Model
 {
     use HasFactory, SoftDeletes;
 
-    protected $fillable = ['pincode', 'city_id', 'is_active'];
+    protected $fillable = ['pincode', 'area_id', 'is_active'];
 
-    public function city()
+    public function area()
     {
-        return $this->belongsTo(City::class);
+        return $this->belongsTo(Area::class);
     }
 }

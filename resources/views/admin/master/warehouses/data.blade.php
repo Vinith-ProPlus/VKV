@@ -76,12 +76,12 @@
                                             @enderror
                                         </div>
                                         <div class="col-6 form-group mt-10">
-                                            <label>City</label>
-                                            <select name="city_id" id="city" class="form-control select2 @error('city_id') is-invalid @enderror"
-                                                    data-selected='{{ $warehouse ? old('city_id', $warehouse->city_id) : old('city_id') }}' required>
-                                                <option value="">Select a City</option>
+                                            <label>Area</label>
+                                            <select name="area_id" id="area" class="form-control select2 @error('area_id') is-invalid @enderror"
+                                                    data-selected='{{ $warehouse ? old('area_id', $warehouse->area_id) : old('area_id') }}' required>
+                                                <option value="">Select a Area</option>
                                             </select>
-                                            @error('city_id')
+                                            @error('area_id')
                                             <span class="error invalid-feedback">{{$message}}</span>
                                             @enderror
                                         </div>
@@ -139,9 +139,9 @@
 
         $('#state').change(() => getDistricts());
 
-        $('#district').change(() => getCities());
+        $('#district').change(() => getAreas());
 
-        $('#city').change(() => getPincodes());
+        $('#area').change(() => getPincodes());
 
         // ------------------------------- get dropdowns
 
@@ -205,29 +205,29 @@
                 },
             });
             $('#district').select2();
-            getCities();
+            getAreas();
         }
 
-        const getCities = () =>{
+        const getAreas = () =>{
 
-            let cityID = $('#city').attr('data-selected');
+            let areaID = $('#area').attr('data-selected');
             let districtID = $('#district').val();
-            $('#city').select2('destroy');
-            $('#city option').remove();
-            $('#city').append('<option value="">Select a City</option>');
+            $('#area').select2('destroy');
+            $('#area option').remove();
+            $('#area').append('<option value="">Select a Area</option>');
 
             $.ajax({
-                url:"{{route('getCities')}}",
+                url:"{{route('getAreas')}}",
                 type: 'GET',
                 dataType: 'json',
                 data: { 'district_id':districtID },
                 success: function(response) {
                     response.forEach(function(item) {
-                        if ((item.id == cityID)) {
-                            $('#city').append('<option selected value="' + item.id
+                        if ((item.id == areaID)) {
+                            $('#area').append('<option selected value="' + item.id
                                 + '">' + item.name + '</option>');
                         } else {
-                            $('#city').append('<option value="' + item.id
+                            $('#area').append('<option value="' + item.id
                                 + '">'  + item.name + '</option>');
                         }
                     });
@@ -236,7 +236,7 @@
                     // ajaxErrors(e, x, settings, exception);
                 },
             });
-            $('#city').select2();
+            $('#area').select2();
             getPincodes();
         }
 

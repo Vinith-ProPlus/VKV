@@ -21,12 +21,10 @@ class LeadController extends Controller
         $this->authorize('View Lead');
 
         if ($request->ajax()) {
-            $data = Lead::with('city','leadFollowBy', 'leadStatus')->withTrashed()->get();
+            $data = Lead::with('area')->withTrashed()->get();
             return DataTables::of($data)
                 ->addIndexColumn()
-                ->editColumn('city_name', fn($data) => optional($data->city)->name ?? '-')
-                ->editColumn('follow_by', fn($data) => optional($data->leadFollowBy)->name ?? '-')
-                ->editColumn('lead_status', fn($data) => optional($data->leadStatus)->name ?? '-')
+                ->editColumn('area_name', fn($data) => optional($data->area)->name ?? '-')
                 ->addColumn('action', function ($data) {
                     $button = '<div class="d-flex justify-content-center">';
                     if ($data->deleted_at) {
@@ -91,6 +89,8 @@ class LeadController extends Controller
         DB::beginTransaction();
         try {
             $data = $request->validated();
+            $newImage = null;
+            $oldImage = null;
             if ($request->hasFile('image')) {
                 $oldImage = $lead->image;
                 $newImage = $data['image'] = $request->file('image')->store('leads', 'public');

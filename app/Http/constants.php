@@ -69,17 +69,20 @@ const IN_PROGRESS = 'In-progress';
 const ON_HOLD = 'On-hold';
 const COMPLETED = 'Completed';
 const DELETED = 'Deleted';
+const OPEN = 'open';
+const BOOKED = 'booked';
+const SOLD = 'sold';
 
 const SITE_TASK_STATUSES = [CREATED, IN_PROGRESS, ON_HOLD, COMPLETED, DELETED];
 
 const SITE_STATUSES = [IN_PROGRESS, ON_HOLD, COMPLETED];
+const SITE_LEAD_STATUSES = [OPEN, BOOKED, SOLD];
 
 CONST PENDING = 'pending';
 CONST REJECTED = 'rejected';
 
 const PURCHASE_REQUEST_STATUSES = [PENDING, COMPLETED, REJECTED];
 
-const OPEN = 'open';
 const CLOSED = 'closed';
 const SUPPORT_TICKET_STATUSES = [OPEN, CLOSED];
 

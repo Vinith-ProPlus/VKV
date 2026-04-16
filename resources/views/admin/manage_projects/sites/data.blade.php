@@ -147,6 +147,34 @@
                                                     @enderror
                                                 </div>
                                             </div>
+                                            <div class="col-12 col-md-6">
+                                                <div class="form-group">
+                                                    <label>Lead Status <span class="text-danger">*</span></label>
+                                                    <select name="lead-status" class="form-control" id="lead-status" required>
+                                                        <option value="">Select a Status</option>
+                                                        @foreach(SITE_LEAD_STATUSES as $status)
+                                                            <option value="{{ $status }}" {{ $status == old('status', ($site->siteLeadMapping)?->status ?? '') ? 'selected' : '' }}>{{ $status }}</option>
+                                                        @endforeach
+                                                    </select>
+                                                    @error('lead-status')
+                                                    <div class="err text-danger mt-1">{{ $message }}</div>
+                                                    @enderror
+                                                </div>
+                                            </div>
+                                            <div class="col-12 col-md-6 d-none" id="leads_div">
+                                                <div class="form-group">
+                                                    <label>Lead <span class="text-danger">*</span></label>
+                                                    <select name="lead" class="form-control" id="lead" required>
+                                                        <option value="">Select a Lead</option>
+                                                        @foreach($leads as $lead)
+                                                            <option value="{{ $lead }}" {{ $lead == old('lead', ($site->siteLeadMapping)?->lead ?? '') ? 'selected' : '' }}>{{ $lead }}</option>
+                                                        @endforeach
+                                                    </select>
+                                                    @error('lead')
+                                                    <div class="err text-danger mt-1">{{ $message }}</div>
+                                                    @enderror
+                                                </div>
+                                            </div>
                                         </div>
                                         <div class="row mt-40 text-end">
                                             <div class="col-6 text-start">
@@ -414,6 +442,8 @@
             let contractCellId = 0;
             let contractUpdateId = 0;
             $('#status').select2();
+            $('#lead-status').select2();
+            $('#lead').select2();
             //-------------------start of wizard tab toggle function
 
             function validateRequiredFields($container) {
@@ -1297,6 +1327,18 @@
                 } else {
                     $('#sold_amount_div').addClass('d-none');
                     $('#sold_amount').removeAttr('required').removeAttr('name');
+                }
+            });
+
+            if ($('#lead-status').val() === 'booked' || $('#lead-status').val() === 'sold') {
+                $('#leads_div').removeClass('d-none');
+            }
+            
+            $('#lead-status').on('change', function () {
+                if ($(this).val() === 'booked' || $(this).val() === 'sold') {
+                    $('#leads_div').removeClass('d-none');
+                } else {
+                    $('#leads_div').addClass('d-none');
                 }
             });
 

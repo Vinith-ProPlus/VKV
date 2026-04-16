@@ -44,10 +44,9 @@
                                         <tr>
                                             <th>S.No</th>
                                             <th>Name</th>
-                                            <th>Mobile Number</th>
-                                            <th>Project</th>
-                                            <th>Rating</th>
-                                            <th>Created by</th>
+                                            <th>Project Name</th>
+                                            <th>Site No</th>
+                                            <th>Status</th>
                                             <th>Actions</th>
                                         </tr>
                                         </thead>
@@ -80,11 +79,10 @@
                 },
                 columns: [
                     { data: 'DT_RowIndex', orderable: false, searchable: false },
-                    {data: 'name'},
-                    {data: 'mobile'},
+                    {data: 'lead_name'},
                     {data: 'project_name'},
-                    {data: 'rating'},
-                    {data: 'created_by'},
+                    {data: 'site_name'},
+                    {data: 'status'},
                     {data: 'action', orderable: false, searchable: false },
                 ]
             });

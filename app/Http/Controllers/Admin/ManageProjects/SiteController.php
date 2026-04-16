@@ -6,8 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\SiteRequest;
 use App\Models\Admin\ManageProjects\SiteStage;
 use App\Models\Document;
+use App\Models\Lead;
 use App\Models\Site;
 use App\Models\SiteContract;
+use Carbon\Carbon;
 use Exception;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Routing\ResponseFactory;
@@ -22,12 +24,12 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Yajra\DataTables\Facades\DataTables;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
-use Carbon\Carbon;
+use Illuminate\Support\Facades\Validator;
+use Yajra\DataTables\Facades\DataTables;
 
-class SiteController extends Controller{
+class SiteController extends Controller
+{
     use AuthorizesRequests;
     /**
      * @throws AuthorizationException
@@ -45,6 +47,19 @@ class SiteController extends Controller{
                 ->editColumn('is_active', function ($data) {
                     return $data->is_active ? 'Active' : 'Inactive';
                 })
+                ->addColumn('status', function ($data) {
+                    $badges = [
+                        'In-progress' => 'badge-info',
+                        'On-hold' => 'badge-warning text-light',
+                        'Completed' => 'badge-success',
+                    ];
+
+                    if (!isset($badges[$data->status])) {
+                        return '-';
+                    }
+
+                    return '<span class="badge ' . $badges[$data->status] . '">' . e($data->status) . '</span>';
+                })
                 ->addColumn('action', function ($data) {
                     $button = '<div class="d-flex justify-content-center">';
                     if ($data->deleted_at) {
@@ -56,7 +71,7 @@ class SiteController extends Controller{
                     $button .= '</div>';
                     return $button;
                 })
-                ->rawColumns(['action'])
+                ->rawColumns(['status', 'action'])
                 ->make(true);
         }
         return view('admin.manage_projects.sites.index');
@@ -68,13 +83,14 @@ class SiteController extends Controller{
     public function create(): View|Factory|Application
     {
         $this->authorize('Create Sites');
-        return view('admin.manage_projects.sites.data', ['site' => '']);
+        $leads = Lead::orderBy('name')->pluck('name', 'id');
+        return view('admin.manage_projects.sites.data', ['site' => '', 'leads' => $leads]);
     }
     /**
      * @throws AuthorizationException
      */
     public function store(SiteRequest $request): RedirectResponse
-    { 
+    {
         $this->authorize('Create Sites');
         DB::beginTransaction();
         try {
@@ -131,7 +147,7 @@ class SiteController extends Controller{
      * @throws AuthorizationException
      */
     public function update(SiteRequest $request, Site $site): RedirectResponse
-    { 
+    {
         $this->authorize('Edit Sites');
         try {
             $site_id = $site->id;

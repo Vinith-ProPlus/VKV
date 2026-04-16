@@ -302,11 +302,11 @@ class ProjectLaborDateController extends Controller
             $request->validate([
                 'site_labor_date_id' => 'required|exists:site_labor_dates,id',
                 'labor_type' => 'required|in:Self,Contract',
-                'project_contract_id' => [
+                'site_contract_id' => [
                     'required_if:labor_type,Contract',
                     static function ($attribute, $value, $fail) use ($request) {
                         $exists = ContractLabor::where('site_labor_date_id', $request->site_labor_date_id)
-                            ->where('project_contract_id', $value)
+                            ->where('site_contract_id', $value)
                             ->exists();
 
                         if ($exists) {
@@ -336,7 +336,7 @@ class ProjectLaborDateController extends Controller
                 'site_labor_date_id.exists' => 'The selected project labor date does not exist.',
                 'labor_type.required' => 'Please select a labor type.',
                 'labor_type.in' => 'Invalid labor type selected.',
-                'project_contract_id.required_if' => 'Please select a contractor for contract labor.',
+                'site_contract_id.required_if' => 'Please select a contractor for contract labor.',
                 'name.required_if' => 'Please enter the laborer\'s name.',
                 'mobile.required_if' => 'Please enter the laborer\'s mobile number.',
                 'mobile.digits' => 'The mobile number must be exactly 10 digits.',
@@ -351,7 +351,7 @@ class ProjectLaborDateController extends Controller
             if ($request->labor_type === 'Self') {
                 $labor = Labor::create($request->only(['site_labor_date_id', 'name', 'labor_designation_id', 'mobile', 'salary']));
             } else {
-                $labor = ContractLabor::create($request->only(['site_labor_date_id', 'project_contract_id', 'count']));
+                $labor = ContractLabor::create($request->only(['site_labor_date_id', 'site_contract_id', 'count']));
             }
             DB::commit();
             return response()->json(['success' => true, 'message' => 'Labor added successfully!', 'data' => $labor]);
@@ -398,11 +398,11 @@ class ProjectLaborDateController extends Controller
             $request->validate([
                 'site_labor_date_id' => 'required|exists:site_labor_dates,id',
                 'labor_type' => 'required|in:Self,Contract',
-                'project_contract_id' => [
+                'site_contract_id' => [
                     'required_if:labor_type,Contract',
                     static function ($attribute, $value, $fail) use ($request, $laborModel) {
                         $exists = ContractLabor::where('site_labor_date_id', $request->site_labor_date_id)
-                            ->where('project_contract_id', $value)
+                            ->where('site_contract_id', $value)
                             ->where('id', '!=', $laborModel->id)
                             ->exists();
                         if ($exists) {
@@ -432,7 +432,7 @@ class ProjectLaborDateController extends Controller
                 'site_labor_date_id.exists' => 'The selected project labor date does not exist.',
                 'labor_type.required' => 'Please select a labor type.',
                 'labor_type.in' => 'Invalid labor type selected.',
-                'project_contract_id.required_if' => 'Please select a contractor for contract labor.',
+                'site_contract_id.required_if' => 'Please select a contractor for contract labor.',
                 'name.required_if' => 'Please enter the laborer\'s name.',
                 'mobile.required_if' => 'Please enter the laborer\'s mobile number.',
                 'mobile.digits' => 'The mobile number must be exactly 10 digits.',
@@ -454,7 +454,7 @@ class ProjectLaborDateController extends Controller
                 ]);
             } elseif ($request->labor_type === 'Contract') {
                 $laborModel->update([
-                    'project_contract_id' => $request->project_contract_id,
+                    'site_contract_id' => $request->site_contract_id,
                     'count' => $request->count,
                 ]);
             }
@@ -538,7 +538,7 @@ class ProjectLaborDateController extends Controller
             if ($request->labor_type === 'Self') {
                 $labor = Labor::create($request->only(['site_labor_date_id', 'name', 'designation', 'mobile', 'salary']));
             } else {
-                $labor = ContractLabor::create($request->only(['site_labor_date_id', 'project_contract_id', 'count']));
+                $labor = ContractLabor::create($request->only(['site_labor_date_id', 'site_contract_id', 'count']));
             }
             return response()->json(['status' => 'success', 'message' => 'Labor added successfully!', 'data' => $labor]);
         } catch (Exception $exception) {

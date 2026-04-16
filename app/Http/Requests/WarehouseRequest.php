@@ -32,7 +32,7 @@ class WarehouseRequest extends FormRequest
             'address' => 'required|string|max:500',
             'state_id' => 'required|integer|exists:states,id',
             'district_id' => 'required|integer|exists:districts,id',
-            'city_id' => 'required|integer|exists:cities,id',
+            'area_id' => 'required|integer|exists:areas,id',
             'pincode_id' => 'required|integer|exists:pincodes,id',
             'is_active' => 'required|boolean',
         ];

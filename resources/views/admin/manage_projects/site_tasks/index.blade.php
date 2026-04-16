@@ -146,8 +146,8 @@
                 },
                 columns: [
                     {data: 'DT_RowIndex', orderable: false, searchable: false},
-                    {data: 'site_no'},
-                    {data: 'project_name'},
+                    {data: 'task_name'},
+                    {data: 'site_name'},
                     {data: 'date'},
                     {data: 'stage_name'},
                     {data: 'status'},

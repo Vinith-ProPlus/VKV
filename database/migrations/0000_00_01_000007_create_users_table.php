@@ -25,7 +25,7 @@ return new class extends Migration
             $table->string('address',255)->nullable();
             $table->foreignId('state_id')->nullable()->constrained('states')->cascadeOnUpdate()->restrictOnDelete();
             $table->foreignId('district_id')->nullable()->constrained('districts')->cascadeOnUpdate()->restrictOnDelete();
-            $table->foreignId('city_id')->nullable()->constrained('cities')->cascadeOnUpdate()->restrictOnDelete();
+            $table->foreignId('area_id')->nullable()->constrained('areas')->cascadeOnUpdate()->restrictOnDelete();
             $table->foreignId('pincode_id')->nullable()->constrained('pincodes')->cascadeOnUpdate()->restrictOnDelete();
             $table->foreignId('role_id')->nullable()->constrained('roles')->cascadeOnUpdate()->restrictOnDelete();
             $table->timestamp('email_verified_at')->nullable();

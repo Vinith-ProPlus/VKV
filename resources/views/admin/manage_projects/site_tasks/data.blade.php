@@ -55,7 +55,7 @@
                                     <div class="form-group">
                                         <label>Project</label>
                                         <select name="project_id" id="project_id" class="form-control select2 @error('project_id') is-invalid @enderror"
-                                                data-selected='{{ $site_task ? old('project_id', $site_task->project?->id) : old('project_id') }}' required>
+                                                data-selected='{{ $site_task ? old('project_id', $site_task->site?->project_id) : old('project_id') }}' required>
                                             <option value="">Select a Project</option>
                                         </select>
                                         @error('project_id')
@@ -67,7 +67,7 @@
                                     <div class="form-group">
                                         <label>Site</label>
                                         <select name="site_id" id="site_id" class="form-control select2 @error('site_id') is-invalid @enderror"
-                                                data-selected='{{ $site_task ? old('site_id', $site_task->site_id) : old('site_id') }}' required>
+                                                data-selected='{{ $site_task ? old('site_id', $site_task->site?->id) : old('site_id') }}' required>
                                             <option value="">Select a Site</option>
                                         </select>
                                         @error('site_id')
@@ -79,7 +79,7 @@
                                     <div class="form-group">
                                         <label>Stage</label>
                                         <select name="stage_id" id="stage_id" class="form-control select2 @error('stage_id') is-invalid @enderror"
-                                                data-selected='{{ $site_task ? old('stage_id', $site_task->stage_id) : old('stage_id') }}' required>
+                                                data-selected='{{ $site_task ? old('stage_id', $site_task->stage?->id) : old('stage_id') }}' required>
                                             <option value="">Select a Stage</option>
                                         </select>
                                         @error('stage_id')
@@ -100,7 +100,10 @@
                                 <div class="col-md-6 col-12 mt-10">
                                     <div class="form-group">
                                         <label>Task Date</label>
-                                        <input type="date" name="date" class="form-control" min="{{ now()->format('Y-m-d') }}"
+                                        <input type="date" name="date" class="form-control" 
+                                        @unless($site_task ?? false)
+                                            min="{{ now()->format('Y-m-d') }}"
+                                        @endunless
                                             value="{{ Carbon\Carbon::parse(old('date', $site_task->date ?? ''))->format('Y-m-d') }}" required>
                                         @error('date')
                                         <div class="text-danger mt-1">{{ $message }}</div>
@@ -180,6 +183,7 @@
                     },
                 });
                 ProjectID.select2();
+                getSites();
             }
 
             // Load sites for selected project
@@ -207,13 +211,18 @@
                     });
                 }
                 SiteID.select2();
+                getProjectStages();
             }
 
             // When project changes, load sites
             $('#project_id').change(function() {
                 getSites();
+            });
+
+            $('#site_id').change(function() {
                 // Optionally clear stage dropdown
                 $('#stage_id').empty().append('<option value="">Select a Stage</option>').select2();
+                getProjectStages();
             });
 
             // When site changes, you may want to load stages for that site
@@ -226,22 +235,22 @@
             $('#status').select2();
 
             const getProjectStages = () => {
+
                 let StageID = $('#stage_id');
+                let SiteID = $('#site_id');
                 let ProjectID = $('#project_id');
-                let SelectedProjectID = ProjectID.val() ? ProjectID.val() : ProjectID.attr('data-selected');
+                let SelectedSiteID = SiteID.val() ? SiteID.val() : SiteID.attr('data-selected');
                 let SelectedStage = StageID.attr('data-selected');
 
                 StageID.select2('destroy');
                 StageID.empty().append('<option value="">Select a Stage</option>');
 
-                console.log("SelectedProjectID: " + SelectedProjectID);
-
-                if (SelectedProjectID) {
+                if (SelectedSiteID) {
                     $.ajax({
                         url: "{{ route('getStages') }}",
                         type: 'GET',
                         dataType: 'json',
-                        data: { 'ProjectID': SelectedProjectID },
+                        data: { 'SiteID': SelectedSiteID },
                         success: function(response) {
                             response.forEach(function(item) {
                                 StageID.append('<option value="' + item.id + '" ' +

@@ -41,8 +41,11 @@ class SiteTaskController extends Controller{
 
             return DataTables::of($query)
                 ->addIndexColumn()
+                ->editColumn('task_name', function ($data) {
+                    return $data->name;
+                })
                 ->editColumn('site_name', function ($data) {
-                    return $data->site?->name;
+                    return $data->site?->site_no;
                 })
                 ->editColumn('date', static function ($data) {
                     return Carbon::parse($data->stage?->date)->format('d-m-Y');
@@ -113,8 +116,9 @@ class SiteTaskController extends Controller{
      */
     public function edit(SiteTask $site_task): View|Factory|Application
     {
-    $this->authorize('Edit Site Tasks');
-    return view('admin.manage_projects.site_tasks.data', compact('site_task'));
+        $this->authorize('Edit Site Tasks');
+        $site_task->load(['site','stage']);
+        return view('admin.manage_projects.site_tasks.data', compact('site_task'));
     }
 
     /**

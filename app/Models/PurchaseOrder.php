@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Site;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -19,7 +20,7 @@ class PurchaseOrder extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'purchase_request_id', 'project_id', 'supervisor_id', 'order_id', 'order_date', 'remarks', 'status', 'approved_by'
+        'purchase_request_id', 'site_id', 'supervisor_id', 'order_id', 'order_date', 'remarks', 'status', 'approved_by'
     ];
 
     public function details(): HasMany
@@ -38,6 +39,10 @@ class PurchaseOrder extends Model
     public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);
+    }
+    public function site(): BelongsTo
+    {
+        return $this->belongsTo(Site::class);
     }
 
     public function supervisor(): BelongsTo

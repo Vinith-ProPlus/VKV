@@ -5,7 +5,7 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Models\Admin\ManageProjects\ProjectTask;
 use App\Models\Project;
-use App\Models\Admin\Master\City;
+use App\Models\Admin\Master\Area;
 use App\Models\Admin\Master\District;
 use App\Models\Admin\Master\Pincode;
 use App\Models\Admin\Master\State;
@@ -48,7 +48,7 @@ class User extends Authenticatable
         'alternate_mobile',
         'address',
         'state_id',
-        'city_id',
+        'area_id',
         'pincode_id',
         'district_id',
         'role_id',
@@ -81,9 +81,9 @@ class User extends Authenticatable
         ];
     }
 
-    public function city(): BelongsTo
+    public function area(): BelongsTo
     {
-        return $this->belongsTo(City::class);
+        return $this->belongsTo(Area::class);
     }
 
     public function district(): BelongsTo

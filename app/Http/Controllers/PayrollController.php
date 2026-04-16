@@ -12,17 +12,28 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Yajra\DataTables\Facades\DataTables;
 
-class PayrollController extends Controller {
+class PayrollController extends Controller
+{
     use AuthorizesRequests;
     public function getUnpaidLabor(Request $request): JsonResponse
     {
-        $request->validate(['mobile' => 'required|string']);
+        $request->validate(['id' => 'nullable|integer']);
+        $request->validate(['mobile' => 'nullable|string']);
 
         $laborRecords = DB::table('labors')
-            ->select('labors.id', 'labors.salary', 'project_labor_dates.date')
-            ->join('project_labor_dates', 'labors.project_labor_date_id', '=', 'project_labor_dates.id')
-            ->where('labors.mobile', $request->mobile)
-            ->whereNotExists(static function ($query) {
+            ->select('labors.id', 'labors.salary', 'site_labor_dates.date')
+            ->join('site_labor_dates', 'labors.site_labor_date_id', '=', 'site_labor_dates.id');
+
+        if ($request->filled('id')) {
+            $laborRecords->where('labors.id', $request->id);
+        }
+
+        if ($request->filled('mobile')) {
+            $laborRecords->where('labors.mobile', $request->mobile);
+        }
+
+        $laborRecords = $laborRecords
+            ->whereNotExists(function ($query) {
                 $query->select(DB::raw(1))
                     ->from('payrolls')
                     ->whereColumn('labors.id', 'payrolls.labor_id')

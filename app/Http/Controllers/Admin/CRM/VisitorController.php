@@ -2,26 +2,28 @@
 
 namespace App\Http\Controllers\Admin\CRM;
 
-use App\Http\Controllers\Controller;
-use App\Http\Requests\VisitorRequest;
-use App\Models\Visitor;
-use App\Models\Project;
 use Exception;
-use Illuminate\Auth\Access\AuthorizationException;
-use Illuminate\Contracts\Routing\ResponseFactory;
-use Illuminate\Contracts\View\Factory;
-use Illuminate\Contracts\View\View;
-use Illuminate\Foundation\Application;
-use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\RedirectResponse;
+use App\Models\Lead;
+use App\Models\Project;
+use App\Models\Visitor;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Contracts\View\View;
+use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
+use App\Http\Requests\VisitorRequest;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Contracts\View\Factory;
+use Illuminate\Foundation\Application;
 use Yajra\DataTables\Facades\DataTables;
+use Illuminate\Contracts\Routing\ResponseFactory;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
-class VisitorController extends Controller {
+class VisitorController extends Controller
+{
     use AuthorizesRequests;
 
     /**
@@ -32,18 +34,28 @@ class VisitorController extends Controller {
         $this->authorize('View Visitors');
 
         if ($request->ajax()) {
-            $query = Visitor::with('project', 'user')->withTrashed();
+            $query = Visitor::with('project', 'customer', 'site')->withTrashed();
 
             return DataTables::of($query)
                 ->addIndexColumn()
                 ->editColumn('project_name', static function ($data) {
                     return $data->project?->name;
                 })
-                ->editColumn('rating', static function ($data) {
-                    return $data->rating . ' / 5';
+                ->editColumn('site_name', static function ($data) {
+                    return $data->site?->site_no ?? 'N/A';
                 })
-                ->editColumn('created_by', static function ($data) {
-                    return $data->user?->name;
+                ->editColumn('lead_name', static function ($data) {
+                    return $data->customer?->name ?? 'N/A';
+                })
+                ->editColumn('status', static function ($data) {
+                    $badgeClass = match ($data->status) {
+                        'new' => 'badge-primary',
+                        'under followup' => 'badge-warning',
+                        'visited' => 'badge-info',
+                        'closed' => 'badge-danger',
+                        default => 'badge-secondary'
+                    };
+                    return '<span class="badge ' . $badgeClass . '">' . ucfirst($data->status) . '</span>';
                 })
                 ->addColumn('action', static function ($data) {
                     $button = '<div class="d-flex justify-content-center">';
@@ -56,7 +68,7 @@ class VisitorController extends Controller {
                     $button .= '</div>';
                     return $button;
                 })
-                ->rawColumns(['action'])
+                ->rawColumns(['action', 'status'])
                 ->make(true);
         }
 
@@ -69,7 +81,20 @@ class VisitorController extends Controller {
     public function create(): View|Factory|Application
     {
         $this->authorize('Create Visitors');
-        return view('admin.crm.visitors.data', ['visitor' => '']);
+
+        $visitor = null;
+        $customers = Lead::get();
+        $user = auth()->user();
+
+        if ($user->role_id === 4) {
+            $projects = $user->projects()->with('sites')->get();
+        } else {
+            $projects = Project::with('sites')->get();
+        }
+
+        $sites = $projects->pluck('sites')->flatten();
+
+        return view('admin.crm.visitors.data', compact('visitor', 'customers', 'projects', 'sites'));
     }
 
     /**
@@ -81,13 +106,33 @@ class VisitorController extends Controller {
         DB::beginTransaction();
         try {
             $data = $request->validated();
-            $data['user_id'] = Auth::id();
-            Visitor::create($data);
+            
+            // Check if this is a new customer based on the flag
+            $customerId = $data['customer_id'];
+            if ($data['new_customer_flag'] === 'true') {
+                // Create new Lead (Customer) with the mobile number and name
+                $newCustomer = Lead::create([
+                    'name' => $data['new_customer_name'] ?? 'Customer',
+                    'mobile_number' => $customerId,
+                ]);
+                $customerId = $newCustomer->id;
+            }
+            
+            // Create visitor with the customer ID (either existing or newly created)
+            $visitorData = [
+                'customer_id' => $customerId,
+                'project_id' => $data['project_id'],
+                'site_id' => $data['site_id'] ?? null,
+                'status' => $data['status'],
+                'remarks' => $data['remarks'] ?? null,
+            ];
+            
+            Visitor::create($visitorData);
             DB::commit();
             return redirect()->route('visitors.index')->with('success', 'Visitor added successfully.');
         } catch (Exception $exception) {
             DB::rollBack();
-            info('Error::Place@VisitorController@update - ' . $exception->getMessage());
+            info('Error::Place@VisitorController@store - ' . $exception->getMessage());
             return redirect()->back()->withInput()->with("warning", "Something went wrong: " . $exception->getMessage());
         }
     }
@@ -98,8 +143,21 @@ class VisitorController extends Controller {
     public function edit(Visitor $visitor): View|Factory|Application
     {
         $this->authorize('Edit Visitors');
-        $projects = Project::all();
-        return view('admin.crm.visitors.data', compact('visitor', 'projects'));
+        
+        $customers = Lead::get();
+        $user = auth()->user();
+
+        if ($user->role_id === 4) {
+            $projects = $user->projects()->with('sites')->get();
+        } else {
+            $projects = Project::with('sites')->get();
+        }
+
+        $sites = $projects->pluck('sites')->flatten();
+
+        logger($sites);
+
+        return view('admin.crm.visitors.data', compact('visitor', 'customers', 'projects', 'sites'));
     }
 
     /**
@@ -110,7 +168,25 @@ class VisitorController extends Controller {
         $this->authorize('Edit Visitors');
         DB::beginTransaction();
         try {
-            $visitor->update($request->validated());
+            $data = $request->validated();
+            
+            // Ensure customer_id is numeric (existing customer only)
+            $customerId = $data['customer_id'];
+            if (!is_numeric($customerId)) {
+                DB::rollBack();
+                return redirect()->back()->withInput()->with("warning", "You can only select existing customers while editing.");
+            }
+            
+            // Update visitor with validated data
+            $visitorData = [
+                'customer_id' => $customerId,
+                'project_id' => $data['project_id'],
+                'site_id' => $data['site_id'] ?? null,
+                'status' => $data['status'],
+                'remarks' => $data['remarks'] ?? null,
+            ];
+            
+            $visitor->update($visitorData);
             DB::commit();
             return redirect()->route('visitors.index')->with('success', 'Visitor updated successfully.');
         } catch (Exception $exception) {

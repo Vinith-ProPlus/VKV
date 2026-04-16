@@ -42,7 +42,7 @@
                                 <tr>
                                     <th>S.No</th>
                                     <th>Order ID</th>
-                                    <th>Project</th>
+                                    <th>Site</th>
                                     <th>Supervisor</th>
                                     <th>Purchase Request ID</th>
                                     <th>Order Date</th>
@@ -77,7 +77,7 @@
                 columns: [
                     { data: 'DT_RowIndex', orderable: false, searchable: false },
                     { data: 'order_id' },
-                    { data: 'project.name' },
+                    { data: 'site.site_no' },
                     { data: 'supervisor.name', defaultContent: '-' },
                     { data: 'purchase_request_id' },
                     { data: 'order_date' },

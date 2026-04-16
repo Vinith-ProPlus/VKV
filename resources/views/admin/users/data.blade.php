@@ -118,12 +118,12 @@
                                     </div>
 
                                     <div class="form-group col-sm-6 col-lg-6 mt-15">
-                                        <label>City <span class="text-danger">*</span></label>
-                                        <select name="city_id" id="city" class="form-control select2 @error('city_id') is-invalid @enderror"
-                                                data-selected='{{ $user ? old('city_id', $user->city_id) : old('city_id') }}' required>
-                                            <option value="">Select a City</option>
+                                        <label>Area <span class="text-danger">*</span></label>
+                                        <select name="area_id" id="area" class="form-control select2 @error('area_id') is-invalid @enderror"
+                                                data-selected='{{ $user ? old('area_id', $user->area_id) : old('area_id') }}' required>
+                                            <option value="">Select a Area</option>
                                         </select>
-                                        @error('city_id')
+                                        @error('area_id')
                                         <span class="error invalid-feedback">{{$message}}</span>
                                         @enderror
                                     </div>
@@ -193,165 +193,213 @@
     </div>
 @endsection
 @section('script')
-<script>
-    $(document).ready(function () {
-        @if($user && $user->image)
-        $("#image-preview").removeClass("d-none").attr("src", "{{ Storage::url($user->image) }}");
-        $("#image-dropzone i, #image-dropzone p").hide();
-        @endif
+    <script>
+        $(document).ready(function () {
+            @if($user && $user->image)
+            $("#image-preview").removeClass("d-none").attr("src", "{{ Storage::url($user->image) }}");
+            $("#image-dropzone i, #image-dropzone p").hide();
+            @endif
 
-        // --------------------------------- event listners
+            // ===================== Config =====================
 
-        $('#state').change(() => getDistricts());
+            const ROUTES = {
+                states:          "{{ route('getStates') }}",
+                districts:       "{{ route('getDistricts') }}",
+                areas:           "{{ route('getAreas') }}",
+                pincodes:        "{{ route('getPinCodes') }}",
+                areaDetails:     "{{ route('getAreaDetails') }}",
+                districtDetails: "{{ route('getDistrictDetails') }}",
+                roles:           "{{ route('getRoles') }}",
+            };
 
-        $('#district').change(() => getCities());
+            const LOCATION_CHAIN = ['#state', '#district', '#area', '#pincode'];
 
-        $('#city').change(() => getPincodes());
+            // ===================== Core Helpers =====================
 
-        // ------------------------------- get dropdowns
+            /**
+             * Rebuild a Select2 dropdown with new options.
+             */
+            const updateSelect2 = (selector, options, selectedValue = null) => {
+                const $el = $(selector);
+                if ($el.hasClass('select2-hidden-accessible')) $el.select2('destroy');
 
-        const getStates = () =>{
-            let StateID = $('#state').attr('data-selected');
-            $('#state').select2('destroy');
-            $('#state option').remove();
-            $('#state').append('<option value="">Select a State</option>');
+                const label  = selector === '#pincode' ? 'pincode' : 'name';
+                const blanks = { '#state': 'State', '#district': 'District', '#area': 'Area', '#pincode': 'Pincode' };
 
-            $.ajax({
-                url:"{{route('getStates')}}",
-                type: 'GET',
-                dataType: 'json',
-                success: function(response) {
-                    response.forEach(function(item) {
-                        if ((item.id == StateID)) {
-                            $('#state').append('<option selected value="' + item.id + '">' + item.name + '</option>');
-                        } else {
-                            $('#state').append('<option value="' + item.id + '">'  + item.name + '</option>');
-                        }
-                    });
+                $el.empty().append(`<option value="">Select a ${blanks[selector] ?? 'option'}</option>`);
+
+                options.forEach(item => {
+                    const opt = new Option(item[label] ?? item.name, item.id, false, String(item.id) === String(selectedValue));
+                    $(opt).data('raw', item);       // stash full record for reverse-cascade
+                    $el.append(opt);
+                });
+
+                $el.val(selectedValue ?? '').select2();
+            };
+
+            /**
+             * Clear one or more downstream dropdowns.
+             */
+            const clearFields = (...selectors) =>
+                selectors.forEach(sel => $(sel).removeAttr('data-selected').val('').select2());
+
+            /**
+             * Simple $.get wrapped in a Promise.
+             */
+            const fetchJson = (url, params = {}) => $.get(url, params);
+
+            // ===================== Cascade Loaders =====================
+
+            /**
+             * Each loader reads its own `data-selected`, fetches fresh options,
+             * then automatically walks down the chain if a pre-selection exists.
+             */
+            const loaders = {
+                states: async () => {
+                    const selected = $('#state').data('selected');
+                    const states   = await fetchJson(ROUTES.states);
+                    updateSelect2('#state', states, selected);
+                    if (selected) await loaders.districts();
                 },
-                error: function(e, x, settings, exception) {
-                    // ajaxErrors(e, x, settings, exception);
+
+                districts: async () => {
+                    const stateId  = $('#state').val();
+                    const selected = $('#district').data('selected');
+
+                    if (!stateId) { updateSelect2('#district', []); return; }
+
+                    const districts = await fetchJson(ROUTES.districts, { state_id: stateId });
+                    updateSelect2('#district', districts, selected);
+                    if (selected) await loaders.areas();
                 },
+
+                areas: async () => {
+                    const districtId = $('#district').val();
+                    const selected   = $('#area').data('selected');
+
+                    if (!districtId) { updateSelect2('#area', []); return; }
+
+                    const areas = await fetchJson(ROUTES.areas, { district_id: districtId });
+                    updateSelect2('#area', areas, selected);
+                    if (selected) {
+                        $('#pincode').removeAttr('data-selected');
+                        await loaders.pincodes();
+                    }
+                },
+
+                pincodes: async () => {
+                    const areaId   = $('#area').val();
+                    const selected = $('#pincode').data('selected');
+
+                    if (!areaId) { updateSelect2('#pincode', []); return; }
+
+                    const pincodes = await fetchJson(ROUTES.pincodes, { area_id: areaId });
+                    updateSelect2('#pincode', pincodes, selected);
+
+                    // Auto-select first pincode when none is pre-selected
+                    if (!selected) {
+                        const first = $(`#pincode option:eq(1)`);
+                        if (first.length) $('#pincode').val(first.val()).select2();
+                    }
+                },
+            };
+
+            // ===================== Forward Cascade (State → Pincode) =====================
+
+            // When user picks a new value, clear everything downstream then re-load
+            const forwardHandlers = {
+                '#state':    () => { clearFields('#district', '#area', '#pincode'); loaders.districts(); },
+                '#district': () => { clearFields('#area', '#pincode');              loaders.areas();     },
+                '#area':     () => { clearFields('#pincode');                       loaders.pincodes();  },
+            };
+
+            Object.entries(forwardHandlers).forEach(([sel, handler]) =>
+                $(sel).on('change', handler)
+            );
+
+            // ===================== Reverse Cascade (Pincode → State) =====================
+
+            // When the user picks a pincode directly, walk UP the chain to resolve
+            // state/district/area, then populate all four dropdowns at once.
+            $('#pincode').on('change', async function () {
+                const pincodeId = $(this).val();
+                if (!pincodeId) return;
+
+                try {
+                    // Step 1 – resolve area from pincode
+                    const pincodes = await fetchJson(ROUTES.pincodes, { pincode_id: pincodeId });
+                    const areaId   = pincodes[0]?.area_id;
+                    if (!areaId) return;
+
+                    // Step 2 – resolve district from area
+                    const area       = await fetchJson(ROUTES.areaDetails,     { area_id: areaId });
+                    const districtId = area?.district_id;
+                    if (!districtId) return;
+
+                    // Step 3 – resolve state from district
+                    const district = await fetchJson(ROUTES.districtDetails, { district_id: districtId });
+                    const stateId  = district?.state_id;
+                    if (!stateId) return;
+
+                    // Step 4 – fetch all four levels in parallel
+                    const [states, districts, areas, allPincodes] = await Promise.all([
+                        fetchJson(ROUTES.states),
+                        fetchJson(ROUTES.districts, { state_id:    stateId    }),
+                        fetchJson(ROUTES.areas,     { district_id: districtId }),
+                        fetchJson(ROUTES.pincodes,  { area_id:     areaId     }),
+                    ]);
+
+                    // Temporarily suppress forward-cascade change events while we update
+                    Object.keys(forwardHandlers).forEach(sel => $(sel).off('change'));
+
+                    updateSelect2('#state',    states,       stateId);
+                    updateSelect2('#district', districts,    districtId);
+                    updateSelect2('#area',     areas,        areaId);
+                    updateSelect2('#pincode',  allPincodes,  pincodeId);
+
+                    // Re-attach forward-cascade handlers
+                    Object.entries(forwardHandlers).forEach(([sel, handler]) =>
+                        $(sel).on('change', handler)
+                    );
+
+                } catch (e) {
+                    console.error('Reverse cascade failed:', e);
+                }
             });
-            $('#state').select2();
-            getDistricts();
-        }
-        const getRoles = () =>{
-            let RoleID = $('#role_id');
-            let SelectedRoleID = RoleID.attr('data-selected');
-            RoleID.select2('destroy');
-            $('#role_id option').remove();
-            RoleID.append('<option value="">Select a Role</option>');
 
-            $.ajax({
-                url:"{{route('getRoles')}}",
-                type: 'GET',
-                dataType: 'json',
-                success: function(response) {
-                    response.forEach(function(item) {
-                        if ((item.id == SelectedRoleID)) {
-                            RoleID.append('<option selected value="' + item.id + '">' + item.name + '</option>');
-                        } else {
-                            RoleID.append('<option value="' + item.id + '">'  + item.name + '</option>');
-                        }
+            // ===================== Pincode Live Search =====================
+
+            let pincodeSearchActive = false;
+
+            $('#pincode')
+                .on('select2:open', function () {
+                    if (pincodeSearchActive) return;
+                    pincodeSearchActive = true;
+
+                    const $search = $('.select2-container--open .select2-search__field');
+                    $search.off('input.pincodeSearch').on('input.pincodeSearch', async function () {
+                        const query = $(this).val().trim();
+                        if (!query) return;
+
+                        const results = await fetchJson(ROUTES.pincodes, { pincode: query });
+                        updateSelect2('#pincode', results.data ?? results);
+                        $('#pincode').select2('open');
                     });
-                },
-                error: function(e, x, settings, exception) {
-                    // ajaxErrors(e, x, settings, exception);
-                },
-            });
-            RoleID.select2();
-        }
+                })
+                .on('select2:close', () => { pincodeSearchActive = false; });
 
-        const getDistricts = () =>{
-            let districtID = $('#district').attr('data-selected');
-            let stateID = $('#state').val();
-            $('#district').select2('destroy');
-            $('#district option').remove();
-            $('#district').append('<option value="">Select a District</option>');
+            // ===================== Roles =====================
 
-            $.ajax({
-                url:"{{route('getDistricts')}}",
-                type: 'GET',
-                dataType: 'json',
-                data: { 'state_id':stateID },
-                success: function(response) {
-                    response.forEach(function(item) {
-                        if ((item.id == districtID)) {
-                            $('#district').append('<option selected value="' + item.id + '">' + item.name + '</option>');
-                        } else {
-                            $('#district').append('<option value="' + item.id + '">'  + item.name + '</option>');
-                        }
-                    });
-                },
-                error: function(e, x, settings, exception) {
-                    // ajaxErrors(e, x, settings, exception);
-                },
-            });
-            $('#district').select2();
-            getCities();
-        }
+            const getRoles = async () => {
+                const selected = $('#role_id').data('selected');
+                const roles    = await fetchJson(ROUTES.roles);
+                updateSelect2('#role_id', roles, selected);
+            };
 
-        const getCities = () =>{
-            let cityID = $('#city').attr('data-selected');
-            let districtID = $('#district').val();
-            $('#city').select2('destroy');
-            $('#city option').remove();
-            $('#city').append('<option value="">Select a City</option>');
+            // ===================== Initialise =====================
 
-            $.ajax({
-                url:"{{route('getCities')}}",
-                type: 'GET',
-                dataType: 'json',
-                data: { 'district_id':districtID },
-                success: function(response) {
-                    response.forEach(function(item) {
-                        if ((item.id == cityID)) {
-                            $('#city').append('<option selected value="' + item.id + '">' + item.name + '</option>');
-                        } else {
-                            $('#city').append('<option value="' + item.id + '">'  + item.name + '</option>');
-                        }
-                    });
-                },
-                error: function(e, x, settings, exception) {
-                    // ajaxErrors(e, x, settings, exception);
-                },
-            });
-            $('#city').select2();
-            getPincodes();
-        }
-
-        const getPincodes = () =>{
-            let SelectedPincode = $('#pincode').attr('data-selected');
-            let CityID = $('#city').val();
-            $('#pincode').select2('destroy');
-            $('#pincode option').remove();
-            $('#pincode').append('<option value="">Select a Pincode</option>');
-
-            $.ajax({
-                url:"{{route('getPinCodes')}}",
-                type: 'GET',
-                dataType: 'json',
-                data: { 'city_id': CityID },
-                success: function(response) {
-                    response.forEach(function(item) {
-                        if ((item.id == SelectedPincode)) {
-                            $('#pincode').append('<option selected value="' + item.id + '">' + item.pincode + '</option>');
-                        } else {
-                            $('#pincode').append('<option value="' + item.id + '">'  + item.pincode + '</option>');
-                        }
-                    });
-                },
-                error: function(e, x, settings, exception) {
-                    // ajaxErrors(e, x, settings, exception);
-                },
-            });
-            $('#pincode').select2();
-        }
-
-        getStates();
-        getRoles();
-
-    });
-</script>
+            loaders.states();
+            getRoles();
+        });
+    </script>
 @endsection

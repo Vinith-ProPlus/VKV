@@ -62,12 +62,12 @@
                                     </div>
 
                                     <div class="form-group mt-15">
-                                        <label>City</label>
-                                        <select id="city_id" name="city_id" class="form-control select2 @error('city_id') is-invalid @enderror"
-                                        data-selected='{{ $pincode ? old('city_id', $pincode->city_id) : old('city_id') }}' required>
-                                            <option value="">--Select a City--</option>
+                                        <label>Area</label>
+                                        <select id="area_id" name="area_id" class="form-control select2 @error('area_id') is-invalid @enderror"
+                                        data-selected='{{ $pincode ? old('area_id', $pincode->area_id) : old('area_id') }}' required>
+                                            <option value="">--Select a Area--</option>
                                         </select>
-                                        @error('city_id')
+                                        @error('area_id')
                                         <span class="error invalid-feedback">{{$message}}</span>
                                         @enderror
                                     </div>
@@ -171,37 +171,37 @@
                     });
                     $('#district_id').select2();
                     @if($pincode)
-                        getCities();
+                        getAreas();
                     @endif
                 },
                 error: function(xhr) {}
             });
         }
 
-        const getCities = () =>{
+        const getAreas = () =>{
 
             let DistrictID = $('#district_id').val();
-            let CityID = $('#city_id').attr('data-selected');
+            let AreaID = $('#area_id').attr('data-selected');
 
-            destroySelect2('#city_id');
-            $('#city_id').empty().append('<option value="">--Select a City--</option>');
+            destroySelect2('#area_id');
+            $('#area_id').empty().append('<option value="">--Select a Area--</option>');
 
             $.ajax({
-                url:"{{route('getCities')}}",
+                url:"{{route('getAreas')}}",
                 type: 'GET',
                 dataType: 'json',
                 data:{'district_id':DistrictID},
                 success: function(response) {
                     response.forEach(function(item) {
-                        if ((item.id == CityID)) {
-                            $('#city_id').append('<option selected value="' + item.id
+                        if ((item.id == AreaID)) {
+                            $('#area_id').append('<option selected value="' + item.id
                                 + '">' + item.name + '</option>');
                         } else {
-                            $('#city_id').append('<option value="' + item.id
+                            $('#area_id').append('<option value="' + item.id
                                 + '">'  + item.name + '</option>');
                         }
                     });
-                    $('#city_id').select2();
+                    $('#area_id').select2();
 
                 },
                 error: function(xhr) {}
@@ -209,12 +209,12 @@
         }
 
         $('#state_id').change(getDistricts);
-        $('#district_id').change(getCities);
+        $('#district_id').change(getAreas);
 
 
         const init = () => {
 
-            $('#state_id, #district_id, #city_id').select2();
+            $('#state_id, #district_id, #area_id').select2();
 
             getStates();
         }

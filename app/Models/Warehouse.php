@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Models\Admin\Master\City;
+use App\Models\Admin\Master\Area;
 use App\Models\Admin\Master\District;
 use App\Models\Admin\Master\Pincode;
 use App\Models\Admin\Master\State;
@@ -27,7 +27,7 @@ class Warehouse extends Model
         'address',
         'state_id',
         'district_id',
-        'city_id',
+        'area_id',
         'pincode_id',
         'is_active'
     ];
@@ -60,9 +60,9 @@ class Warehouse extends Model
     /**
      * @return BelongsTo
      */
-    public function city(): BelongsTo
+    public function area(): BelongsTo
     {
-        return $this->belongsTo(City::class);
+        return $this->belongsTo(Area::class);
     }
 
     /**

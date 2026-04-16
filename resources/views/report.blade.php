@@ -158,7 +158,7 @@
         <div class="container-fluid">
             <div class="hero-title w-25">
                 <span>
-                    {{$project->name ?? ''}}
+                    {{$project?->name ?? ''}}
                  </span>
              </div>
             <div class="row justify-content-center" style="padding: 15px;">
@@ -212,7 +212,7 @@
                                         <!-- Header -->
                                         <div class="flex justify-between items-center mb-8">
                                           <div>
-                                            <h1 class="text-3xl font-bold text-blue-800">{{ $project->name }}</h1>
+                                            <h1 class="text-3xl font-bold text-blue-800">{{ $project?->name }}</h1>
                                             <h1 class="text-xl font-bold text-gray-800"><i class="fas fa-map-marker-alt mr-2" style="font-size: initial;"></i>{{ $project->location }}</h1>
                                           </div>
                                           <div class="flex space-x-3">
@@ -224,16 +224,16 @@
 
                                         <!-- Main Grid -->
                                         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                                          <!-- Project Details Card -->
+                                          <!-- Site Details Card -->
                                           <div class="bg-white rounded-xl shadow-md p-6 transition duration-300 card-hover">
                                             <div class="flex items-center mb-4">
                                                 <div class="p-3 bg-indigo-100 rounded-lg">
                                                     <i class="fas fa-building text-indigo-600 text-xl"></i>
                                                 </div>
-                                                <h2 class="text-xl font-bold text-gray-800 ml-3">Project Details</h2>
+                                                <h2 class="text-xl font-bold text-gray-800 ml-3">Site Details</h2>
 
                                                 <div class="ml-20">
-                                                    <span class="px-4 py-2 bg-blue-100 text-blue-800 rounded-full font-medium text-nowrap" >{{ $project->status }}</span>
+                                                    <span class="px-4 py-2 bg-blue-100 text-blue-800 rounded-full font-medium text-nowrap" >{{ $site?->status }}</span>
                                                 </div>
                                             </div>
 
@@ -241,32 +241,32 @@
                                               <div class="grid grid-cols-2">
                                                 <div>
                                                   <p class="text-sm text-gray-500">Type</p>
-                                                  <p class="font-medium">{{ $project->type }}</p>
+                                                  <p class="font-medium">{{ $site?->type }}</p>
                                                 </div>
-                                                <div>
+                                                {{-- <div>
                                                   <p class="text-sm text-gray-500">Units</p>
-                                                  <p class="font-medium">{{ $project->units }}</p>
-                                                </div>
+                                                  <p class="font-medium">{{ $project?->units }}</p>
+                                                </div> --}}
                                               </div>
 
                                               <div>
                                                 <p class="text-sm text-gray-500">Target Customers</p>
-                                                <p class="font-medium">{{ $project->target_customers }}</p>
+                                                <p class="font-medium">{{ $site?->target_customers }}</p>
                                               </div>
 
                                               <div>
                                                 <p class="text-sm text-gray-500">Range</p>
-                                                <p class="font-medium">{{ $project->range }}</p>
+                                                <p class="font-medium">{{ $site->range }}</p>
                                               </div>
 
                                               <div>
                                                 <p class="text-sm text-gray-500">Engineer</p>
-                                                <p class="font-medium">{{ $project->engineer->name }}</p>
+                                                <p class="font-medium">{{ $site?->engineer?->name }}</p>
                                               </div>
 
                                               <div>
                                                 <p class="text-sm text-gray-500">Area</p>
-                                                <p class="font-medium">{{ number_format($project->area_sqft) }} sqft</p>
+                                                <p class="font-medium">{{ number_format($site?->area_sqft) }} sqft</p>
                                               </div>
 
                                             </div>
@@ -285,7 +285,7 @@
                                               <div>
                                                 <div class="flex justify-between mb-1">
                                                   <p class="text-sm text-gray-500">Investment Amount</p>
-                                                  <p class="text-sm font-medium">₹{{ number_format($project->investment_amount) }}</p>
+                                                  <p class="text-sm font-medium">₹{{ number_format($site->investment_amount) }}</p>
                                                 </div>
                                                 <div class="progress-bar">
                                                   <div class="progress-value" style="width: 100%"></div>
@@ -295,17 +295,17 @@
                                               <div>
                                                 <div class="flex justify-between mb-1">
                                                   <p class="text-sm text-gray-500">Sold Amount</p>
-                                                  <p class="text-sm font-medium">₹{{ number_format($project->sold_amount) }}</p>
+                                                  <p class="text-sm font-medium">₹{{ number_format($site->sold_amount) }}</p>
                                                 </div>
                                                 <div class="progress-bar">
-                                                  <div class="progress-value" style="width: {{ ($project->sold_amount / ($project->investment_amount ?? 1)) * 100 }}%"></div>
+                                                  <div class="progress-value" style="width: {{ ($site->sold_amount / ($site->investment_amount ?? 1)) * 100 }}%"></div>
                                                 </div>
                                               </div>
 
                                               <div class="pt-4 border-t">
                                                 <div class="flex justify-between">
                                                   <p class="font-semibold">Total Profit</p>
-                                                  <p class="font-bold text-green-600">₹{{ number_format($project->investment_amount - $project->sold_amount) }}</p>
+                                                  <p class="font-bold text-green-600">₹{{ number_format($site->investment_amount - $site->sold_amount) }}</p>
                                                 </div>
                                               </div>
 
@@ -327,29 +327,29 @@
                                             <div class="space-y-4">
                                               <div>
                                                 <p class="text-sm text-gray-500">Site Name</p>
-                                                <p class="font-medium">{{ $project->site->name }}</p>
+                                                <p class="font-medium">{{ $site?->site_no }}</p>
                                               </div>
 
                                               <div>
                                                 <p class="text-sm text-gray-500">Location</p>
-                                                <p class="font-medium">{{ $project->site->location }}</p>
+                                                <p class="font-medium">{{ $project?->location }}</p>
                                               </div>
 
                                               <div class="grid grid-cols-2">
                                                 <div>
                                                   <p class="text-sm text-gray-500">Latitude</p>
-                                                  <p class="font-medium">{{ $project->site->latitude }}</p>
+                                                  <p class="font-medium">{{ $project?->latitude }}</p>
                                                 </div>
                                                 <div>
                                                   <p class="text-sm text-gray-500">Longitude</p>
-                                                  <p class="font-medium">{{ $project->site->longitude }}</p>
+                                                  <p class="font-medium">{{ $project?->longitude }}</p>
                                                 </div>
                                               </div>
 
                                               <div>
                                                 <p class="text-sm text-gray-500">Status</p>
-                                                <span class="inline-flex px-3 py-1 text-sm {{ $project->site->is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }} rounded-full">
-                                                  {{ $project->site->is_active ? 'Active' : 'Inactive' }}
+                                                <span class="inline-flex px-3 py-1 text-sm {{ $project->is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }} rounded-full">
+                                                  {{ $project->is_active ? 'Active' : 'Inactive' }}
                                                 </span>
                                               </div>
 
@@ -377,9 +377,9 @@
                                                 @foreach($project->amenities as $item)
                                                 <div class="items-center p-3 bg-gray-50 rounded-lg">
                                                     <i class="fas fa-check-circle text-green-500 mr-2"></i>
-                                                    <span>{{ $item->amenity->name }}</span>
+                                                    <span>{{ $item?->amenity?->name }}</span>
                                                     <br>
-                                                    <span>{{ $item->description }}</span>
+                                                    <span>{{ $item?->description }}</span>
                                                 </div>
                                             @endforeach
                                             </div>
@@ -795,6 +795,7 @@
 
           // Contracts DataTable
           let project_id = "{{$project->id}}";
+          let site_id = "{{$site->id}}";
 
           $('#contractsTable').DataTable({
                 "columnDefs": [{"className": "dt-center", "targets": "_all"}],
@@ -805,7 +806,7 @@
                     url: '{{ route("contractsTableLists") }}',
                     type: 'GET',
                     data: function (d) {
-                        d.project_id = project_id;
+                        d.site_id = site_id;
                         // d.stage_id = $('#stage_id').val();
                         // d.status = $('#status').val();
                         // d.date = $('#date_filter').val();

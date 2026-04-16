@@ -43,12 +43,11 @@
                                         <thead class="thead-light">
                                         <tr>
                                             <th>S.No</th>
-                                            <th>Lead Title</th>
                                             <th>Name</th>
                                             <th>Phone</th>
-                                            <th>City</th>
-                                            <th>Followed By</th>
-                                            <th>Status</th>
+                                            <th>Email</th>
+                                            <th>Area</th>
+                                            <th>Lead Source</th>
                                             <th>Actions</th>
                                         </tr>
                                         </thead>
@@ -81,12 +80,11 @@
                     },
                     columns: [
                         {data: 'DT_RowIndex'},
-                        {data: 'lead_title'},
-                        {data: 'first_name'},
+                        {data: 'name'},
                         {data: 'mobile_number'},
-                        {data: 'city_name'},
-                        {data: 'follow_by'},
-                        {data: 'lead_status'},
+                        {data: 'email'},
+                        {data: 'area_name'},
+                        {data: 'lead_source_id'},
                         {data: 'action', orderable: false},
                     ]
                 });

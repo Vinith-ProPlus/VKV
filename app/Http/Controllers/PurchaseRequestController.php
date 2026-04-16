@@ -8,6 +8,7 @@ use App\Models\Project;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseRequest;
 use App\Models\PurchaseRequestDetail;
+use App\Models\Site;
 use Exception;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Routing\ResponseFactory;
@@ -37,7 +38,7 @@ class PurchaseRequestController extends Controller
         $this->authorize('View Purchase Requests');
 
         if ($request->ajax()) {
-            $data = PurchaseRequest::withTrashed()->with(['supervisor', 'project'])->get();
+            $data = PurchaseRequest::withTrashed()->with(['supervisor', 'site'])->get();
 
             return DataTables::of($data)
                 ->addIndexColumn()
@@ -84,7 +85,7 @@ class PurchaseRequestController extends Controller
     public function create(): View|Factory|\Illuminate\Foundation\Application
     {
         $this->authorize('Create Purchase Requests');
-        $projects = Project::whereNot('status', COMPLETED)->get();
+        $projects = Project::where('is_active', '1')->get();
         return view('admin.purchase_requests.data', ['purchaseRequest' => '', 'projects' => $projects]);
     }
 
@@ -95,7 +96,7 @@ class PurchaseRequestController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $request->validate([
-            'project_id' => 'required|exists:projects,id',
+            'site_id' => 'required|exists:sites,id',
             'products' => 'required|array',
             'products.*.category_id' => 'required|exists:product_categories,id',
             'products.*.product_id' => 'required|exists:products,id',
@@ -107,7 +108,7 @@ class PurchaseRequestController extends Controller
         try {
             $purchaseRequest = PurchaseRequest::create([
                 'supervisor_id' => $supervisorId,
-                'project_id' => $request->project_id,
+                'site_id' => $request->site_id,
                 'product_count' => count($request->products),
                 'status' => PENDING,
                 'remarks' => $request->remarks ?? null,
@@ -146,8 +147,8 @@ class PurchaseRequestController extends Controller
      */
     public function edit(PurchaseRequest $purchaseRequest): View|Factory|\Illuminate\Foundation\Application
     {
-        $purchaseRequest->load('details.category', 'details.product', 'project', 'supervisor');
-        $projects = Project::all();
+        $purchaseRequest->load('details.category', 'details.product', 'site', 'supervisor');
+        $projects = Project::where('is_active', '1')->get();
         return view('admin.purchase_requests.data', compact('purchaseRequest', 'projects'));
     }
 
@@ -159,7 +160,7 @@ class PurchaseRequestController extends Controller
     public function update(Request $request, PurchaseRequest $purchaseRequest): RedirectResponse|JsonResponse
     {
         $request->validate([
-            'project_id' => 'required|exists:projects,id',
+            'site_id' => 'required|exists:sites,id',
             'products' => 'required|array',
             'products.*.category_id' => 'required|exists:product_categories,id',
             'products.*.product_id' => 'required|exists:products,id',
@@ -179,7 +180,7 @@ class PurchaseRequestController extends Controller
 
         try {
             $purchaseRequest->update([
-                'project_id' => $request->project_id,
+                'site_id' => $request->site_id,
                 'product_count' => count($request->products),
                 'remarks' => $request->remarks ?? null,
             ]);

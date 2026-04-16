@@ -49,9 +49,9 @@
                                 <a href="{{ route('districts.index') }}" data-active-name="Districts" data-original-title="" title="">Districts</a>
                             </li>
                             @endcan
-                            @can('View Cities')
+                            @can('View Areas')
                                 <li class="">
-                                    <a href="{{ route('cities.index') }}" data-active-name="Cities" data-original-title="" title="">City</a>
+                                    <a href="{{ route('areas.index') }}" data-active-name="Areas" data-original-title="" title="">Area</a>
                                 </li>
                             @endcan
                             @can('View Pincodes')
@@ -187,6 +187,12 @@
                                 <li class="">
                                     <a href="{{ route('visitors.index') }}" data-active-name="Visitor" data-original-title=""
                                        title="">Visitor</a>
+                                </li>
+                            @endcan
+                            @can('View Followups')
+                                <li class="">
+                                    <a href="{{ route('followups.index') }}" data-active-name="Followups" data-original-title=""
+                                       title="">Followups</a>
                                 </li>
                             @endcan
                             <!--
