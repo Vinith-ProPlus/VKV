@@ -104,6 +104,12 @@
                                             <option value="visited"
                                                 {{ $followup && old('status', $followup->status) == 'visited' ? 'selected' : '' }}>
                                                 Visited</option>
+                                            <option value="booked"
+                                                {{ $followup && old('status', $followup->status) == 'booked' ? 'selected' : '' }}>
+                                                Booked</option>
+                                            <option value="sold"
+                                                {{ $followup && old('status', $followup->status) == 'sold' ? 'selected' : '' }}>
+                                                Sold</option>
                                             <option value="closed"
                                                 {{ $followup && old('status', $followup->status) == 'closed' ? 'selected' : '' }}>
                                                 Closed</option>

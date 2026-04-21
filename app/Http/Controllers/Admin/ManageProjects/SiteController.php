@@ -9,6 +9,7 @@ use App\Models\Document;
 use App\Models\Lead;
 use App\Models\Site;
 use App\Models\SiteContract;
+use App\Models\SiteLeadMapping;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -38,11 +39,21 @@ class SiteController extends Controller
     {
         $this->authorize('View Sites');
         if ($request->ajax()) {
-            $data = Site::with('project')->withTrashed()->get();
+            $data = Site::with('project', 'siteLeadMapping')->withTrashed()->get();
             return DataTables::of($data)
                 ->addIndexColumn()
                 ->addColumn('project_name', function ($data) {
                     return $data->project->name ?? '-';
+                })
+                ->addColumn('booking_status', function ($data) {
+                    $status = $data->siteLeadMapping?->status ?? 'open';
+                    $statusBadges = [
+                        'open' => 'badge-secondary',
+                        'booked' => 'badge-primary',
+                        'sold' => 'badge-success',
+                    ];
+                    $badgeClass = $statusBadges[$status] ?? 'badge-secondary';
+                    return '<span class="badge ' . $badgeClass . '">' . ucfirst($status) . '</span>';
                 })
                 ->editColumn('is_active', function ($data) {
                     return $data->is_active ? 'Active' : 'Inactive';
@@ -71,7 +82,7 @@ class SiteController extends Controller
                     $button .= '</div>';
                     return $button;
                 })
-                ->rawColumns(['status', 'action'])
+                ->rawColumns(['status', 'booking_status', 'action'])
                 ->make(true);
         }
         return view('admin.manage_projects.sites.index');
@@ -124,6 +135,19 @@ class SiteController extends Controller
                 );
             }
 
+            // Save Site-Lead Mapping
+            $leadStatus = strtolower($request->input('lead-status', 'open'));
+            if ($leadStatus === 'open') {
+                SiteLeadMapping::where('site_id', $site->id)->delete();
+            } elseif ($request->has('lead') && $request->lead) {
+                SiteLeadMapping::create([
+                    'site_id' => $site->id,
+                    'lead_id' => $request->lead,
+                    'status' => $leadStatus,
+                    'remarks' => $request->input('remarks', null)
+                ]);
+            }
+
             DB::commit();
             return redirect()->route('sites.index')->with('success', 'Site created successfully.');
         } catch (Exception $exception) {
@@ -140,7 +164,8 @@ class SiteController extends Controller
     public function edit(Site $site): View|Factory|Application
     {
         $this->authorize('Edit Sites');
-        return view('admin.manage_projects.sites.data', compact('site'));
+        $leads = Lead::orderBy('name')->pluck('name', 'id');
+        return view('admin.manage_projects.sites.data', compact('site','leads'));
     }
 
     /**
@@ -205,6 +230,23 @@ class SiteController extends Controller
                 if (!$newStages->pluck('id')->contains($stage->id)) {
                     $stage->delete();
                 }
+            }
+
+            // Update Site-Lead Mapping
+            $leadStatus = strtolower($request->input('lead-status', 'open'));
+            if ($leadStatus === 'open') {
+                SiteLeadMapping::where('site_id', $site_id)->delete();
+            } elseif ($request->has('lead') && $request->lead) {
+                SiteLeadMapping::updateOrCreate(
+                    [
+                        'site_id' => $site_id
+                    ],
+                    [
+                        'lead_id' => $request->lead,
+                        'status' => $leadStatus,
+                        'remarks' => $request->input('remarks', null)
+                    ]
+                );
             }
 
             return redirect()->route('sites.index')->with('success', 'Site updated successfully.');

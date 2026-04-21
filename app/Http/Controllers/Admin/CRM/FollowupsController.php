@@ -6,6 +6,7 @@ use App\Models\Lead;
 use App\Models\User;
 use App\Models\Project;
 use App\Models\Followup;
+use App\Models\SiteLeadMapping;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
@@ -97,11 +98,25 @@ class FollowupsController extends Controller
             'customer_id' => 'required|exists:leads,id',
             'project_id' => 'required|exists:projects,id',
             'site_id' => 'nullable|exists:sites,id',
-            'status' => 'required|in:new,under followup,visited,closed',
+            'status' => 'required|in:new,under followup,visited,booked,sold,closed',
             'remarks' => 'nullable|string',
         ]);
 
-        Followup::create($validated);
+        $followup = Followup::create($validated);
+
+        // Sync with SiteLeadMapping if site_id exists
+        if ($validated['site_id']) {
+            SiteLeadMapping::updateOrCreate(
+                [
+                    'site_id' => $validated['site_id'],
+                    'lead_id' => $validated['customer_id']
+                ],
+                [
+                    'status' => $validated['status'],
+                    'remarks' => $validated['remarks'] ?? null
+                ]
+            );
+        }
 
         return redirect()->route('followups.index')->with('success', 'Followup created successfully.');
     }
@@ -127,11 +142,25 @@ class FollowupsController extends Controller
             'customer_id' => 'required|exists:leads,id',
             'project_id' => 'required|exists:projects,id',
             'site_id' => 'nullable|exists:sites,id',
-            'status' => 'required|in:new,under followup,visited,closed',
+            'status' => 'required|in:new,under followup,visited,booked,sold,closed',
             'remarks' => 'nullable|string',
         ]);
 
         $followup->update($validated);
+
+        // Sync with SiteLeadMapping if site_id exists
+        if ($validated['site_id']) {
+            SiteLeadMapping::updateOrCreate(
+                [
+                    'site_id' => $validated['site_id'],
+                    'lead_id' => $validated['customer_id']
+                ],
+                [
+                    'status' => $validated['status'],
+                    'remarks' => $validated['remarks'] ?? null
+                ]
+            );
+        }
 
         return redirect()->route('followups.index')->with('success', 'Followup updated successfully.');
     }

@@ -12,11 +12,12 @@ class SiteLeadMapping extends Model
     use HasFactory;
 
     protected $table = 'site_lead_mappings';
-
+    
     protected $fillable = [
         'site_id',
         'lead_id',
-        'status'
+        'status',
+        'remarks'
     ];
 
     // Optional: make sure status is always one of these

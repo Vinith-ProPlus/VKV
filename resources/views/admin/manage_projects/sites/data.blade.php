@@ -57,7 +57,6 @@
                                 </span>
                             </a>
                         </div>
-
                         <form id="site-form"
                               action="{{ $site ? route('sites.update', $site->id) : route('sites.store') }}"
                               method="POST">
@@ -147,13 +146,13 @@
                                                     @enderror
                                                 </div>
                                             </div>
-                                            <div class="col-12 col-md-6">
+                                            <div class="col-12 col-md-6 d-none">
                                                 <div class="form-group">
                                                     <label>Lead Status <span class="text-danger">*</span></label>
                                                     <select name="lead-status" class="form-control" id="lead-status" required>
                                                         <option value="">Select a Status</option>
                                                         @foreach(SITE_LEAD_STATUSES as $status)
-                                                            <option value="{{ $status }}" {{ $status == old('status', ($site->siteLeadMapping)?->status ?? '') ? 'selected' : '' }}>{{ $status }}</option>
+                                                            <option value="{{ $status }}" {{ $status == old('status', ($site->siteLeadMapping)?->status ?? 'open') ? 'selected' : '' }}>{{ $status }}</option>
                                                         @endforeach
                                                     </select>
                                                     @error('lead-status')
@@ -166,11 +165,20 @@
                                                     <label>Lead <span class="text-danger">*</span></label>
                                                     <select name="lead" class="form-control" id="lead" required>
                                                         <option value="">Select a Lead</option>
-                                                        @foreach($leads as $lead)
-                                                            <option value="{{ $lead }}" {{ $lead == old('lead', ($site->siteLeadMapping)?->lead ?? '') ? 'selected' : '' }}>{{ $lead }}</option>
+                                                        @foreach($leads as $key => $lead)
+                                                            <option value="{{ $key }}" {{ $key == old('lead', ($site->siteLeadMapping)?->lead_id ?? '') ? 'selected' : '' }}>{{ $lead }}</option>
                                                         @endforeach
                                                     </select>
                                                     @error('lead')
+                                                    <div class="err text-danger mt-1">{{ $message }}</div>
+                                                    @enderror
+                                                </div>
+                                            </div>
+                                            <div class="col-12 col-md-6 d-none" id="remarks_div">
+                                                <div class="form-group">
+                                                    <label>Remarks</label>
+                                                    <textarea name="remarks" class="form-control" id="remarks" rows="3" placeholder="Enter remarks (optional)">{{ old('remarks', ($site->siteLeadMapping)?->remarks ?? '') }}</textarea>
+                                                    @error('remarks')
                                                     <div class="err text-danger mt-1">{{ $message }}</div>
                                                     @enderror
                                                 </div>
@@ -1330,21 +1338,26 @@
                 }
             });
 
-            if ($('#lead-status').val() === 'booked' || $('#lead-status').val() === 'sold') {
-                $('#leads_div').removeClass('d-none');
-            }
+            // if ($('#lead-status').val() === 'booked' || $('#lead-status').val() === 'sold') {
+            //     $('#leads_div').removeClass('d-none');
+            //     $('#remarks_div').removeClass('d-none');
+            // }
             
-            $('#lead-status').on('change', function () {
-                if ($(this).val() === 'booked' || $(this).val() === 'sold') {
-                    $('#leads_div').removeClass('d-none');
-                } else {
-                    $('#leads_div').addClass('d-none');
-                }
-            });
+            // $('#lead-status').on('change', function () {
+            //     if ($(this).val() === 'booked' || $(this).val() === 'sold') {
+            //         $('#leads_div').removeClass('d-none');
+            //         $('#remarks_div').removeClass('d-none');
+            //     } else {
+            //         $('#leads_div').addClass('d-none');
+            //         $('#remarks_div').addClass('d-none');
+            //         $('#lead').val('').select2();
+            //         $('#remarks').val('');
+            //     }
+            // });
 
-            getProjects();
+            getProjects(); 
             getEngineers();
-            getDocuments();
+            getDocuments(); 
 
             getContractTypes();
             getContractors();

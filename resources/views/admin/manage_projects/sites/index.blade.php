@@ -48,6 +48,7 @@
                                             <th>Range</th>
                                             <th>Sq.Feet</th>
                                             <th>Status</th>
+                                            <th>Booking Status</th>
                                             <th>Actions</th>
                                         </tr>
                                         </thead>
@@ -85,6 +86,7 @@
                         {data: 'range'},
                         {data: 'area_sqft'},
                         {data: 'status'},
+                        {data: 'booking_status'},
                         {data: 'action', orderable: false},
                     ]
                 });
