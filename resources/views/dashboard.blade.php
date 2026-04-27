@@ -358,6 +358,7 @@
                         
                         total++;
 
+
                         // Generate a unique chart ID
                         let chartId = `project-chart-${index}`;
                         getProjectTasks(item.id);
@@ -392,7 +393,7 @@
             let total = 0;
             let completed = 0;
             let unCompletedPercentage = 0;
-            let projectName = '';
+            let siteName = '';
             $.ajax({
                 url: "{{ route('project.tasks') }}",
                 type: "GET",
@@ -400,13 +401,13 @@
                 data:{'id':id},
                 success: function(response) { 
                         response.forEach((item, index) => { 
-                            projectName = item.project.name;
+                            siteName = item.site.site_no;
                             if(item.status === 'Completed') completed++;
                             total++;
                         });
                         unCompletedPercentage = ((total-completed)/total)*100;
                     if(unCompletedPercentage){
-                        setPendingTasks(total, completed, unCompletedPercentage, projectName);
+                        setPendingTasks(total, completed, unCompletedPercentage, siteName);
                     }
                 },
                 error: function(xhr, status, error) {

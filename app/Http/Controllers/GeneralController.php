@@ -6,6 +6,7 @@ use App\Models\Admin\Labor\LaborDesignation;
 use App\Models\Admin\ManageProjects\ProjectStage;
 use App\Models\Admin\ManageProjects\ProjectTask;
 use App\Models\Admin\ManageProjects\SiteStage;
+use App\Models\Admin\ManageProjects\SiteTask;
 use App\Models\Admin\Master\Area;
 use App\Models\Admin\Master\District;
 use App\Models\Admin\Master\Pincode;
@@ -386,7 +387,9 @@ class GeneralController extends Controller
 
     public function getProjectTasks(Request $req)
     {
-        return ProjectTask::where('project_id', $req->id)->whereDate('created_at', now())->with('project:id,name')->get();
+        return SiteTask::whereHas('site', function ($query) use ($req) {
+            $query->where('project_id', $req->id);
+        })->with('site:id,project_id,site_no', 'stage:id,name')->get();
     }
 
     public function getSupervisors()

@@ -16,6 +16,7 @@ class Project extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = ['name', 'location', 'latitude', 'longitude', 'is_active'];
+    protected $appends = ['completion_percentage'];
 
     public function supervisors()
     {
@@ -30,5 +31,35 @@ class Project extends Model
     public function amenities()
     {
         return $this->HasMany(ProjectAmenity::class);
+    }
+
+    /**
+     * Calculate completion percentage for the entire project
+     * by aggregating all tasks across all sites and their stages
+     */
+    public function getCompletionPercentageAttribute(): string
+    {
+        $totalTasks = 0;
+        $completedTasks = 0;
+
+        // Get all sites for this project
+        $sites = $this->sites()->get();
+
+        foreach ($sites as $site) {
+            // Get all stages for each site
+            $stages = $site->stages()->get();
+            
+            foreach ($stages as $stage) {
+                // Get all tasks for each stage
+                $stageTasks = $stage->tasks()
+                    ->whereIn('status', ['Created', 'In-progress', 'Completed'])
+                    ->get();
+
+                $totalTasks += $stageTasks->count();
+                $completedTasks += $stageTasks->where('status', 'Completed')->count();
+            }
+        }
+
+        return ($totalTasks === 0 ? 0.0 : round(($completedTasks / $totalTasks) * 100, 2))."%";
     }
 }

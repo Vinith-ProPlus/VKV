@@ -2,19 +2,20 @@
 
 namespace App\Http\Controllers\Admin\ProjectReports;
 
-use App\Models\Admin\ManageProjects\SiteTask;
-use App\Models\Site;
-use App\Models\SiteContract;
-use Illuminate\Http\Request;
-use App\Models\Project;
-use App\Models\PurchaseOrder;
+use App\Http\Controllers\Controller;
+use App\Models\Admin\Labor\ProjectLaborDate;
+use App\Models\Admin\Labor\SiteLaborDate;
 use App\Models\Admin\ManageProjects\ProjectStage;
 use App\Models\Admin\ManageProjects\ProjectTask;
+use App\Models\Admin\ManageProjects\SiteTask;
+use App\Models\Project;
 use App\Models\ProjectContract;
-use App\Http\Controllers\Controller;
-use Yajra\DataTables\Facades\DataTables;
+use App\Models\PurchaseOrder;
+use App\Models\Site;
+use App\Models\SiteContract;
 use Carbon\Carbon;
-use App\Models\Admin\Labor\ProjectLaborDate;
+use Illuminate\Http\Request;
+use Yajra\DataTables\Facades\DataTables;
 
 class ProjectReportsController extends Controller
 {
@@ -33,7 +34,7 @@ class ProjectReportsController extends Controller
     }
 
     public function create(Request $request){
-        $site = $this->sites->where('id',$request->input('site'))->with(['project','stages','contracts','engineer'])->first();
+        $site = $this->sites->where('id',$request->input('site'))->with(['project','stages','contracts','engineer','siteLeadMapping.lead'])->first();
         $project = $site->project ?? '';
         $stages = $site->stages ?? ''; 
         $contracts = $site->contracts ?? '';
@@ -43,20 +44,20 @@ class ProjectReportsController extends Controller
     }
 
     public function getProjectTasks(Request $request){
-        $projectsTasks = ProjectTask::withoutTrashed(); 
+        $siteTasks = SiteTask::withoutTrashed(); 
         
         if($request->input('stage_id')){
-            $projectsTasks->where('stage_id', $request->input('stage_id'));
+            $siteTasks->where('stage_id', $request->input('stage_id'));
         }
 
-        return $projectsTasks->get();
+        return $siteTasks->get();
     }
 
     public function tasksTableLists(Request $request)
     { 
 
         if ($request->ajax()) {
-            $query = SiteTask::with('project', 'stage')->withTrashed()
+            $query = SiteTask::with('site', 'stage')->withTrashed()
             
                 ->when($request->get('stage_id'), static function ($q) use ($request) {
                     $q->where('stage_id', $request->stage_id);
@@ -64,13 +65,13 @@ class ProjectReportsController extends Controller
 
             return DataTables::of($query)
                 ->addIndexColumn()
-                ->editColumn('project_name', static function ($data) {
-                    return $data->project?->name;
+                ->addColumn('site_name', static function ($data) {
+                    return $data->site?->site_no;
                 })
-                ->editColumn('date', static function ($data) {
+                ->addColumn('date', static function ($data) {
                     return Carbon::parse($data->stage?->date)->format('d-m-Y');
                 })
-                ->editColumn('stage_name', static function ($data) {
+                ->addColumn('stage_name', static function ($data) {
                     return $data->stage?->name;
                 })
                 ->editColumn('status', static function ($data) {
@@ -136,11 +137,13 @@ class ProjectReportsController extends Controller
     public function laborTableList(Request $request)
     { 
         if ($request->ajax()) {
-            $query = ProjectLaborDate::with(['project', 'labors', 'contractLabors'])->withTrashed();
+            $query = SiteLaborDate::with(['site', 'site.project', 'labors', 'contractLabors'])->withTrashed();
     
             // Project
             if ($request->filled('project_id')) {
-                $query->whereIn('project_id', $request->project_id);
+                $query->whereHas('site', function ($q) use ($request) {
+                    $q->whereIn('project_id', $request->project_id);
+                });
             }
     
             // From and To Date
@@ -161,12 +164,12 @@ class ProjectReportsController extends Controller
 
             return DataTables::eloquent($query)
                 ->addIndexColumn()
-                ->addColumn('project_name', fn($data) => $data->project->name ?? 'N/A')
+                ->addColumn('site_name', fn($data) => $data->site->site_no ?? 'N/A')
                 ->addColumn('labor_count', fn($data) => $data->labors->count())
                 ->addColumn('contract_labor_count', fn($data) => $data->contractLabors->sum('count'))
                 ->addColumn('action', function ($data) {
                     $button = '<div class="d-flex justify-content-center">';
-                    $button .= '<a href="' . route('labors.create', ['project_id' => $data->project_id, 'date' => $data->date]) . '" class="btn btn-outline-warning btn-sm m-1"><i class="fa fa-eye" aria-hidden="true"></i></a>';
+                    $button .= '<a href="' . route('labors.create', ['site_id' => $data->site_id, 'date' => $data->date]) . '" class="btn btn-outline-warning btn-sm m-1"><i class="fa fa-eye" aria-hidden="true"></i></a>';
                     $button .= '</div>';
                     return $button;
                 })
@@ -182,13 +185,15 @@ class ProjectReportsController extends Controller
             $data = PurchaseOrder::with(['supervisor', 'project', 'details'])->latest();
 
             if ($request->filled('project_id')) {
-                $data->whereIn('project_id', $request->project_id);
+                $data->whereHas('site', function ($q) use ($request) {
+                    $q->whereIn('project_id', $request->project_id);
+                });
             }
 
             return DataTables::of($data)
                 ->addIndexColumn()
                 ->editColumn('order_date', static fn($data): string => Carbon::parse($data->order_date)->format('d-m-Y'))
-                ->editColumn('product_count', static fn($data) => $data->details->count())
+                ->addColumn('product_count', static fn($data) => $data->details->count())
                 ->editColumn('status', static function ($data) {
                     $deliveredCount = $data->details->where('status', 'Delivered')->count();
                     $total = $data->details->count();

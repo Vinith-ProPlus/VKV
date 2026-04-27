@@ -171,36 +171,36 @@
                     <div class="card mt-15" style="border: none;">
                         <div class="card-body">
                             <div class="nav nav-tabs wizard-head" id="projectTabs">
-                                <a class="nav-link active" href="#project-details" data-tab="project-details"
-                                data-name="tab-project-details" data-bs-toggle="tab">
-                                    <span class="nav-contents">
-                                        <span class="nav-title">Details</span>
-                                    </span>
-                                </a>
-                                <a class="nav-link" href="#project-stages" data-tab="project-stages"
-                                data-name="tab-project-stages" data-bs-toggle="tab">
-                                <span class="nav-contents">
-                                    <span class="nav-title">Stages</span>
-                                </span>
-                                </a>
-                                <a class="nav-link" href="#project-contractors" data-tab="project-contractors"
-                                data-name="tab-project-contractors" data-bs-toggle="tab">
-                                    <span class="nav-contents">
-                                        <span class="nav-title">Contractors</span>
-                                    </span>
-                                </a>
-                                <a class="nav-link" href="#project-labors" data-tab="project-labors"
-                                data-name="tab-project-labors" data-bs-toggle="tab">
-                                    <span class="nav-contents">
-                                        <span class="nav-title">Labors</span>
-                                    </span>
-                                </a>
-                               <a class="nav-link" href="#project-purchases" data-tab="project-purchases"
-                               data-name="tab-project-purchases" data-bs-toggle="tab">
-                                   <span class="nav-contents">
-                                       <span class="nav-title">Purchases</span>
-                                   </span>
-                               </a>
+                              <a class="nav-link active" href="#project-details" data-tab="project-details"
+                              data-name="tab-project-details" data-bs-toggle="tab">
+                                  <span class="nav-contents">
+                                      <span class="nav-title">Details</span>
+                                  </span>
+                              </a>
+                              <a class="nav-link" href="#project-stages" data-tab="project-stages"
+                              data-name="tab-project-stages" data-bs-toggle="tab">
+                              <span class="nav-contents">
+                                  <span class="nav-title">Stages</span>
+                              </span>
+                              </a>
+                              <a class="nav-link" href="#project-contractors" data-tab="project-contractors"
+                              data-name="tab-project-contractors" data-bs-toggle="tab">
+                                  <span class="nav-contents">
+                                      <span class="nav-title">Contractors</span>
+                                  </span>
+                              </a>
+                              <a class="nav-link" href="#project-labors" data-tab="project-labors"
+                              data-name="tab-project-labors" data-bs-toggle="tab">
+                                  <span class="nav-contents">
+                                      <span class="nav-title">Labors</span>
+                                  </span>
+                              </a>
+                              <a class="nav-link" href="#project-purchases" data-tab="project-purchases"
+                              data-name="tab-project-purchases" data-bs-toggle="tab">
+                                  <span class="nav-contents">
+                                      <span class="nav-title">Purchases</span>
+                                  </span>
+                              </a>
                             </div>
                             <div class="position-relative" style="margin: 0 -2rem; background-color: #b1b1b1;">
                                 <hr class="border-top">
@@ -268,6 +268,33 @@
                                                 <p class="text-sm text-gray-500">Area</p>
                                                 <p class="font-medium">{{ number_format($site?->area_sqft) }} sqft</p>
                                               </div>
+
+                                              @php
+                                                  $mapping = $site?->siteLeadMapping;
+                                                  $status = strtolower($mapping?->status ?? '');
+                                              @endphp
+
+                                              @if($mapping && in_array($status, ['booked', 'sold']))
+                                                <div class="pt-2 border-t">
+                                                  <div>
+                                                    <p class="text-sm text-gray-500">Lead Name</p>
+                                                    <p class="font-medium">{{ $mapping->lead?->name }}</p>
+                                                  </div>
+                                                  <div class="mt-2">
+                                                    <p class="text-sm text-gray-500">Booking Status</p>
+                                                    <span class="px-3 py-1 inline-block text-sm font-medium {{ $status === 'sold' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800' }} rounded-full">
+                                                      {{ ucfirst($status) }}
+                                                    </span>
+                                                  </div>
+                                                </div>
+                                              @else
+                                                <div class="pt-2 border-t">
+                                                  <p class="text-sm text-gray-500">Booking Status</p>
+                                                  <span class="px-3 py-1 inline-block text-sm font-medium bg-green-100 text-green-800 rounded-full">
+                                                    Open
+                                                  </span>
+                                                </div>
+                                              @endif
 
                                             </div>
                                           </div>
@@ -785,7 +812,7 @@
                 columns: [
                     {data: 'DT_RowIndex', orderable: false, searchable: false},
                     {data: 'name'},
-                    {data: 'project_name'},
+                    {data: 'site_name'},
                     {data: 'date'},
                     {data: 'stage_name'},
                     {data: 'status'},

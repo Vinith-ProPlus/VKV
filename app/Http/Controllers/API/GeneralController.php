@@ -8,6 +8,7 @@ use App\Http\Requests\VisitorRequest;
 use App\Models\Admin\Labor\LaborDesignation;
 use App\Models\Admin\ManageProjects\ProjectStage;
 use App\Models\Admin\ManageProjects\ProjectTask;
+use App\Models\Admin\ManageProjects\SiteStage;
 use App\Models\Admin\Master\Area;
 use App\Models\Admin\Master\District;
 use App\Models\Admin\Master\Pincode;
@@ -45,6 +46,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use Spatie\Permission\Models\Role;
 use Throwable;
+
 use function Laravel\Prompts\warning;
 
 class GeneralController extends Controller
@@ -145,8 +147,8 @@ class GeneralController extends Controller
 
     public function getStages(Request $request): JsonResponse
     {
-        $query = ProjectStage::with(['tasks' => fn($q) => $q->whereIn('status', ['Created', 'In-progress', 'Completed']), 'project:id,name'])
-            ->when($request->filled('project_id'), fn($q) => $q->where('project_id', $request->project_id));
+        $query = SiteStage::with(['tasks' => fn($q) => $q->whereIn('status', ['Created', 'In-progress', 'Completed']), 'site:id,project_id'])
+            ->when($request->filled('project_id'), fn($q) => $q->whereHas('site', fn($s) => $s->where('project_id', $request->project_id)));
 
         $stages = dataFilter($query, $request, ['name']);
 
@@ -166,13 +168,12 @@ class GeneralController extends Controller
 
             return [
                 'id' => $stage->id,
-                'project_id' => $stage->project_id,
-                'project_name' => optional($stage->project)->name ?? "N/A",
+                'site_id' => $stage->site_id,
+                'project_id' => $stage->site->project_id ?? null,
                 'name' => $stage->name,
                 'order_no' => $stage->order_no,
                 'status' => $status,
                 'completion_percentage' => $completionPercentage,
-//                'tasks' => $stage->tasks,
             ];
         });
 
