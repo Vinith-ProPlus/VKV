@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('site_id')->constrained('sites')->onDelete('cascade');
             $table->foreignId('lead_id')->constrained('leads')->onDelete('cascade');
-            $table->enum('status', ['open', 'booked', 'sold'])->default('open');
+            $table->enum('status', ['open', 'booked', 'sold', 'new', 'under followup'])->default('open');
             $table->timestamps();
 
             $table->unique('site_id');

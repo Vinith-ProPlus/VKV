@@ -127,6 +127,8 @@ Route::group(['prefix'=>'admin'], static function (){
         Route::resource('followups', FollowupsController::class)->except('show');
         Route::put('followups/restore/{id}', [FollowupsController::class, 'restore'])->name('followups.restore')->middleware('can:Restore Followups');
         Route::get('followups/last', [FollowupsController::class, 'getLastFollowup'])->name('followups.getLastFollowup')->middleware('can:View Followups');
+        Route::get('followups/all-history', [FollowupsController::class, 'getAllFollowups'])->name('followups.getAllFollowups')->middleware('can:View Followups');
+        Route::get('leads/{leadId}/followups', [FollowupsController::class, 'showLeadFollowups'])->name('leads.followups.view')->middleware('can:View Lead');
 
         Route::resource('visitors', VisitorController::class);
         Route::put('visitors/restore/{id}', [VisitorController::class, 'restore'])->name('visitors.restore')->middleware('can:Restore Visitors');

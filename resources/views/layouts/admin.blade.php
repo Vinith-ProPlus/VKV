@@ -176,6 +176,8 @@
             font-size: 14px;
         }
     </style>
+	@yield('style')
+
 	<body>
 		<input type="hidden" style="display:none!important" id="txtRootUrl" value="{{url('/')}}/">
 		<input type="hidden" name="txtActiveName" id="txtActiveName" value="{{$ActiveMenuName ?? ''}}">

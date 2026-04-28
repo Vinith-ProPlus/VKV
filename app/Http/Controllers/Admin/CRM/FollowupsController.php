@@ -80,13 +80,16 @@ class FollowupsController extends Controller
      *
      * @throws AuthorizationException
      */
-    public function create()
+    public function create(Request $request)
     {
         $followup = null;
         $customers = Lead::get();
         $projects = Project::all();
+        
+        // Pre-select lead if lead_id is passed in the request
+        $selectedLeadId = $request->query('lead_id');
 
-        return view('admin.crm.followups.data', compact('followup', 'customers', 'projects'));
+        return view('admin.crm.followups.data', compact('followup', 'customers', 'projects', 'selectedLeadId'));
     }
 
     /**
@@ -193,5 +196,41 @@ class FollowupsController extends Controller
     {
         $followup = Followup::where('customer_id', $req->customer_id)->latest()->first();
         return response()->json(['success' => true, 'data' => $followup]);
+    }
+
+    public function getAllFollowups(Request $req)
+    {
+        $followup = Followup::where('customer_id', $req->customer_id)
+            ->with('project', 'site')
+            ->latest('created_at')
+            ->first();
+
+        if ($followup) {
+            $data = [
+                'id' => $followup->id,
+                'status' => $followup->status,
+                'remarks' => $followup->remarks,
+                'created_at' => $followup->created_at,
+                'project_name' => $followup->project->name ?? 'N/A',
+                'site_no' => $followup->site->site_no ?? 'Not Specified',
+            ];
+            return response()->json(['success' => true, 'data' => $data]);
+        }
+
+        return response()->json(['success' => true, 'data' => null]);
+    }
+
+    /**
+     * Show all followups for a specific lead
+     */
+    public function showLeadFollowups($leadId)
+    {
+        $lead = Lead::findOrFail($leadId);
+        $followups = Followup::where('customer_id', $leadId)
+            ->with('project', 'site')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return view('admin.crm.followups.followups_view', compact('lead', 'followups'));
     }
 }

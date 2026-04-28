@@ -25,6 +25,7 @@ class Lead extends Model
         'email',
         'mobile_number',
         'lead_source_id',
+        'lead_owner_id',
         'image',
     ];
 
@@ -46,6 +47,10 @@ class Lead extends Model
 
     public function leadSource() {
         return $this->belongsTo(LeadSource::class);
+    }
+
+    public function owner() {
+        return $this->belongsTo(User::class, 'lead_owner_id');
     }
 
     public function siteLeadMappings()
