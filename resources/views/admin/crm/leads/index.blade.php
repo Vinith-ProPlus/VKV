@@ -89,7 +89,7 @@
 @endsection
 @section('style')
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-multiselect/2.5.2/css/bootstrap-multiselect.min.css">
-    <link>
+    <style>
         .multiselect-container {
             max-height: 300px;
             overflow-y: auto;
@@ -109,7 +109,7 @@
         .btn-default:hover {
             background-color: #e2e6ea;
         }
-    </link>
+    </style>
 @endsection
 @section('script')
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-multiselect/2.5.2/js/bootstrap-multiselect.min.js"></script>

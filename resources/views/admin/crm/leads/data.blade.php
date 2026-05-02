@@ -140,6 +140,19 @@
                                         @enderror
                                     </div>
 
+                                    <div class="form-group col-sm-6 col-lg-6 mt-15">
+                                        <label>Lead Owner</label>
+                                        <select name="lead_owner_id" id="lead_owner_id" class="form-control select2 @error('lead_owner_id') is-invalid @enderror">
+                                            <option value="">Select a Lead Owner</option>
+                                            @foreach($users as $user)
+                                                <option value="{{ $user->id }}" {{ $lead && old('lead_owner_id', $lead->lead_owner_id) == $user->id ? 'selected' : '' }}>{{ $user->name }}</option>
+                                            @endforeach
+                                        </select>
+                                        @error('lead_owner_id')
+                                        <span class="error invalid-feedback">{{$message}}</span>
+                                        @enderror
+                                    </div>
+
                                     <div class="row mt-15 text-end">
                                         <div>
                                             <a href="javascript:void(0)" onclick="window.history.back()" type="button" class="btn btn-warning">Back</a>

@@ -55,7 +55,12 @@ class LeadController extends Controller
         }
         
         $isSuperAdmin = auth()->user()->hasRole('Super Admin');
-        $users = $isSuperAdmin ? User::where('id', '!=', auth()->id())->select('id', 'name')->get() : [];
+        $users = $isSuperAdmin ? User::where('id', '!=', auth()->id())
+            ->whereHas('roles', function($query) {
+                $query->whereIn('name', ['CRM', 'crm']);
+            })
+            ->select('id', 'name')
+            ->get() : [];
         
         return view('admin.crm.leads.index', compact('isSuperAdmin', 'users'));
     }
@@ -66,7 +71,10 @@ class LeadController extends Controller
     public function create()
     {
         $this->authorize('Create Lead');
-        return view('admin.crm.leads.data', ['lead' => '']);
+        $users = User::whereHas('roles', function($query) {
+            $query->whereIn('name', ['CRM', 'crm']);
+        })->select('id', 'name')->get();
+        return view('admin.crm.leads.data', ['lead' => '', 'users' => $users]);
     }
 
     public function store(LeadRequest $request)
@@ -75,7 +83,9 @@ class LeadController extends Controller
         DB::beginTransaction();
         try {
             $data = $request->all();
-            $data['lead_owner_id'] = auth()->id();
+            if (!isset($data['lead_owner_id']) || empty($data['lead_owner_id'])) {
+                $data['lead_owner_id'] = auth()->id();
+            }
             if ($request->hasFile('image')) {
                 $newImage = $data['image'] = $request->file('image')->store('leads', 'public');
             }
@@ -96,7 +106,10 @@ class LeadController extends Controller
     public function edit(Lead $lead)
     {
         $this->authorize('Edit Lead');
-        return view('admin.crm.leads.data', compact('lead'));
+        $users = User::whereHas('roles', function($query) {
+            $query->whereIn('name', ['CRM', 'crm']);
+        })->select('id', 'name')->get();
+        return view('admin.crm.leads.data', compact('lead', 'users'));
     }
 
     /**
@@ -107,8 +120,10 @@ class LeadController extends Controller
         $this->authorize('Edit Lead');
         DB::beginTransaction();
         try {
-            $data = $request->validated();
-            $data['lead_owner_id'] = auth()->id();
+            $data = $request->all();
+            if (!isset($data['lead_owner_id']) || empty($data['lead_owner_id'])) {
+                $data['lead_owner_id'] = auth()->id();
+            }
             $newImage = null;
             $oldImage = null;
             if ($request->hasFile('image')) {

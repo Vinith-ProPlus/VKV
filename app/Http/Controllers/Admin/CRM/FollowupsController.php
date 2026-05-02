@@ -105,6 +105,18 @@ class FollowupsController extends Controller
             'remarks' => 'nullable|string',
         ]);
 
+        // Check if site_id is already used with "booked" or "sold" status by a different lead
+        if ($validated['site_id']) {
+            $existingMapping = SiteLeadMapping::where('site_id', $validated['site_id'])
+                ->where('lead_id', '!=', $validated['customer_id'])
+                ->whereIn('status', ['booked', 'sold'])
+                ->exists();
+
+            if ($existingMapping) {
+                return redirect()->back()->withInput()->with('warning', 'This site is already booked or sold by another lead. Cannot assign to this site.');
+            }
+        }
+
         $followup = Followup::create($validated);
 
         // Sync with SiteLeadMapping if site_id exists
@@ -148,6 +160,18 @@ class FollowupsController extends Controller
             'status' => 'required|in:new,under followup,visited,booked,sold,closed',
             'remarks' => 'nullable|string',
         ]);
+
+        // Check if site_id is already used with "booked" or "sold" status by a different lead
+        if ($validated['site_id']) {
+            $existingMapping = SiteLeadMapping::where('site_id', $validated['site_id'])
+                ->where('lead_id', '!=', $validated['customer_id'])
+                ->whereIn('status', ['booked', 'sold'])
+                ->exists();
+
+            if ($existingMapping) {
+                return redirect()->back()->withInput()->with('warning', 'This site is already booked or sold by another lead. Cannot assign to this site.');
+            }
+        }
 
         $followup->update($validated);
 

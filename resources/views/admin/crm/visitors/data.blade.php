@@ -110,7 +110,7 @@
                                     </div>
 
                                     <!-- Status Dropdown -->
-                                    <div class="form-group col-sm-6 col-lg-6 mt-15">
+                                    <div class="form-group col-sm-6 col-lg-6 mt-15" style="display: none;">
                                         <label>Status <span class="text-danger">*</span></label>
                                         <select name="status" id="status"
                                             class="form-control select2 @error('status') is-invalid @enderror" required>
