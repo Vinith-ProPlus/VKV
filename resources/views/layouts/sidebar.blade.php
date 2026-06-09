@@ -153,14 +153,6 @@
                                        title="">Manage Users</a>
                                 </li>
                             @endcan
-                            <!--
-                            <li class=""><a
-                                    href="http://localhost/VKV-OLD/admin/users-and-permissions/users/"  data-active-name="Users" data-original-title="" title="">Users</a>
-                            </li>
-                            <li class=""><a
-                                    href="http://localhost/VKV-OLD/admin/users-and-permissions/change-password/"  data-active-name="Change-Password" data-original-title=""
-                                    title="">Change Password</a></li>
-                                    -->
                         </ul>
                     </li>
                     <li class="dropdown CMenus"><a class="nav-link menu-title" href="#">
@@ -195,14 +187,6 @@
                                        title="">Followups</a>
                                 </li>
                             @endcan
-                            <!--
-                            <li class=""><a
-                                    href="http://localhost/VKV-OLD/admin/users-and-permissions/users/"  data-active-name="Users" data-original-title="" title="">Users</a>
-                            </li>
-                            <li class=""><a
-                                    href="http://localhost/VKV-OLD/admin/users-and-permissions/change-password/"  data-active-name="Change-Password" data-original-title=""
-                                    title="">Change Password</a></li>
-                                    -->
                         </ul>
                     </li>
                     <li class="dropdown CMenus"><a class="nav-link menu-title" href="#">
