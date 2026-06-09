@@ -114,9 +114,9 @@ class PermissionSeeder extends Seeder
                 "role_id" => $super_admin_role_id,
             ],
             [
-                "name" => 'Anand',
-                "email" => 'anand@propluslogics.com',
-                "password" => Hash::make('proplus1234$'),
+                "name" => 'Super Admin',
+                "email" => 'admin@gmail.com',
+                "password" => Hash::make('admin@123'),
                 "role_id" => $super_admin_role_id,
             ]
         ];
