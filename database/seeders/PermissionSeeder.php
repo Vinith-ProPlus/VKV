@@ -2,6 +2,10 @@
 
 namespace Database\Seeders;
 
+use App\Models\Admin\Master\Area;
+use App\Models\Admin\Master\District;
+use App\Models\Admin\Master\Pincode;
+use App\Models\Admin\Master\State;
 use App\Models\ContractType;
 use App\Models\SupportType;
 use App\Models\User;
@@ -22,6 +26,8 @@ class PermissionSeeder extends Seeder
      */
     public function run()
     {
+        $defaultAddress = $this->defaultAddress();
+
         $modules = [
             // Master
             ['guard_name' => 'web', 'model' => 'States'],
@@ -124,7 +130,7 @@ class PermissionSeeder extends Seeder
         foreach ($users as $userData) {
             $admin = User::updateOrCreate(
                 ['email' => $userData['email']],
-                $userData
+                array_merge($userData, $defaultAddress)
             );
             $admin->assignRole($super_admin_role_id);
         }
@@ -153,7 +159,7 @@ class PermissionSeeder extends Seeder
         foreach ($supervisors as $supervisorData) {
             $supervisor = User::updateOrCreate(
                 ['email' => $supervisorData['email']],
-                $supervisorData
+                array_merge($supervisorData, $defaultAddress)
             );
             $supervisor->assignRole($supervisor_role_id);
         }
@@ -182,7 +188,7 @@ class PermissionSeeder extends Seeder
         foreach ($engineers as $engineerData) {
             $engineer = User::updateOrCreate(
                 ['email' => $engineerData['email']],
-                $engineerData
+                array_merge($engineerData, $defaultAddress)
             );
             $engineer->assignRole($engineer_role_id);
         }
@@ -211,7 +217,7 @@ class PermissionSeeder extends Seeder
         foreach ($vendors as $vendorData) {
             $vendor = User::updateOrCreate(
                 ['email' => $vendorData['email']],
-                $vendorData
+                array_merge($vendorData, $defaultAddress)
             );
             $vendor->assignRole($vendor_role_id);
         }
@@ -240,7 +246,7 @@ class PermissionSeeder extends Seeder
         foreach ($contractors as $contractorData) {
             $contractor = User::updateOrCreate(
                 ['email' => $contractorData['email']],
-                $contractorData
+                array_merge($contractorData, $defaultAddress)
             );
             $contractor->assignRole($contractor_role_id);
         }
@@ -272,5 +278,32 @@ class PermissionSeeder extends Seeder
             SupportType::firstOrCreate(['name' => $support_type, 'is_active' => true]);
         }
 
+    }
+
+    private function defaultAddress(): array
+    {
+        $stateId = State::query()->where('name', 'Tamil Nadu')->value('id');
+        $districtId = District::query()
+            ->where('name', 'Coimbatore')
+            ->where('state_id', $stateId)
+            ->value('id');
+        $areaId = Area::query()
+            ->where('name', 'Coimbatore Press Colony')
+            ->where('district_id', $districtId)
+            ->value('id');
+        $pincodeId = Pincode::query()->where('area_id', $areaId)->value('id');
+
+        if (!$stateId || !$districtId || !$areaId || !$pincodeId) {
+            throw new \RuntimeException(
+                'Default address not found. Run AddressDataSeeder before PermissionSeeder.'
+            );
+        }
+
+        return [
+            'state_id' => $stateId,
+            'district_id' => $districtId,
+            'area_id' => $areaId,
+            'pincode_id' => $pincodeId,
+        ];
     }
 }
