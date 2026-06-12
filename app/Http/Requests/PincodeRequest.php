@@ -23,12 +23,10 @@ class PincodeRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'pincode' => [
-                'required', 'string', 'max:100',
-                Rule::unique('pincodes')->ignore($this->route('pincode'))
-            ],
+            'pincode' => ['required', 'digits:6'],
             'area_id' => [
                 'required', 'integer', 'exists:areas,id',
+                Rule::unique('pincodes')->ignore($this->route('pincode')),
             ],
             'is_active' => 'required|boolean',
         ];
