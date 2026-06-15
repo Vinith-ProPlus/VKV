@@ -9,7 +9,22 @@ class SiteTask extends Model
 {
     use SoftDeletes;
 
-    protected $fillable = ['site_id', 'stage_id', 'name', 'order_no', 'status', 'created_by_id', 'start_date', 'end_date'];
+    protected $fillable = [
+        'site_id',
+        'stage_id',
+        'name',
+        'date',
+        'image',
+        'description',
+        'status',
+        'created_by_id',
+        'completed_at',
+    ];
+
+    protected $casts = [
+        'date' => 'datetime',
+        'completed_at' => 'datetime',
+    ];
 
     public function stage()
     {

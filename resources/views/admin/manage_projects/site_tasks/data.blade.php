@@ -104,7 +104,7 @@
                                         @unless($site_task ?? false)
                                             min="{{ now()->format('Y-m-d') }}"
                                         @endunless
-                                            value="{{ Carbon\Carbon::parse(old('date', $site_task->date ?? ''))->format('Y-m-d') }}" required>
+                                            value="{{ old('date', $site_task?->date ? \Carbon\Carbon::parse($site_task->date)->format('Y-m-d') : '') }}" required>
                                         @error('date')
                                         <div class="text-danger mt-1">{{ $message }}</div>
                                         @enderror

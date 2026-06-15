@@ -82,17 +82,17 @@ class SiteTaskController extends Controller{
     public function create(): View|Factory|Application
     {
     $this->authorize('Create Site Tasks');
-    return view('admin.manage_projects.site_tasks.data', ['site_task' => '']);
+    return view('admin.manage_projects.site_tasks.data', ['site_task' => null]);
     }
     /**
      * @throws AuthorizationException
      */
-    public function store(Request $request): RedirectResponse
+    public function store(SiteTaskRequest $request): RedirectResponse
     {
         $this->authorize('Create Site Tasks');
         DB::beginTransaction();
         try {
-            $data = $request->all();
+            $data = $request->validated();
             if ($request->input('status') == 'Completed') {
                 $data['completed_at'] = now();
             }
@@ -124,12 +124,12 @@ class SiteTaskController extends Controller{
     /**
      * @throws AuthorizationException
      */
-    public function update(Request $request, SiteTask $site_task): RedirectResponse
+    public function update(SiteTaskRequest $request, SiteTask $site_task): RedirectResponse
     {
         $this->authorize('Edit Site Tasks');
         DB::beginTransaction();
         try {
-            $data = $request->all();
+            $data = $request->validated();
             if ($request->input('status') == 'Completed') {
                 $data['completed_at'] = now();
             }
