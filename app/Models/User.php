@@ -113,9 +113,7 @@ class User extends Authenticatable
 
     public function tasks()
     {
-        return ProjectTask::whereHas('project.site.supervisors', function ($query) {
-            $query->where('users.id', $this->id);
-        });
+        return ProjectTask::forSupervisor($this->id);
     }
     public function devices(): HasMany
     {
