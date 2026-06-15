@@ -9,6 +9,7 @@ use App\Models\Admin\Labor\LaborDesignation;
 use App\Models\Admin\ManageProjects\ProjectStage;
 use App\Models\Admin\ManageProjects\ProjectTask;
 use App\Models\Admin\ManageProjects\SiteStage;
+use App\Models\Admin\ManageProjects\SiteTask;
 use App\Models\Admin\Master\Area;
 use App\Models\Admin\Master\District;
 use App\Models\Admin\Master\Pincode;
@@ -301,35 +302,61 @@ class GeneralController extends Controller
 
     public function HomeScreen(): JsonResponse
     {
-        $user = auth()->user();
-        $user->role_name = Role::find($user->role_id)?->name ?? 'N/A';
-        $user->image = generate_file_url($user->image);
+        try {
+            $user = auth()->user();
+            if (!$user) {
+                return $this->errorResponse([], 'Unauthenticated', 401);
+            }
 
-        $userId = $user->id;
-        $query = ProjectTask::with(['project:id,name', 'stage:id,name'])
-            ->forSupervisor($userId)
-            ->whereDate('date', today());
+            $user->role_name = Role::find($user->role_id)?->name ?? 'N/A';
+            $user->image = generate_file_url($user->image);
 
-        $today_tasks = (clone $query)->limit(2)->get();
-        $today_tasks->transform(static function ($today_task) {
-            $today_task->image = generate_file_url($today_task->image);
-            return $today_task;
-        });
-        $total_today_task = $query->count();
-        $notification_count = 0;
-        // Check user's last attendance entry for today
-        $lastAttendance = MobileUserAttendance::where('user_id', $userId)
-            ->whereDate('time', Carbon::today())
-            ->latest('time')
-            ->first();
+            $userId = $user->id;
+            $query = SiteTask::with(['site.project:id,name', 'stage:id,name'])
+                ->whereHas(
+                    'site.project.supervisors',
+                    static fn($q) => $q->where('users.id', $userId)
+                )
+                ->whereDate('date', today());
 
-        // Determine if the user should check in or check out
-        $check_in_status = $lastAttendance && $lastAttendance->type === 'check_in';
+            $today_tasks = (clone $query)->limit(2)->get();
+            $today_tasks->transform(static function ($today_task) {
+                $today_task->image = generate_file_url($today_task->image);
+                $today_task->project = $today_task->site?->project;
+                return $today_task;
+            });
+            $total_today_task = $query->count();
+            $notification_count = 0;
 
-        return $this->successResponse(
-            compact('user', 'today_tasks', 'total_today_task', 'notification_count', 'check_in_status'),
-            "Home Screen data fetched successfully!"
-        );
+            $lastAttendance = MobileUserAttendance::where('user_id', $userId)
+                ->whereDate('time', Carbon::today())
+                ->latest('time')
+                ->first();
+
+            $check_in_status = $lastAttendance && $lastAttendance->type === 'check_in';
+
+            return $this->successResponse(
+                compact('user', 'today_tasks', 'total_today_task', 'notification_count', 'check_in_status'),
+                'Home Screen data fetched successfully!'
+            );
+        } catch (Throwable $e) {
+            Log::error('HomeScreen failed', [
+                'user_id' => auth()->id(),
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ]);
+
+            return $this->errorResponse(
+                [
+                    'error' => $e->getMessage(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                ],
+                'Home Screen failed: ' . $e->getMessage(),
+                500
+            );
+        }
     }
 
     public function getVisitors(Request $request): JsonResponse
