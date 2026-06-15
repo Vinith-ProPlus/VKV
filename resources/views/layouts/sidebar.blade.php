@@ -25,6 +25,12 @@
                             <span>Dashboard</span>
                             <div class="according-menu"><i class="fa fa-angle-double-right"></i></div>
                         </a></li>
+
+                    @canany([
+                        'View States', 'View Districts', 'View Areas', 'View Pincodes', 'View Tax',
+                        'View Unit of Measurement', 'View Product Category', 'View Product',
+                        'View Warehouse', 'View Contract Type',
+                    ])
                     <li class="dropdown CMenus"><a class="nav-link menu-title" href="#">
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
                                  viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -62,8 +68,10 @@
                             @can('View Tax')
                             <li class=""><a href="{{ route('taxes.index') }}" data-active-name="Tax" data-original-title="" title="">Tax</a></li>
                             @endcan
+                            @can('View Unit of Measurement')
                             <li class=""><a href="{{ route('units.index') }}"  data-active-name="Unit-Of-Measurement" data-original-title=""
                                     title="">Unit of Measurement</a></li>
+                            @endcan
                             @can('View Product Category')
                             <li class="">
                                 <a href="{{ route('product_categories.index') }}" data-active-name="Product-Category" data-original-title=""
@@ -90,6 +98,9 @@
                             @endcan
                         </ul>
                     </li>
+                    @endcanany
+
+                    @canany(['View Amenities', 'View Projects', 'View Sites', 'View Site Tasks'])
                     <li class="dropdown CMenus"><a class="nav-link menu-title" href="#">
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M5 3h10l6 6v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"></path>
@@ -121,13 +132,11 @@
                                     <a href="{{ route('site_tasks.index') }}" data-active-name="Site Tasks" data-original-title="" title="">Site Tasks</a>
                                 </li>
                             @endcan
-                            {{-- @can('View Project Specifications')
-                                <li class="">
-                                    <a href="{{ route('project_specifications.index') }}" data-active-name="Project-Specifications" data-original-title="" title="">Project Specifications</a>
-                                </li>
-                            @endcan --}}
                         </ul>
                     </li>
+                    @endcanany
+
+                    @canany(['View Roles and Permissions', 'View Users'])
                     <li class="dropdown CMenus"><a class="nav-link menu-title" href="#">
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
                                  viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -155,6 +164,9 @@
                             @endcan
                         </ul>
                     </li>
+                    @endcanany
+
+                    @canany(['View Lead Source', 'View Lead', 'View Visitors', 'View Followups'])
                     <li class="dropdown CMenus"><a class="nav-link menu-title" href="#">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-person-workspace" viewBox="0 0 16 16">
                             <path d="M4 16s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1zm4-5.95a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5"/>
@@ -189,6 +201,9 @@
                             @endcan
                         </ul>
                     </li>
+                    @endcanany
+
+                    @canany(['View Labor Designations', 'View Labors', 'View Payrolls'])
                     <li class="dropdown CMenus"><a class="nav-link menu-title" href="#">
                         <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="currentColor" class="bi bi-person-fill-gear" viewBox="0 0 16 16">
                             <path d="M11 5a3 3 0 1 1-6 0 3 3 0 0 1 6 0m-9 8c0 1 1 1 1 1h5.256A4.5 4.5 0 0 1 8 12.5a4.5 4.5 0 0 1 1.544-3.393Q8.844 9.002 8 9c-5 0-6 3-6 4m9.886-3.54c.18-.613 1.048-.613 1.229 0l.043.148a.64.64 0 0 0 .921.382l.136-.074c.561-.306 1.175.308.87.869l-.075.136a.64.64 0 0 0 .382.92l.149.045c.612.18.612 1.048 0 1.229l-.15.043a.64.64 0 0 0-.38.921l.074.136c.305.561-.309 1.175-.87.87l-.136-.075a.64.64 0 0 0-.92.382l-.045.149c-.18.612-1.048.612-1.229 0l-.043-.15a.64.64 0 0 0-.921-.38l-.136.074c-.561.305-1.175-.309-.87-.87l.075-.136a.64.64 0 0 0-.382-.92l-.148-.045c-.613-.18-.613-1.048 0-1.229l.148-.043a.64.64 0 0 0 .382-.921l-.074-.136c-.306-.561.308-1.175.869-.87l.136.075a.64.64 0 0 0 .92-.382zM14 12.5a1.5 1.5 0 1 0-3 0 1.5 1.5 0 0 0 3 0"/>
@@ -215,6 +230,9 @@
                             @endcan
                         </ul>
                     </li>
+                    @endcanany
+
+                    @canany(['View Purchase Requests', 'View Purchase Orders', 'View Project Stocks'])
                     <li class="dropdown CMenus"><a class="nav-link menu-title" href="#">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-credit-card" viewBox="0 0 16 16">
                             <path d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v1h14V4a1 1 0 0 0-1-1zm13 4H1v5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1z"/>
@@ -244,6 +262,9 @@
                             @endcan
                         </ul>
                     </li>
+                    @endcanany
+
+                    @canany(['View Contents', 'View Mobile Versions'])
                     <li class="dropdown CMenus"><a class="nav-link menu-title" href="#">
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
                                  viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -265,6 +286,9 @@
                             @endcan
                         </ul>
                     </li>
+                    @endcanany
+
+                    @can('View Support Tickets')
                     <li class="dropdown CMenus">
                         <a class="nav-link menu-title" href="#">
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
@@ -278,15 +302,16 @@
                             <div class="according-menu"><i class="fa fa-angle-double-right"></i></div>
                         </a>
                         <ul class="nav-submenu menu-content" style="display: none;">
-                            @can('View Support Tickets')
-                                <li class="">
-                                    <a href="{{ route('support_tickets.index') }}" data-active-name="Support-Tickets" title="Support Tickets">
-                                        Support Tickets
-                                    </a>
-                                </li>
-                            @endcan
+                            <li class="">
+                                <a href="{{ route('support_tickets.index') }}" data-active-name="Support-Tickets" title="Support Tickets">
+                                    Support Tickets
+                                </a>
+                            </li>
                         </ul>
                     </li>
+                    @endcan
+
+                    @can('View Blogs')
                     <li class="dropdown CMenus">
                         <a class="nav-link menu-title" href="#">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-substack" viewBox="0 0 16 16">
@@ -296,17 +321,18 @@
                             <div class="according-menu"><i class="fa fa-angle-double-right"></i></div>
                         </a>
                         <ul class="nav-submenu menu-content" style="display: none;">
-                            @can('View Blogs')
-                                <li class="">
-                                    <a href="{{ route('blogs.index') }}" data-active-name="Blog" title="Blogs">
-                                        Blogs
-                                    </a>
-                                </li>
-                            @endcan
+                            <li class="">
+                                <a href="{{ route('blogs.index') }}" data-active-name="Blog" title="Blogs">
+                                    Blogs
+                                </a>
+                            </li>
                         </ul>
                     </li>
+                    @endcan
+
+                    @can('View Project Reports')
                     <li class="dropdown CMenus">
-                        <a class="nav-link" href="{{route('project_reports.index')}}">
+                        <a class="nav-link" href="{{ route('project_reports.index') }}">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-file-earmark-bar-graph" viewBox="0 0 16 16">
                                 <path d="M10 13.5a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-6a.5.5 0 0 0-.5-.5h-1a.5.5 0 0 0-.5.5zm-2.5.5a.5.5 0 0 1-.5-.5v-4a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v4a.5.5 0 0 1-.5.5zm-3 0a.5.5 0 0 1-.5-.5v-2a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-.5.5z"/>
                                 <path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2M9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5z"/>
@@ -314,6 +340,8 @@
                             <span>Project Reports</span>
                         </a>
                     </li>
+                    @endcan
+
                     <li class="dropdown CMenus" id="btnLogout"><a class="nav-link menu-title link-nav" data-active-name="logout"
                                 onclick="event.preventDefault(); document.getElementById('logout-form').submit();" type="button">
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"

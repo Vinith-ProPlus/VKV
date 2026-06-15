@@ -334,20 +334,28 @@ class GeneralController extends Controller
             $user->image = generate_file_url($user->image);
 
             $userId = $user->id;
-            $query = SiteTask::with(['site.project:id,name', 'stage:id,name'])
+            $todayTasksQuery = SiteTask::query()
                 ->whereHas(
                     'site.project.supervisors',
                     static fn($q) => $q->where('users.id', $userId)
                 )
-                ->whereDate('date', today());
+                ->whereDate('date', today())
+                ->whereIn('status', ['Created', 'In-progress', 'Completed']);
 
-            $today_tasks = (clone $query)->limit(2)->get();
+            $today_tasks = (clone $todayTasksQuery)
+                ->with(['site.project:id,name', 'stage:id,name'])
+                ->orderBy('date')
+                ->orderBy('id')
+                ->get();
+
             $today_tasks->transform(static function ($today_task) {
                 $today_task->image = generate_file_url($today_task->image);
                 $today_task->project = $today_task->site?->project;
+
                 return $today_task;
             });
-            $total_today_task = $query->count();
+
+            $total_today_task = $today_tasks->count();
             $notification_count = 0;
 
             $lastAttendance = MobileUserAttendance::where('user_id', $userId)
