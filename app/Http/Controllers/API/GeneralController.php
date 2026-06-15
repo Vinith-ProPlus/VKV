@@ -258,27 +258,32 @@ class GeneralController extends Controller
 
     public function getTasks(Request $request): JsonResponse
     {
-        $userId = Auth::id();
-        $today = today();
-        $tasks = ProjectTask::with('project:id,name', 'stage:id,name', 'created_by:id,name')
-            ->forSupervisor($userId)
-            ->when($request->filled('project_id'), static fn($q) => $q->forProject($request->project_id))
-            ->where(static function ($q) use ($today) {
-                $q->where(static function ($subQuery) use ($today) {
-                    $subQuery->where('date', '<', $today)
-                        ->whereIn('status', ['Created', 'In-progress']);
-                })->orWhere(static function ($subQuery) use ($today) {
-                    $subQuery->where('date', $today)
-                        ->whereIn('status', ['Created', 'In-progress', 'Completed']);
+        try {
+            $userId = Auth::id();
+            $today = today();
+            $tasks = ProjectTask::with('project:id,name', 'stage:id,name', 'created_by:id,name')
+                ->forSupervisor($userId)
+                ->when($request->filled('project_id'), static fn($q) => $q->forProject($request->project_id))
+                ->where(static function ($q) use ($today) {
+                    $q->where(static function ($subQuery) use ($today) {
+                        $subQuery->where('date', '<', $today)
+                            ->whereIn('status', ['Created', 'In-progress']);
+                    })->orWhere(static function ($subQuery) use ($today) {
+                        $subQuery->where('date', $today)
+                            ->whereIn('status', ['Created', 'In-progress', 'Completed']);
+                    });
                 });
-            });
-        $tasks = dataFilter($tasks, $request);
+            $tasks = dataFilter($tasks, $request);
 
-        $tasks->transform(static function ($task) {
-            $task->image = generate_file_url($task->image);
-            return $task;
-        });
-        return $this->successResponse(dataFormatter($tasks), "Tasks fetched successfully!");
+            $tasks->transform(static function ($task) {
+                $task->image = generate_file_url($task->image);
+                return $task;
+            });
+
+            return $this->successResponse(dataFormatter($tasks), 'Tasks fetched successfully!');
+        } catch (Throwable $e) {
+            return $this->apiExceptionResponse($e, 'getTasks');
+        }
     }
 
     public function createProjectTask(ProjectTaskRequest $request): JsonResponse

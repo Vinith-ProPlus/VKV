@@ -17,5 +17,6 @@ class DatabaseSeeder extends Seeder
 
         $this->call(AddressDataSeeder::class);
         $this->call(PermissionSeeder::class);
+        $this->call(AmenitySeeder::class);
     }
 }

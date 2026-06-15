@@ -44,7 +44,12 @@ class MobileUserAttendanceController extends Controller
             ]);
 
             DB::commit();
-            return $this->successResponse($attendance, ucfirst($request->type) . " recorded successfully!");
+
+            $message = $request->type === 'check_in'
+                ? 'Check-in successful. Have a productive day!'
+                : 'See you tomorrow! Check-out recorded.';
+
+            return $this->successResponse($attendance, $message);
         } catch (Throwable $exception) {
             DB::rollBack();
             Log::error('Error::AttendanceController@recordAttendance - ' . $exception->getMessage());
