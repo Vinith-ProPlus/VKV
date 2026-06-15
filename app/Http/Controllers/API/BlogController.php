@@ -199,11 +199,11 @@ class BlogController extends Controller
 
         // Start building the query for completed tasks
         $query = ProjectTask::with(['project:id,name', 'stage:id,name', 'created_by:id,name'])
-            ->whereHas('project.site.supervisors', fn($q) => $q->where('users.id', $userId))
+            ->forSupervisor($userId)
             ->whereNotNull('completed_at');
 
         if ($request->filled('project_id')) {
-            $query->where('project_id', $request->project_id);
+            $query->forProject($request->project_id);
         }
         if ($request->filled('stage_id')) {
             $query->where('stage_id', $request->stage_id);
