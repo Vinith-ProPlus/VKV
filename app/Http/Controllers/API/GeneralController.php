@@ -128,22 +128,37 @@ class GeneralController extends Controller
 
     public function getProjects(Request $request): JsonResponse
     {
-        $query = Project::with('stages', 'engineer:id,name', 'site:id,name');
+        try {
+            $query = Project::with(['sites:id,project_id,site_no', 'sites.stages:id,site_id,name,order_no']);
 
-        $roles = dataFilter($query, $request, ['name']);
+            $projects = dataFilter($query, $request, ['name']);
 
-        return $this->successResponse(dataFormatter($roles), "Project fetched successfully!");
+            return $this->successResponse(dataFormatter($projects), 'Project fetched successfully!');
+        } catch (Throwable $e) {
+            return $this->apiExceptionResponse($e, 'getProjects');
+        }
     }
+
+    public function getSupervisorProjects(Request $request): JsonResponse
+    {
+        return $this->getTaskProjects($request);
+    }
+
     public function getTaskProjects(Request $request): JsonResponse
     {
-        $query = Project::with('stages', 'engineer:id,name', 'site:id,name')->whereHas('site', static function ($q) {
-            $q->whereHas('supervisors', static function ($supervisorQuery) {
-                $supervisorQuery->where('users.id', Auth::id());
-            });
-        });
+        try {
+            $query = Project::with(['sites:id,project_id,site_no', 'sites.stages:id,site_id,name,order_no'])
+                ->whereHas(
+                    'supervisors',
+                    static fn($q) => $q->where('users.id', Auth::id())
+                );
 
-        $query = dataFilter($query, $request);
-        return $this->successResponse(dataFormatter($query), "Projects fetched successfully!");
+            $query = dataFilter($query, $request, ['name']);
+
+            return $this->successResponse(dataFormatter($query), 'Projects fetched successfully!');
+        } catch (Throwable $e) {
+            return $this->apiExceptionResponse($e, 'getTaskProjects');
+        }
     }
 
     public function getStages(Request $request): JsonResponse
@@ -340,22 +355,7 @@ class GeneralController extends Controller
                 'Home Screen data fetched successfully!'
             );
         } catch (Throwable $e) {
-            Log::error('HomeScreen failed', [
-                'user_id' => auth()->id(),
-                'message' => $e->getMessage(),
-                'file' => $e->getFile(),
-                'line' => $e->getLine(),
-            ]);
-
-            return $this->errorResponse(
-                [
-                    'error' => $e->getMessage(),
-                    'file' => $e->getFile(),
-                    'line' => $e->getLine(),
-                ],
-                'Home Screen failed: ' . $e->getMessage(),
-                500
-            );
+            return $this->apiExceptionResponse($e, 'HomeScreen');
         }
     }
 
@@ -833,5 +833,25 @@ class GeneralController extends Controller
                 $stockQuery->select('project_id', 'product_id', 'quantity')->where('project_id', $project_id)->where('quantity', '>', 0);
             }]);
         }])->get();
+    }
+
+    private function apiExceptionResponse(Throwable $e, string $action): JsonResponse
+    {
+        Log::error("{$action} failed", [
+            'user_id' => auth()->id(),
+            'message' => $e->getMessage(),
+            'file' => $e->getFile(),
+            'line' => $e->getLine(),
+        ]);
+
+        return $this->errorResponse(
+            [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ],
+            "{$action} failed: {$e->getMessage()}",
+            500
+        );
     }
 }
