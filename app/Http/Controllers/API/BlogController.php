@@ -198,7 +198,7 @@ class BlogController extends Controller
         $value = $request->input('value');
 
         // Start building the query for completed tasks
-        $query = ProjectTask::with(['project:id,name', 'stage:id,name', 'created_by:id,name'])
+        $query = ProjectTask::withApiRelations()
             ->forSupervisor($userId)
             ->whereNotNull('completed_at');
 
@@ -236,6 +236,7 @@ class BlogController extends Controller
 
         // Add file URL conversion
         $filteredData->transform(static function ($task) {
+            $task->project = $task->site?->project;
             $task->image = generate_file_url($task->image);
             return $task;
         });

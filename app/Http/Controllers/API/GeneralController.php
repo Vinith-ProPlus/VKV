@@ -246,10 +246,11 @@ class GeneralController extends Controller
     {
         $user = auth()->user();
         $userId = $user->id;
-        $task = ProjectTask::with('project:id,name', 'stage:id,name', 'created_by:id,name')
+        $task = ProjectTask::withApiRelations()
             ->forSupervisor($userId)
             ->where('id', $request->task_id)->first();
-        if($task) {
+        if ($task) {
+            $task->project = $task->site?->project;
             $task->image = generate_file_url($task->image);
             $task->is_in_progress = in_array($task->status, [ON_HOLD, COMPLETED, DELETED], true) ? 0 : 1;
         }
@@ -261,7 +262,7 @@ class GeneralController extends Controller
         try {
             $userId = Auth::id();
             $today = today();
-            $tasks = ProjectTask::with('project:id,name', 'stage:id,name', 'created_by:id,name')
+            $tasks = ProjectTask::withApiRelations()
                 ->forSupervisor($userId)
                 ->when($request->filled('project_id'), static fn($q) => $q->forProject($request->project_id))
                 ->where(static function ($q) use ($today) {
@@ -276,6 +277,7 @@ class GeneralController extends Controller
             $tasks = dataFilter($tasks, $request);
 
             $tasks->transform(static function ($task) {
+                $task->project = $task->site?->project;
                 $task->image = generate_file_url($task->image);
                 return $task;
             });
