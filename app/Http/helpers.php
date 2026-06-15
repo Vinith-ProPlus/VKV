@@ -1168,11 +1168,22 @@ use Random\RandomException;
  */
 function generate_file_url($file_path): Application|string|UrlGenerator
     {
-        if ($file_path && Storage::disk('public')->exists($file_path)) {
-            return url(Storage::url($file_path));
-        }
+        $normalize = static function (?string $path): string {
+            return ltrim(str_replace('\\', '/', (string) $path), '/');
+        };
 
-        $extension = pathinfo($file_path, PATHINFO_EXTENSION) ?? 'png';
+        if (is_string($file_path) && $file_path !== '') {
+            $relativePath = $normalize($file_path);
+            $absolutePath = storage_path('app/public/' . $relativePath);
+
+            if (is_file($absolutePath)) {
+                return url('storage/' . $relativePath);
+            }
+
+            $extension = strtolower(pathinfo($relativePath, PATHINFO_EXTENSION) ?: 'png');
+        } else {
+            $extension = 'png';
+        }
 
         $dummyFiles = [
             'jpg' => 'images/dummy.jpg',
@@ -1191,7 +1202,7 @@ function generate_file_url($file_path): Application|string|UrlGenerator
 
         $dummyFile = $dummyFiles[$extension] ?? 'images/dummy.png';
 
-        return url(Storage::url($dummyFile));
+        return url('storage/' . $dummyFile);
     }
 
     /**
