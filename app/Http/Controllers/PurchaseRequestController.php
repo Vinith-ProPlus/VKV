@@ -86,7 +86,13 @@ class PurchaseRequestController extends Controller
     {
         $this->authorize('Create Purchase Requests');
         $projects = Project::where('is_active', '1')->get();
-        return view('admin.purchase_requests.data', ['purchaseRequest' => '', 'projects' => $projects]);
+        $categories = $this->getActiveCategoriesWithProducts();
+
+        return view('admin.purchase_requests.data', [
+            'purchaseRequest' => '',
+            'projects' => $projects,
+            'categories' => $categories,
+        ]);
     }
 
     /**
@@ -149,7 +155,22 @@ class PurchaseRequestController extends Controller
     {
         $purchaseRequest->load('details.category', 'details.product', 'site', 'supervisor');
         $projects = Project::where('is_active', '1')->get();
-        return view('admin.purchase_requests.data', compact('purchaseRequest', 'projects'));
+        $categories = $this->getActiveCategoriesWithProducts();
+
+        return view('admin.purchase_requests.data', compact('purchaseRequest', 'projects', 'categories'));
+    }
+
+    private function getActiveCategoriesWithProducts()
+    {
+        return ProductCategory::query()
+            ->where('is_active', 1)
+            ->orderBy('name')
+            ->with(['products' => static function ($query) {
+                $query->select('id', 'name', 'category_id')
+                    ->where('is_active', 1)
+                    ->orderBy('name');
+            }])
+            ->get(['id', 'name']);
     }
 
     /**

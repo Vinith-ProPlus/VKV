@@ -412,13 +412,28 @@ class GeneralController extends Controller
 
     public function getCategories(Request $request): JsonResponse
     {
-        $categories = ProductCategory::whereIsActive(1)->get();
+        $categories = ProductCategory::query()
+            ->select('id', 'name')
+            ->where('is_active', 1)
+            ->orderBy('name')
+            ->get();
+
         return response()->json($categories);
     }
 
     public function getProductsByCategory(Request $request): JsonResponse
     {
-        $products = Product::with('category', 'unit')->whereIsActive(1)->where('category_id', $request->category_id)->get();
+        $request->validate([
+            'category_id' => 'required|exists:product_categories,id',
+        ]);
+
+        $products = Product::query()
+            ->select('id', 'name', 'category_id', 'code')
+            ->where('is_active', 1)
+            ->where('category_id', $request->category_id)
+            ->orderBy('name')
+            ->get();
+
         return response()->json($products);
     }
 

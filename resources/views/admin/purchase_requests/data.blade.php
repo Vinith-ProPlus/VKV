@@ -92,6 +92,9 @@
                                             <label for="category_id"><strong>Category</strong></label>
                                             <select class="form-control select2" id="category_id">
                                                 <option value="">Select</option>
+                                                @foreach(($categories ?? []) as $category)
+                                                    <option value="{{ $category->id }}">{{ $category->name }}</option>
+                                                @endforeach
                                             </select>
                                         </div>
                                         <div class="col-3">
@@ -202,6 +205,7 @@
             let productCellId = {{ $isEdit ? ($purchaseRequest->details->count() > 0 ? $purchaseRequest->details->max('id') + 1 : 0) : 0 }};
             let productUpdateId = 0;
             let isConverted = {{ $isConverted ? 'true' : 'false' }};
+            let categories = @json($categories ?? []);
 
             $('.select2').select2();
 
@@ -265,80 +269,39 @@
                 getSites();
             @endif
 
-            // Function to get product categories
-            const getCategories = () => {
-                let categoryID = $('#category_id');
-                let selectedCategoryID = categoryID.attr('data-selected');
-                if (categoryID.hasClass("select2-hidden-accessible")) {
-                    categoryID.select2('destroy');
-                }
-                $('#category_id option').remove();
-                categoryID.append('<option value="">--Select a Category--</option>');
-
-                $.ajax({
-                    url: "{{route('getCategories')}}",
-                    type: 'GET',
-                    dataType: 'json',
-                    success: function (response) {
-                        response.forEach(function (item) {
-                            if ((item.id == selectedCategoryID)) {
-                                categoryID.append('<option selected value="' + item.id
-                                    + '">' + item.name + '</option>');
-                            } else {
-                                categoryID.append('<option value="' + item.id
-                                    + '">' + item.name + '</option>');
-                            }
-                        });
-                        categoryID.select2();
-                    },
-                    error: function (xhr) {
-                        console.error('Error loading categories:', xhr);
-                    }
-                });
-            }
-
-            // Function to get products by category
+            // Load products for selected category from server-provided data
             const getProducts = () => {
                 let productID = $('#product_id');
                 let selectedProductID = productID.attr('data-selected');
                 if (productID.hasClass("select2-hidden-accessible")) {
                     productID.select2('destroy');
                 }
-                $('#product_id option').remove();
-                productID.append('<option value="">--Select a Product--</option>');
+                productID.empty().append('<option value="">--Select a Product--</option>');
+
                 let categoryId = $('#category_id').val();
+                if (!categoryId) {
+                    productID.select2();
+                    return;
+                }
 
-                if (!categoryId) return;
-
-                $.ajax({
-                    url: "{{route('getProductsByCategory')}}",
-                    type: 'GET',
-                    data: {category_id: categoryId},
-                    success: function (response) {
-                        response.forEach(function (item) {
-                            if ((item.id == selectedProductID)) {
-                                productID.append('<option selected value="' + item.id
-                                    + '">' + item.name + '</option>');
-                            } else {
-                                productID.append('<option value="' + item.id
-                                    + '">' + item.name + '</option>');
-                            }
-                        });
-                        productID.select2();
-                    },
-                    error: function (xhr) {
-                        console.error('Error loading products:', xhr);
-                    }
+                let category = categories.find(function (item) {
+                    return String(item.id) === String(categoryId);
                 });
-            }
+
+                if (category && category.products) {
+                    category.products.forEach(function (item) {
+                        let selected = String(item.id) === String(selectedProductID) ? 'selected' : '';
+                        productID.append('<option ' + selected + ' value="' + item.id + '">' + item.name + '</option>');
+                    });
+                }
+
+                productID.select2();
+            };
 
             // Skip initialization if already converted to PO
             if (!isConverted) {
-                // Initialize categories dropdown
-                getCategories();
-
-                // Load products when category changes
                 $('#category_id').change(function () {
+                    $('#product_id').attr('data-selected', '');
                     getProducts();
                 });
 
