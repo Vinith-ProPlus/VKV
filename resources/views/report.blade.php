@@ -308,7 +308,7 @@
                                         <div class="flex justify-between items-center mb-8">
                                           <div>
                                             <h1 class="text-3xl font-bold text-blue-800">{{ $project?->name }}</h1>
-                                            <h1 class="text-xl font-bold text-gray-800"><i class="fas fa-map-marker-alt mr-2" style="font-size: initial;"></i>{{ $project->location }}</h1>
+                                            <h1 class="text-xl font-bold text-gray-800"><i class="fas fa-map-marker-alt mr-2" style="font-size: initial;"></i>{{ $project?->location ?? '—' }}</h1>
                                           </div>
                                           <div class="flex space-x-3">
                                             <button id="printDiv" class="no-print px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-800 transition">
@@ -466,8 +466,8 @@
 
                                               <div>
                                                 <p class="text-sm text-gray-500">Status</p>
-                                                <span class="inline-flex px-3 py-1 text-sm {{ $project->is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }} rounded-full">
-                                                  {{ $project->is_active ? 'Active' : 'Inactive' }}
+                                                <span class="inline-flex px-3 py-1 text-sm {{ ($project?->is_active ?? false) ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }} rounded-full">
+                                                  {{ ($project?->is_active ?? false) ? 'Active' : 'Inactive' }}
                                                 </span>
                                               </div>
 
@@ -492,7 +492,7 @@
                                             </div>
 
                                             <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                                                @forelse($project->amenities ?? [] as $item)
+                                                @forelse(($project?->amenities ?? collect()) as $item)
                                                 <div class="items-center p-3 bg-gray-50 rounded-lg">
                                                     <i class="fas fa-check-circle text-green-500 mr-2"></i>
                                                     <span>{{ $item?->amenity?->name }}</span>
@@ -942,8 +942,8 @@
             });
 
           // Contracts DataTable
-          let project_id = "{{$project->id}}";
-          let site_id = "{{$site->id}}";
+          let project_id = "{{ $project?->id ?? '' }}";
+          let site_id = "{{ $site->id }}";
 
           $('#contractsTable').DataTable({
                 "columnDefs": [{"className": "dt-center", "targets": "_all"}],

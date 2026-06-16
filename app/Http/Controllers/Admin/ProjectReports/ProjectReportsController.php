@@ -19,6 +19,7 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\View\View;
 use Yajra\DataTables\Facades\DataTables;
 
@@ -52,7 +53,11 @@ class ProjectReportsController extends Controller
             ->firstOrFail();
 
         $project = $site->project;
-        $stages = $site->stages;
+        if (!$project) {
+            abort(404, 'Project not found for the selected site.');
+        }
+
+        $stages = $site->stages ?? collect();
         $summary = $this->buildSiteSummary($site);
 
         return view('report', compact('site', 'project', 'stages', 'summary'));
@@ -270,7 +275,7 @@ class ProjectReportsController extends Controller
 
         $stockItems = SiteStock::where('site_id', $siteId)->count();
         $stockQuantity = SiteStock::where('site_id', $siteId)->sum('quantity');
-        $stockLogCount = StockLog::where('site_id', $siteId)->count();
+        $stockLogCount = $this->countStockLogsForSite($site);
 
         $poCount = $purchaseOrderIds->count();
         $poProductCount = $purchaseOrderIds->isEmpty()
@@ -306,5 +311,18 @@ class ProjectReportsController extends Controller
             'sold_amount' => $sold,
             'net_gain' => $sold - $investment,
         ];
+    }
+
+    private function countStockLogsForSite(Site $site): int
+    {
+        if (Schema::hasColumn('stock_logs', 'site_id')) {
+            return StockLog::where('site_id', $site->id)->count();
+        }
+
+        if (Schema::hasColumn('stock_logs', 'project_id') && $site->project_id) {
+            return StockLog::where('project_id', $site->project_id)->count();
+        }
+
+        return 0;
     }
 }
