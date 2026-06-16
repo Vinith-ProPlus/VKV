@@ -3,7 +3,7 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>Project Report</title>
+        <title>Site Report - {{ $site?->site_no ?? 'Report' }}</title>
 
         {{-- <link href="{{ asset('css/style.css') }}" rel="stylesheet"> --}}
         <link rel="stylesheet" type="text/css" href="{{url('/')}}/assets/css/style.css?r={{date('YmdHis')}}">
@@ -156,10 +156,9 @@
     </style>
     <body class="">
         <div class="container-fluid">
-            <div class="hero-title w-25">
-                <span>
-                    {{$project?->name ?? ''}}
-                 </span>
+            <div class="hero-title w-auto px-4">
+                <span>{{ $site?->site_no ?? 'Site' }}</span>
+                <small class="d-block text-muted" style="font-size: 14px;">{{ $project?->name ?? '' }}</small>
              </div>
             <div class="row justify-content-center" style="padding: 15px;">
                <div class="col-12 mt-10">
@@ -171,7 +170,13 @@
                     <div class="card mt-15" style="border: none;">
                         <div class="card-body">
                             <div class="nav nav-tabs wizard-head" id="projectTabs">
-                              <a class="nav-link active" href="#project-details" data-tab="project-details"
+                              <a class="nav-link active" href="#report-overview" data-tab="report-overview"
+                              data-name="tab-report-overview" data-bs-toggle="tab">
+                                  <span class="nav-contents">
+                                      <span class="nav-title">Overview</span>
+                                  </span>
+                              </a>
+                              <a class="nav-link" href="#project-details" data-tab="project-details"
                               data-name="tab-project-details" data-bs-toggle="tab">
                                   <span class="nav-contents">
                                       <span class="nav-title">Details</span>
@@ -201,13 +206,103 @@
                                       <span class="nav-title">Purchases</span>
                                   </span>
                               </a>
+                              <a class="nav-link" href="#project-stock" data-tab="project-stock"
+                              data-name="tab-project-stock" data-bs-toggle="tab">
+                                  <span class="nav-contents">
+                                      <span class="nav-title">Stock</span>
+                                  </span>
+                              </a>
                             </div>
                             <div class="position-relative" style="margin: 0 -2rem; background-color: #b1b1b1;">
                                 <hr class="border-top">
                             </div>
 
                             <div class="tab-content mt-3">
-                                <div class="tab-pane fade show active" id="project-details">
+                                <div class="tab-pane fade show active" id="report-overview">
+                                    <div class="container mx-auto px-4 py-4">
+                                        <div class="flex justify-between items-center mb-6">
+                                            <div>
+                                                <h1 class="text-2xl font-bold text-blue-800">Site Report Overview</h1>
+                                                <p class="text-gray-600">{{ $project?->name }} &mdash; {{ $site?->site_no }}</p>
+                                            </div>
+                                            <span class="px-4 py-2 bg-indigo-100 text-indigo-800 rounded-full font-semibold">
+                                                Completion: {{ $summary['completion_percentage'] }}
+                                            </span>
+                                        </div>
+
+                                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                                            <div class="bg-white rounded-xl shadow p-4 card-hover">
+                                                <p class="text-sm text-gray-500">Tasks</p>
+                                                <p class="text-2xl font-bold text-indigo-700">{{ $summary['completed_tasks'] }}/{{ $summary['total_tasks'] }}</p>
+                                                <p class="text-xs text-gray-500 mt-1">{{ $summary['in_progress_tasks'] }} in progress, {{ $summary['pending_tasks'] }} pending</p>
+                                            </div>
+                                            <div class="bg-white rounded-xl shadow p-4 card-hover">
+                                                <p class="text-sm text-gray-500">Contractors</p>
+                                                <p class="text-2xl font-bold text-green-700">{{ $summary['contractor_count'] }}</p>
+                                                <p class="text-xs text-gray-500 mt-1">Contract value: ₹{{ number_format($summary['contract_value']) }}</p>
+                                            </div>
+                                            <div class="bg-white rounded-xl shadow p-4 card-hover">
+                                                <p class="text-sm text-gray-500">Labor</p>
+                                                <p class="text-2xl font-bold text-orange-600">{{ $summary['labor_headcount'] }}</p>
+                                                <p class="text-xs text-gray-500 mt-1">{{ $summary['labor_days'] }} days | Salary: ₹{{ number_format($summary['labor_salary_total']) }}</p>
+                                            </div>
+                                            <div class="bg-white rounded-xl shadow p-4 card-hover">
+                                                <p class="text-sm text-gray-500">Purchases</p>
+                                                <p class="text-2xl font-bold text-purple-700">{{ $summary['purchase_orders'] }} POs</p>
+                                                <p class="text-xs text-gray-500 mt-1">{{ $summary['purchase_delivered'] }}/{{ $summary['purchase_products'] }} items delivered</p>
+                                            </div>
+                                        </div>
+
+                                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                                            <div class="bg-white rounded-xl shadow p-4 card-hover">
+                                                <p class="text-sm text-gray-500">Site Stock</p>
+                                                <p class="text-2xl font-bold text-teal-700">{{ $summary['stock_items'] }} items</p>
+                                                <p class="text-xs text-gray-500 mt-1">Total qty: {{ number_format($summary['stock_quantity'], 2) }}</p>
+                                            </div>
+                                            <div class="bg-white rounded-xl shadow p-4 card-hover">
+                                                <p class="text-sm text-gray-500">Stock Transactions</p>
+                                                <p class="text-2xl font-bold text-teal-700">{{ $summary['stock_log_count'] }}</p>
+                                                <p class="text-xs text-gray-500 mt-1">Recorded stock log entries</p>
+                                            </div>
+                                            <div class="bg-white rounded-xl shadow p-4 card-hover">
+                                                <p class="text-sm text-gray-500">Contract Labor</p>
+                                                <p class="text-2xl font-bold text-orange-600">{{ $summary['contract_labor_count'] }}</p>
+                                                <p class="text-xs text-gray-500 mt-1">Total contract labor count</p>
+                                            </div>
+                                            <div class="bg-white rounded-xl shadow p-4 card-hover">
+                                                <p class="text-sm text-gray-500">Stages</p>
+                                                <p class="text-2xl font-bold text-indigo-700">{{ $summary['stage_count'] }}</p>
+                                                <p class="text-xs text-gray-500 mt-1">Construction stages tracked</p>
+                                            </div>
+                                        </div>
+
+                                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                            <div class="bg-white rounded-xl shadow p-6 card-hover">
+                                                <h3 class="text-lg font-bold text-gray-800 mb-4">Financial Snapshot</h3>
+                                                <div class="space-y-3">
+                                                    <div class="flex justify-between"><span class="text-gray-500">Investment</span><span class="font-semibold">₹{{ number_format($summary['investment_amount']) }}</span></div>
+                                                    <div class="flex justify-between"><span class="text-gray-500">Sold Amount</span><span class="font-semibold">₹{{ number_format($summary['sold_amount']) }}</span></div>
+                                                    <div class="flex justify-between border-t pt-3">
+                                                        <span class="font-semibold">Net Gain / Loss</span>
+                                                        <span class="font-bold {{ $summary['net_gain'] >= 0 ? 'text-green-600' : 'text-red-600' }}">₹{{ number_format($summary['net_gain']) }}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="bg-white rounded-xl shadow p-6 card-hover">
+                                                <h3 class="text-lg font-bold text-gray-800 mb-4">Report Sections</h3>
+                                                <div class="grid grid-cols-2 gap-2">
+                                                    <a href="#project-details" class="btn btn-sm btn-outline-primary tab-jump" data-tab="project-details">Site Details</a>
+                                                    <a href="#project-stages" class="btn btn-sm btn-outline-primary tab-jump" data-tab="project-stages">Stages & Tasks</a>
+                                                    <a href="#project-contractors" class="btn btn-sm btn-outline-primary tab-jump" data-tab="project-contractors">Contractors</a>
+                                                    <a href="#project-labors" class="btn btn-sm btn-outline-primary tab-jump" data-tab="project-labors">Labor</a>
+                                                    <a href="#project-purchases" class="btn btn-sm btn-outline-primary tab-jump" data-tab="project-purchases">Purchases</a>
+                                                    <a href="#project-stock" class="btn btn-sm btn-outline-primary tab-jump" data-tab="project-stock">Stock</a>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="tab-pane fade" id="project-details">
                                     <div class="container mx-auto px-4 py-8">
                                         <!-- Header -->
                                         <div class="flex justify-between items-center mb-8">
@@ -250,13 +345,8 @@
                                               </div>
 
                                               <div>
-                                                <p class="text-sm text-gray-500">Target Customers</p>
-                                                <p class="font-medium">{{ $site?->target_customers }}</p>
-                                              </div>
-
-                                              <div>
-                                                <p class="text-sm text-gray-500">Range</p>
-                                                <p class="font-medium">{{ $site->range }}</p>
+                                                <p class="text-sm text-gray-500">Units / Range</p>
+                                                <p class="font-medium">{{ $site?->units ?? '—' }} @if($site?->range) | {{ $site->range }} @endif</p>
                                               </div>
 
                                               <div>
@@ -331,9 +421,10 @@
 
                                               <div class="pt-4 border-t">
                                                 <div class="flex justify-between">
-                                                  <p class="font-semibold">Total Profit</p>
-                                                  <p class="font-bold text-green-600">₹{{ number_format($site->investment_amount - $site->sold_amount) }}</p>
+                                                  <p class="font-semibold">Net Gain / Loss</p>
+                                                  <p class="font-bold {{ ($summary['net_gain'] ?? 0) >= 0 ? 'text-green-600' : 'text-red-600' }}">₹{{ number_format($summary['net_gain'] ?? 0) }}</p>
                                                 </div>
+                                                <p class="text-xs text-gray-500 mt-1">Sold amount minus investment amount</p>
                                               </div>
 
                                               <div class="pt-4">
@@ -401,14 +492,16 @@
                                             </div>
 
                                             <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                                                @foreach($project->amenities as $item)
+                                                @forelse($project->amenities ?? [] as $item)
                                                 <div class="items-center p-3 bg-gray-50 rounded-lg">
                                                     <i class="fas fa-check-circle text-green-500 mr-2"></i>
                                                     <span>{{ $item?->amenity?->name }}</span>
                                                     <br>
                                                     <span>{{ $item?->description }}</span>
                                                 </div>
-                                            @endforeach
+                                                @empty
+                                                <p class="text-gray-500 col-span-full">No amenities configured for this project.</p>
+                                                @endforelse
                                             </div>
                                           </div>
                                         </div>
@@ -487,7 +580,7 @@
                                                   <tr>
                                                       <th>S.No</th>
                                                       <th>Name</th>
-                                                      <th>Project</th>
+                                                      <th>Site</th>
                                                       <th>Date</th>
                                                       <th>Stage Name</th>
                                                       <th>Status</th>
@@ -573,6 +666,7 @@
                                                           <th>Date</th>
                                                           <th>Labor Count</th>
                                                           <th>Contract Labor Count</th>
+                                                          <th>Salary Total</th>
                                                           <th>Actions</th>
                                                       </tr>
                                                       </thead>
@@ -605,6 +699,32 @@
                                             </thead>
                                             <tbody class="small">
                                             </tbody>
+                                          </table>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                               <div class="tab-pane fade" id="project-stock">
+                                <div class="card-body">
+                                  <div class="row mb-3">
+                                    <div class="col-12">
+                                      <p class="text-muted mb-0">Current site stock levels and last update times.</p>
+                                    </div>
+                                  </div>
+                                  <div class="row">
+                                      <div class="col-12">
+                                        <div class="table-responsive">
+                                          <table class="table text-center border rounded" id="stock_table">
+                                            <thead class="thead-light">
+                                            <tr>
+                                              <th>S.No</th>
+                                              <th>Category</th>
+                                              <th>Product</th>
+                                              <th>Quantity</th>
+                                              <th>Last Updated</th>
+                                            </tr>
+                                            </thead>
+                                            <tbody></tbody>
                                           </table>
                                         </div>
                                       </div>
@@ -807,6 +927,7 @@
                     type: 'GET',
                     data: function (d) {
                         d.stage_id = stage_id;
+                        d.site_id = site_id;
                     }
                 },
                 columns: [
@@ -854,7 +975,7 @@
             initMultiSelect();
 
             // Setup event handlers
-            $('#multiselect_project_id, #status, #from_date_filter, #to_date_filter').on('change', reloadTable);
+            $('#status, #from_date_filter, #to_date_filter').on('change', reloadTable);
             $('#clearFilters').click(clearFilter);
 
             // Initialize DataTable
@@ -865,15 +986,11 @@
                 serverSide: true,
                 iDisplayLength: 10,
                 lengthMenu: [[10, 25, 50, -1], [10, 25, 50, "All"]],
-                dom: 'lBfrtip',
-                buttons: [
-                    'copy', 'excel', 'pdf', 'print'
-                ],
                 ajax: {
                     url: '{{ route("laborTableList") }}',
                     type: 'GET',
                     data: function (d) {
-                        d.project_id = [project_id];
+                        d.site_id = site_id;
                         d.paid_status = $('#status').val();
                         d.from_date = $('#from_date_filter').val();
                         d.to_date = $('#to_date_filter').val();
@@ -884,12 +1001,10 @@
                     { data: 'date' },
                     { data: 'labor_count' },
                     { data: 'contract_labor_count' },
+                    { data: 'salary_total' },
                     { data: 'action', orderable: false, searchable: false }
                 ]
             });
-
-            // Load projects
-            getProjects();
 
             $('#purchase_table').DataTable({
                 "columnDefs": [{ "className": "dt-center", "targets": "_all" }],
@@ -900,10 +1015,10 @@
                     url: '{{ route("purchaseTableList") }}',
                     type: 'GET',
                     data: function (d) {
-                        d.project_id = [project_id];
+                        d.site_id = site_id;
                     }
                 },
-                order: [[1, 'desc']],
+                order: [[4, 'desc']],
                 columns: [
                     { data: 'DT_RowIndex', orderable: false, searchable: false },
                     { data: 'order_id' },
@@ -914,6 +1029,57 @@
                     { data: 'status' },
                     { data: 'action', orderable: false },
                 ]
+            });
+
+            $('#stock_table').DataTable({
+                "columnDefs": [{ "className": "dt-center", "targets": "_all" }],
+                serverSide: true,
+                iDisplayLength: 10,
+                lengthMenu: [[10, 25, 50, -1], [10, 25, 50, "All"]],
+                ajax: {
+                    url: '{{ route("stockTableList") }}',
+                    type: 'GET',
+                    data: function (d) {
+                        d.site_id = site_id;
+                    }
+                },
+                columns: [
+                    { data: 'DT_RowIndex', orderable: false, searchable: false },
+                    { data: 'category_name' },
+                    { data: 'product_name' },
+                    { data: 'quantity' },
+                    { data: 'updated_at' },
+                ]
+            });
+
+            // Financial chart on Details tab
+            const chartEl = document.getElementById('financialChart');
+            if (chartEl) {
+                new Chart(chartEl, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Investment', 'Sold Amount'],
+                        datasets: [{
+                            data: [{{ max($summary['investment_amount'], 0) }}, {{ max($summary['sold_amount'], 0) }}],
+                            backgroundColor: ['#6366f1', '#22c55e'],
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: { position: 'bottom' }
+                        }
+                    }
+                });
+            }
+
+            $('.tab-jump').on('click', function(e) {
+                e.preventDefault();
+                const tab = $(this).data('tab');
+                $('.wizard-head .nav-link').removeClass('active');
+                $('.tab-pane').removeClass('show active');
+                $('a[href="#' + tab + '"]').addClass('active');
+                $('#' + tab).addClass('show active');
             });
 
 
@@ -931,67 +1097,7 @@
             $('#list_table').DataTable().ajax.reload();
         }
 
-        function getProjects() {
-            const $multiSelect = $('#multiselect_project_id');
-            const $modalSelect = $('#selectProjectModal #project_id');
-            const selectedMultiProject = $multiSelect.attr('data-selected');
-            const selectedModalProject = $modalSelect.attr('data-selected');
-
-            $.ajax({
-                url: "{{ route('getProjects') }}",
-                type: 'GET',
-                dataType: 'json',
-                success: function (response) {
-                    let options = '<option value="">Select a Project</option>';
-                    response.forEach(item => {
-                        options += `<option value="${item.id}" ${(item.id == selectedMultiProject || item.id == selectedModalProject) ? 'selected' : ''}>${item.name}</option>`;
-                    });
-
-                    // Update and rebuild multiselect
-                    $multiSelect.html(options);
-                    $multiSelect.multiselect('rebuild');
-
-                    // Update and reinitialize Select2
-                    $modalSelect.html(options);
-                    $modalSelect.select2({ dropdownParent: $('#selectProjectModal') });
-                },
-                error: function () {
-                    console.error("Error fetching projects.");
-                }
-            });
-        }
-
-
-        // function getLaborStatus() {
-        //     let statusSelect = $('#status');
-        //     let selectedProject = statusSelect.attr('data-selected');
-
-        //     $.ajax({
-        //         url: "{{ route('getLaborStatus') }}",
-        //         type: 'GET',
-        //         dataType: 'json',
-        //         data: {'status':0},
-        //         success: function (response) {
-        //           console.log(response);
-        //         }
-        //     })
-        // };
-
-        // getLaborStatus();
-
-        $('#selectProjectForm').submit(function(e) {
-            e.preventDefault();
-            let projectId = $('#selectProjectModal #project_id').val();
-            let date = $('#date').val();
-            if (projectId && date) {
-                window.location.href = '/admin/manage-projects/labors/create?project_id=' + projectId + '&date=' + date;
-            } else {
-                alert('Please fill all required fields.');
-            }
-        });
-
         function clearFilter() {
-            $('#multiselect_project_id').val('').multiselect('refresh');
             $('#status').val('').multiselect('refresh');
             $('#from_date_filter').val('');
             $('#to_date_filter').val('');
@@ -1017,7 +1123,7 @@
 
           const opt = {
               margin: 0,
-              filename: 'Project_details.pdf',
+              filename: 'Site_Report_{{ $site->site_no ?? "details" }}.pdf',
               image: { type: 'jpeg', quality: 0.98 },
               html2canvas: {
                   scale: 3,
@@ -1037,11 +1143,16 @@
     {{-- map script --}}
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            const project = "{{ $project->site->name ?? 'Site Location' }}";
-            const latitude = {{ $project->site->latitude ?? '0' }};
-            const longitude = {{ $project->site->longitude ?? '0' }};
+            const siteLabel = @json($site?->site_no ?? 'Site Location');
+            const latitude = {{ (float) ($project?->latitude ?? 0) }};
+            const longitude = {{ (float) ($project?->longitude ?? 0) }};
 
-            const map = L.map('map').setView([latitude, longitude], 15); // Zoom level 15 is decent
+            if (!latitude || !longitude) {
+                document.getElementById('map').innerHTML = '<div class="p-4 text-center text-muted">Map coordinates not configured for this project.</div>';
+                return;
+            }
+
+            const map = L.map('map').setView([latitude, longitude], 15);
 
             // Add OpenStreetMap tiles
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -1051,7 +1162,7 @@
             // Add marker
             L.marker([latitude, longitude])
                 .addTo(map)
-                .bindPopup(`${project}`)
+                .bindPopup(siteLabel)
                 .openPopup();
         });
     </script>
