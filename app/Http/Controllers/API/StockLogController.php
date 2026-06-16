@@ -14,77 +14,59 @@ class StockLogController extends Controller
 {
     use ApiResponse;
 
-    /**
-     * @param Request $request
-     * @return JsonResponse
-     */
     public function getStockLogDates(Request $request): JsonResponse
     {
         $request->validate([
-            'project_id' => 'required|integer|exists:projects,id'
+            'site_id' => 'required|integer|exists:sites,id',
         ]);
 
-        $projectId = $request->input('project_id');
+        $siteId = $request->input('site_id');
 
-        // Get unique dates from stock logs for the specified project
-        $dates = StockLog::where('project_id', $projectId)
+        $dates = StockLog::where('site_id', $siteId)
             ->select(DB::raw('DATE(time) as date'))
             ->distinct();
         $query = dataFilter($dates, $request);
         $query->getCollection()->transform(function ($date) {
             return [
-                'date' => Carbon::parse($date->date)->format('d/m/Y')
+                'date' => Carbon::parse($date->date)->format('d/m/Y'),
             ];
         });
 
-        return $this->successResponse(dataFormatter($query), "Stock dates fetched successfully!");
+        return $this->successResponse(dataFormatter($query), 'Stock dates fetched successfully!');
     }
 
-    /**
-     * Get stock data for a specific project and date, categorized by type
-     *
-     * @param Request $request
-     * @return JsonResponse
-     */
     public function getStockLogData(Request $request): JsonResponse
     {
         $request->validate([
-            'project_id' => 'required|integer|exists:stock_logs,project_id',
+            'site_id' => 'required|integer|exists:stock_logs,site_id',
             'date' => ['required', 'date_format:d/m/Y'],
         ]);
 
-        $projectId = $request->input('project_id');
+        $siteId = $request->input('site_id');
         $date = Carbon::createFromFormat('d/m/Y', $request->input('date'))?->format('Y-m-d');
 
-        // Filter stock logs by project, date, and desired types
         $stockLogs = StockLog::with(['category', 'product'])
-            ->where('project_id', $projectId)
+            ->where('site_id', $siteId)
             ->whereDate('time', $date)
             ->whereIn('type', ['Re-Allocation - Transfer', 'Re-Allocation - Received', 'Taken for construction', 'Manual Adjustment - Out'])
             ->get();
-        logger($stockLogs);
+
         $transferredData = $stockLogs->whereIn('type', ['Re-Allocation - Transfer', 'Re-Allocation - Received'])->values();
         $usedData = $stockLogs->whereIn('type', ['Taken for construction', 'Manual Adjustment - Out'])->values();
 
         $formattedData = [
-            'used_data' => $usedData->map(fn($log) => $this->formatStockLog($log)),
-            'transferred_data' => $transferredData->map(fn($log) => $this->formatStockLog($log)),
+            'used_data' => $usedData->map(fn ($log) => $this->formatStockLog($log)),
+            'transferred_data' => $transferredData->map(fn ($log) => $this->formatStockLog($log)),
         ];
 
-        return $this->successResponse($formattedData, "Stock data fetched successfully!");
+        return $this->successResponse($formattedData, 'Stock data fetched successfully!');
     }
 
-    /**
-     * Format a stock log entry with relevant details
-     *
-     * @param $log
-     * @return array
-     */
     private function formatStockLog($log): array
     {
         $remarks = $log->remarks;
         $transferType = null;
-        $transferProject = null;
+        $transferSite = null;
 
         $baseData = [
             'category' => $log->category->name ?? 'N/A',
@@ -93,23 +75,37 @@ class StockLogController extends Controller
         ];
 
         if (($log->type === 'Re-Allocation - Transfer' || $log->type === 'Re-Allocation - Received') && !empty($remarks)) {
-            if (str_contains($remarks, 'Transferred to Project:')) {
+            if (str_contains($remarks, 'Transferred to Site:')) {
+                $parts = explode('Transferred to Site:', $remarks);
+                if (isset($parts[1])) {
+                    $siteParts = explode('|', $parts[1]);
+                    $transferType = 'Sent';
+                    $transferSite = trim($siteParts[0]);
+                }
+            } elseif (str_contains($remarks, 'Received from Site:')) {
+                $parts = explode('Received from Site:', $remarks);
+                if (isset($parts[1])) {
+                    $siteParts = explode('|', $parts[1]);
+                    $transferType = 'Received';
+                    $transferSite = trim($siteParts[0]);
+                }
+            } elseif (str_contains($remarks, 'Transferred to Project:')) {
                 $parts = explode('Transferred to Project:', $remarks);
                 if (isset($parts[1])) {
-                    $projectParts = explode('|', $parts[1]);
-                    $transferType = "Sent";
-                    $transferProject = trim($projectParts[0]);
+                    $siteParts = explode('|', $parts[1]);
+                    $transferType = 'Sent';
+                    $transferSite = trim($siteParts[0]);
                 }
             } elseif (str_contains($remarks, 'Received from Project:')) {
                 $parts = explode('Received from Project:', $remarks);
                 if (isset($parts[1])) {
-                    $projectParts = explode('|', $parts[1]);
-                    $transferType = "Received";
-                    $transferProject = trim($projectParts[0]);
+                    $siteParts = explode('|', $parts[1]);
+                    $transferType = 'Received';
+                    $transferSite = trim($siteParts[0]);
                 }
             }
 
-            return [...$baseData, 'transfer_type' => $transferType, 'transfer_project' => $transferProject, 'remarks' => $remarks];
+            return [...$baseData, 'transfer_type' => $transferType, 'transfer_site' => $transferSite, 'remarks' => $remarks];
         }
 
         return $baseData;

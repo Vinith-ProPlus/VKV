@@ -63,9 +63,15 @@ class Product extends Model
     /**
      * @return HasMany
      */
+    public function siteStocks(): HasMany
+    {
+        return $this->hasMany(SiteStock::class);
+    }
+
+    /** @deprecated Use siteStocks() */
     public function projectStocks(): HasMany
     {
-        return $this->hasMany(ProjectStock::class);
+        return $this->siteStocks();
     }
 
     /**

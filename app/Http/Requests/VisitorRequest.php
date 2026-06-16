@@ -30,8 +30,8 @@ class VisitorRequest extends FormRequest
             'customer_id' => 'required|string',
             'new_customer_name' => 'nullable|string|required_if:new_customer_flag,true',
             'new_customer_flag' => 'nullable|string',
-            'project_id' => 'required|exists:projects,id',
-            'site_id' => 'nullable|exists:sites,id',
+            'project_id' => 'nullable|exists:projects,id',
+            'site_id' => 'required|exists:sites,id',
             'status' => 'required|in:visited',
             'remarks' => 'nullable|string',
         ];

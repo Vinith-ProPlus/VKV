@@ -4,12 +4,10 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use App\Models\Admin\Labor\SiteLaborDate;
-use App\Models\Admin\ManageProjects\ProjectTask;
-use App\Models\Blog;
 use App\Models\ContractLabor;
-use App\Models\Document;
 use App\Models\Labor;
 use App\Models\LaborReallocation;
+use App\Models\SiteContract;
 use App\Traits\ApiResponse;
 use Carbon\Carbon;
 use Exception;
@@ -19,20 +17,15 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
-use function Laravel\Prompts\warning;
 
 class LaborController extends Controller
 {
     use ApiResponse;
 
-    /**
-     * @param Request $request
-     * @return JsonResponse
-     */
     public function getLaborDates(Request $request): JsonResponse
     {
         $request->validate([
-            'site_id' => 'required|integer|exists:sites,id'
+            'site_id' => 'required|integer|exists:sites,id',
         ]);
 
         $siteId = $request->input('site_id');
@@ -49,66 +42,68 @@ class LaborController extends Controller
             return [
                 'id' => $date->id,
                 'date' => Carbon::parse($date->date)->format('d/m/Y'),
-                'labor_count' => $date->labor_count
+                'labor_count' => $date->labor_count,
             ];
         });
 
-        return $this->successResponse(dataFormatter($query), "Labor dates fetched successfully!");
+        return $this->successResponse(dataFormatter($query), 'Labor dates fetched successfully!');
     }
 
     public function getLaborData(Request $request): JsonResponse
     {
         $request->validate([
-            'project_labor_date_id' => 'required|integer|exists:project_labor_dates,id',
+            'site_labor_date_id' => 'required|integer|exists:site_labor_dates,id',
         ]);
 
-        $projectLaborDate = SiteLaborDate::with(['labors.labor_designation', 'contractLabors.projectContract.user:name', 'contractLabors.projectContract.contract_type'])
-            ->findOrFail($request->input('project_labor_date_id'));
-        $projectLaborDate->count = $projectLaborDate->labor_count + $projectLaborDate->contract_count;
+        $siteLaborDate = SiteLaborDate::with([
+            'labors.labor_designation',
+            'contractLabors.siteContract.user:id,name',
+            'contractLabors.siteContract.contract_type:id,name',
+        ])->findOrFail($request->input('site_labor_date_id'));
+        $siteLaborDate->count = $siteLaborDate->labors()->count() + (int) $siteLaborDate->contractLabors()->sum('count');
 
-        foreach ($projectLaborDate->contractLabors as $contractLabor) {
-            $user = optional($contractLabor->projectContract->user)->name;
-            $type = optional($contractLabor->projectContract->contract_type)->name;
-
-            // Add formatted string
+        foreach ($siteLaborDate->contractLabors as $contractLabor) {
+            $user = optional($contractLabor->siteContract->user)->name;
+            $type = optional($contractLabor->siteContract->contract_type)->name;
             $contractLabor->contractor_name = "$user - $type";
-
-            // Remove original nested objects
-            unset($contractLabor->projectContract->user);
-            unset($contractLabor->projectContract->contract_type);
+            unset($contractLabor->siteContract);
         }
 
-        return $this->successResponse($projectLaborDate, "Labor data fetched successfully!");
+        return $this->successResponse($siteLaborDate, 'Labor data fetched successfully!');
     }
+
     public function getTodayLaborData(Request $request): JsonResponse
     {
         $request->validate([
-            'project_id' => 'required|integer|exists:projects,id',
+            'site_id' => 'required|integer|exists:sites,id',
         ]);
-        $projectLaborDate = SiteLaborDate::with(['labors.labor_designation'])
-            ->where('project_id', $request->input('project_id'))->where('date', now()->format('Y-m-d'))->first();
-        if ($projectLaborDate) {
-            return $this->successResponse($projectLaborDate, "Labor data fetched successfully!");
-        }
-        return $this->errorResponse([], "Labor data not found!");
-    }
 
+        $siteLaborDate = SiteLaborDate::with(['labors.labor_designation'])
+            ->where('site_id', $request->input('site_id'))
+            ->where('date', now()->format('Y-m-d'))
+            ->first();
+
+        if ($siteLaborDate) {
+            return $this->successResponse($siteLaborDate, 'Labor data fetched successfully!');
+        }
+
+        return $this->errorResponse([], 'Labor data not found!');
+    }
 
     public function getLabors(Request $request): JsonResponse
     {
-
         if ($request->ajax()) {
             $labors = Labor::select('id', 'name')->orderBy('name')->get();
 
             return response()->json([
                 'status' => true,
-                'data' => $labors
+                'data' => $labors,
             ]);
         }
 
         return response()->json([
             'status' => false,
-            'message' => 'Invalid request'
+            'message' => 'Invalid request',
         ], 400);
     }
 
@@ -118,19 +113,20 @@ class LaborController extends Controller
         try {
             $request->validate([
                 'labors' => 'required|array|min:1',
-                'labors.*.project_labor_date_id' => 'required|exists:project_labor_dates,id',
+                'labors.*.site_labor_date_id' => 'required|exists:site_labor_dates,id',
                 'labors.*.labor_type' => 'required|in:Self,Contract',
-                'labors.*.project_contract_id' => [
+                'labors.*.site_contract_id' => [
                     'required_if:labors.*.labor_type,Contract',
                     'nullable',
+                    'exists:site_contracts,id',
                     static function ($attribute, $value, $fail) use ($request) {
                         foreach ($request->labors as $labor) {
                             if ($labor['labor_type'] === 'Contract') {
-                                $exists = ContractLabor::where('project_labor_date_id', $labor['project_labor_date_id'])
-                                    ->where('project_contract_id', $value)
+                                $exists = ContractLabor::where('site_labor_date_id', $labor['site_labor_date_id'])
+                                    ->where('site_contract_id', $value)
                                     ->exists();
                                 if ($exists) {
-                                    $fail('This contractor is already assigned for the selected project labor date.');
+                                    $fail('This contractor is already assigned for the selected site labor date.');
                                 }
                             }
                         }
@@ -143,11 +139,11 @@ class LaborController extends Controller
                     static function ($attribute, $value, $fail) use ($request) {
                         foreach ($request->labors as $labor) {
                             if ($labor['labor_type'] === 'Self') {
-                                $exists = Labor::where('project_labor_date_id', $labor['project_labor_date_id'])
+                                $exists = Labor::where('site_labor_date_id', $labor['site_labor_date_id'])
                                     ->where('mobile', $value)
                                     ->exists();
                                 if ($exists) {
-                                    $fail("Mobile number {$value} is already registered for this project labor date.");
+                                    $fail("Mobile number {$value} is already registered for this site labor date.");
                                 }
                             }
                         }
@@ -156,30 +152,13 @@ class LaborController extends Controller
                 'labors.*.labor_designation_id' => 'required_if:labors.*.labor_type,Self|exists:labor_designations,id',
                 'labors.*.salary' => 'required_if:labors.*.labor_type,Self|numeric',
                 'labors.*.count' => 'required_if:labors.*.labor_type,Contract|numeric|min:1',
-            ], [
-                'labors.required' => 'Labors array is required.',
-                'labors.min' => 'At least one labor entry is required.',
-                'labors.*.project_labor_date_id.required' => 'Project labor date is required.',
-                'labors.*.project_labor_date_id.exists' => 'Invalid project labor date.',
-                'labors.*.labor_type.required' => 'Labor type is required.',
-                'labors.*.labor_type.in' => 'Invalid labor type.',
-                'labors.*.project_contract_id.required_if' => 'Contractor is required for contract labor.',
-                'labors.*.name.required_if' => 'Labor name is required for self labor.',
-                'labors.*.mobile.required_if' => 'Mobile number is required for self labor.',
-                'labors.*.mobile.digits' => 'Mobile number must be 10 digits.',
-                'labors.*.labor_designation_id.required' => 'Designation is required.',
-                'labors.*.salary.required_if' => 'Salary is required for self labor.',
-                'labors.*.salary.numeric' => 'Salary must be numeric.',
-                'labors.*.count.required_if' => 'Contract labor count is required.',
-                'labors.*.count.numeric' => 'Count must be numeric.',
-                'labors.*.count.min' => 'Contract labor count must be at least 1.',
             ]);
 
             $createdLabors = [];
             foreach ($request->labors as $labor) {
                 if ($labor['labor_type'] === 'Self') {
                     $createdLabors[] = Labor::create([
-                        'project_labor_date_id' => $labor['project_labor_date_id'],
+                        'site_labor_date_id' => $labor['site_labor_date_id'],
                         'name' => $labor['name'],
                         'mobile' => $labor['mobile'],
                         'salary' => $labor['salary'],
@@ -187,23 +166,23 @@ class LaborController extends Controller
                     ]);
                 } else {
                     $createdLabors[] = ContractLabor::create([
-                        'project_labor_date_id' => $labor['project_labor_date_id'],
-                        'project_contract_id' => $labor['project_contract_id'],
+                        'site_labor_date_id' => $labor['site_labor_date_id'],
+                        'site_contract_id' => $labor['site_contract_id'],
                         'count' => $labor['count'],
                     ]);
                 }
             }
 
             DB::commit();
+
             return response()->json([
                 'success' => true,
                 'message' => 'Labors added successfully!',
                 'data' => $createdLabors,
             ]);
-
         } catch (Exception $exception) {
             DB::rollBack();
-            Log::error("Error in ProjectLaborDateController@storeMultipleLabors: " . $exception->getMessage());
+            Log::error('Error in LaborController@storeMultipleLabors: ' . $exception->getMessage());
 
             return response()->json([
                 'success' => false,
@@ -211,6 +190,7 @@ class LaborController extends Controller
             ]);
         }
     }
+
     public function deleteLabor(Request $request): JsonResponse
     {
         DB::beginTransaction();
@@ -227,7 +207,7 @@ class LaborController extends Controller
                         if ($request->labor_type === 'Contract' && !ContractLabor::where('id', $value)->exists()) {
                             return $fail('The selected labor ID is invalid for Contract labor.');
                         }
-                    }
+                    },
                 ],
             ]);
 
@@ -240,60 +220,54 @@ class LaborController extends Controller
 
             $labor->delete();
             DB::commit();
+
             return $this->successResponse([], 'Labor deleted successfully');
         } catch (Exception $exception) {
             DB::rollBack();
-            $error = $exception->getMessage();
-            Log::error("Error in ProjectLaborDateController@deleteLabor: " .$error);
-            return $this->errorResponse([], 'Something went wrong: ' . $error);
+            Log::error('Error in LaborController@deleteLabor: ' . $exception->getMessage());
+
+            return $this->errorResponse([], 'Something went wrong: ' . $exception->getMessage());
         }
     }
 
     public function getLaborsByProject(Request $request): JsonResponse
     {
-        $request->validate(['project_id' => 'required|integer|exists:projects,id']);
+        $request->validate(['site_id' => 'required|integer|exists:sites,id']);
 
-        $projectId = $request->input('project_id');
-
-        $projectLaborDate = SiteLaborDate::firstOrCreate([
-            'project_id' => $projectId,
+        $siteLaborDate = SiteLaborDate::firstOrCreate([
+            'site_id' => $request->input('site_id'),
             'date' => today()->format('Y-m-d'),
         ]);
 
-        $query = Labor::where('project_labor_date_id', $projectLaborDate->id)->get();
+        $query = Labor::where('site_labor_date_id', $siteLaborDate->id)->get();
 
-        return $this->successResponse($query, "Labors fetched successfully!");
-
+        return $this->successResponse($query, 'Labors fetched successfully!');
     }
+
     public function reallocateLabors(Request $request): JsonResponse
     {
         DB::beginTransaction();
 
         try {
             $request->validate([
-                'from_project_id' => 'required|exists:projects,id',
-                'to_project_id' => 'required|exists:projects,id',
+                'from_site_id' => 'required|exists:sites,id',
+                'to_site_id' => 'required|exists:sites,id',
                 'labors' => 'required|array',
                 'labors.*' => 'exists:labors,id',
                 'remarks' => 'nullable|string',
             ]);
 
-            $fromProjectId = $request->from_project_id;
-            $fromProjectLaborDate = SiteLaborDate::firstOrCreate([
-                'project_id' => $fromProjectId,
+            $fromSiteLaborDate = SiteLaborDate::firstOrCreate([
+                'site_id' => $request->from_site_id,
                 'date' => today()->format('Y-m-d'),
             ]);
-            $fromProjectLaborDateId = $fromProjectLaborDate->id;
-            $toProjectId = $request->to_project_id;
-            $toProjectLaborDate = SiteLaborDate::firstOrCreate([
-                'project_id' => $toProjectId,
+            $toSiteLaborDate = SiteLaborDate::firstOrCreate([
+                'site_id' => $request->to_site_id,
                 'date' => today()->format('Y-m-d'),
             ]);
 
-            $toProjectLaborDateId = $toProjectLaborDate->id;
-            $selectedLaborIds = $request->labors;
-            $labors = Labor::whereIn('id', $selectedLaborIds)->get();
-            $existingLabors = Labor::where('project_labor_date_id', $toProjectLaborDateId)
+            $labors = Labor::whereIn('id', $request->labors)->get();
+            $existingLabors = Labor::where('site_labor_date_id', $toSiteLaborDate->id)
                 ->whereIn('mobile', $labors->pluck('mobile'))
                 ->pluck('name')
                 ->toArray();
@@ -301,19 +275,19 @@ class LaborController extends Controller
             if (!empty($existingLabors)) {
                 return response()->json([
                     'status' => false,
-                    'message' => 'Some labors (' . implode(', ', $existingLabors) . ') already exist in the selected project.',
+                    'message' => 'Some labors (' . implode(', ', $existingLabors) . ') already exist in the selected site.',
                 ], 422);
             }
 
             foreach ($labors as $labor) {
                 LaborReallocation::create([
                     'labor_id' => $labor->id,
-                    'from_project_labor_date_id' => $fromProjectLaborDateId,
-                    'to_project_labor_date_id' => $toProjectLaborDateId,
+                    'from_site_labor_date_id' => $fromSiteLaborDate->id,
+                    'to_site_labor_date_id' => $toSiteLaborDate->id,
                     'remarks' => $request->remarks,
                     'reallocated_by' => Auth::id(),
                 ]);
-                $labor->update(['project_labor_date_id' => $toProjectLaborDateId]);
+                $labor->update(['site_labor_date_id' => $toSiteLaborDate->id]);
             }
 
             DB::commit();
@@ -322,12 +296,13 @@ class LaborController extends Controller
                 'status' => true,
                 'message' => 'Labors reallocated successfully.',
             ], 200);
-        } catch (\Exception $exception) {
+        } catch (Exception $exception) {
             DB::rollBack();
-            Log::error("Error in reallocateLabors: " . $exception->getMessage());
+            Log::error('Error in reallocateLabors: ' . $exception->getMessage());
+
             return response()->json([
                 'status' => false,
-                'message' => "Something went wrong: " . $exception->getMessage(),
+                'message' => 'Something went wrong: ' . $exception->getMessage(),
             ], 500);
         }
     }

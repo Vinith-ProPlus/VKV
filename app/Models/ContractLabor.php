@@ -30,9 +30,15 @@ class ContractLabor extends Model
     /**
      * @return BelongsTo
      */
-    public function projectContract(): BelongsTo
+    public function siteContract(): BelongsTo
     {
         return $this->belongsTo(SiteContract::class, 'site_contract_id');
+    }
+
+    /** @deprecated Use siteContract() */
+    public function projectContract(): BelongsTo
+    {
+        return $this->siteContract();
     }
 }
 

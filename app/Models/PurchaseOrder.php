@@ -36,10 +36,6 @@ class PurchaseOrder extends Model
     /**
      * @return BelongsTo
      */
-    public function project(): BelongsTo
-    {
-        return $this->belongsTo(Project::class);
-    }
     public function site(): BelongsTo
     {
         return $this->belongsTo(Site::class);

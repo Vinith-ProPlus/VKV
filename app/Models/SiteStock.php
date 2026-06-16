@@ -24,10 +24,6 @@ class SiteStock extends Model
         'last_transaction_type'
     ];
 
-    public function project(): BelongsTo
-    {
-        return $this->belongsTo(Project::class);
-    }
     public function site(): BelongsTo
     {
         return $this->belongsTo(Site::class);

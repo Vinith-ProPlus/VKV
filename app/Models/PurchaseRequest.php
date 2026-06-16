@@ -29,10 +29,6 @@ class PurchaseRequest extends Model
         return $this->belongsTo(User::class, 'supervisor_id');
     }
 
-    public function project(): BelongsTo
-    {
-        return $this->belongsTo(Project::class);
-    }
     public function site(): BelongsTo
     {
         return $this->belongsTo(Site::class);

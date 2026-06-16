@@ -8,14 +8,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * @method static create(array $array)
- * @method static where(string $string, mixed $projectId)
+ * @method static where(string $string, mixed $siteId)
  */
 class StockLog extends Model
 {
     use HasFactory;
 
     protected $fillable = [
-        'project_id',
+        'site_id',
         'category_id',
         'product_id',
         'previous_quantity',
@@ -24,19 +24,19 @@ class StockLog extends Model
         'user_id',
         'time',
         'type',
-        'remarks'
+        'remarks',
     ];
 
     protected $casts = [
         'time' => 'datetime',
         'quantity' => 'decimal:2',
         'previous_quantity' => 'decimal:2',
-        'balance_quantity' => 'decimal:2'
+        'balance_quantity' => 'decimal:2',
     ];
 
-    public function project(): BelongsTo
+    public function site(): BelongsTo
     {
-        return $this->belongsTo(Project::class);
+        return $this->belongsTo(Site::class);
     }
 
     public function category(): BelongsTo

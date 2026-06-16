@@ -17,67 +17,28 @@ class PurchaseRequestApiController extends Controller
 {
     use ApiResponse;
 
-    /**
-     * Get all purchase requests
-     *
-     * @param Request $request
-     * @return JsonResponse
-     */
     public function index(Request $request): JsonResponse
     {
         try {
-            $query = PurchaseRequest::with(['supervisor:id,name', 'project:id,name']);
+            $query = PurchaseRequest::with([
+                'supervisor:id,name',
+                'site:id,site_no,project_id',
+                'site.project:id,name',
+            ]);
+
             if ($request->filled('status')) {
                 $query->where('status', $request->status);
             }
-            if ($request->filled('project_id')) {
-                $query->where('project_id', $request->project_id);
+            if ($request->filled('site_id')) {
+                $query->where('site_id', $request->site_id);
             }
+            if ($request->filled('project_id')) {
+                $query->whereHas('site', static fn($q) => $q->where('project_id', $request->project_id));
+            }
+
             $purchaseRequests = dataFilter($query, $request);
 
-            $purchaseRequests->getCollection()->transform(static function($request) {
-                if ($request->deleted_at) {
-                    $request->status_display = 'Deleted';
-                } elseif ($request->status === 'converted') {
-                    $request->status_display = 'Converted to PO';
-                } else {
-                    $request->status_display = ucfirst($request->status);
-                }
-                return $request;
-            });
-
-            return $this->successResponse(dataFormatter($purchaseRequests),"Purchase requests fetched successfully!");
-        } catch (Exception $e) {
-            Log::error('Error::API@PurchaseRequestApiController@index - ' . $e->getMessage());
-            return $this->errorResponse($e->getMessage(), "Failed to fetch purchase requests", 500);
-        }
-    }
-
-    /**
-     * Get a specific purchase request with details
-     *
-     * @param Request $request
-     * @return JsonResponse
-     */
-    public function show(Request $request): JsonResponse
-    {
-        try {
-            $validator = Validator::make($request->all(), [
-                'id' => 'required|exists:purchase_requests,id'
-            ]);
-
-            if ($validator->fails()) {
-                return $this->errorResponse($validator->errors(), "Validation failed", 422);
-            }
-
-            $purchaseRequest = PurchaseRequest::with([
-                'supervisor:id,name',
-                'project:id,name',
-                'details.category:id,name',
-                'details.product:id,name'
-            ])->findOrFail($request->id);
-
-            if($purchaseRequest) {
+            $purchaseRequests->getCollection()->transform(static function ($purchaseRequest) {
                 if ($purchaseRequest->deleted_at) {
                     $purchaseRequest->status_display = 'Deleted';
                 } elseif ($purchaseRequest->status === 'converted') {
@@ -85,45 +46,73 @@ class PurchaseRequestApiController extends Controller
                 } else {
                     $purchaseRequest->status_display = ucfirst($purchaseRequest->status);
                 }
-            }
 
-            return $this->successResponse(
-                compact('purchaseRequest'),
-                "Purchase request fetched successfully!"
-            );
+                return $purchaseRequest;
+            });
+
+            return $this->successResponse(dataFormatter($purchaseRequests), 'Purchase requests fetched successfully!');
         } catch (Exception $e) {
-            Log::error('Error::API@PurchaseRequestApiController@show - ' . $e->getMessage());
-            return $this->errorResponse($e->getMessage(), "Failed to fetch purchase request", 500);
+            Log::error('Error::API@PurchaseRequestApiController@index - ' . $e->getMessage());
+
+            return $this->errorResponse($e->getMessage(), 'Failed to fetch purchase requests', 500);
         }
     }
 
-    /**
-     * Create a new purchase request
-     *
-     * @param Request $request
-     * @return JsonResponse
-     */
+    public function show(Request $request): JsonResponse
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'id' => 'required|exists:purchase_requests,id',
+            ]);
+
+            if ($validator->fails()) {
+                return $this->errorResponse($validator->errors(), 'Validation failed', 422);
+            }
+
+            $purchaseRequest = PurchaseRequest::with([
+                'supervisor:id,name',
+                'site:id,site_no,project_id',
+                'site.project:id,name',
+                'details.category:id,name',
+                'details.product:id,name',
+            ])->findOrFail($request->id);
+
+            if ($purchaseRequest->deleted_at) {
+                $purchaseRequest->status_display = 'Deleted';
+            } elseif ($purchaseRequest->status === 'converted') {
+                $purchaseRequest->status_display = 'Converted to PO';
+            } else {
+                $purchaseRequest->status_display = ucfirst($purchaseRequest->status);
+            }
+
+            return $this->successResponse(compact('purchaseRequest'), 'Purchase request fetched successfully!');
+        } catch (Exception $e) {
+            Log::error('Error::API@PurchaseRequestApiController@show - ' . $e->getMessage());
+
+            return $this->errorResponse($e->getMessage(), 'Failed to fetch purchase request', 500);
+        }
+    }
+
     public function store(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
-            'project_id' => 'required|exists:projects,id',
+            'site_id' => 'required|exists:sites,id',
             'products' => 'required|array',
             'products.*.category_id' => 'required|exists:product_categories,id',
             'products.*.product_id' => 'required|exists:products,id',
             'products.*.quantity' => 'required|numeric|min:0',
-            'remarks' => 'nullable|string'
+            'remarks' => 'nullable|string',
         ]);
 
         if ($validator->fails()) {
-            return $this->errorResponse($validator->errors(), "Validation failed", 422);
+            return $this->errorResponse($validator->errors(), 'Validation failed', 422);
         }
 
-        $supervisorId = auth()->id();
         DB::beginTransaction();
         try {
             $purchaseRequest = PurchaseRequest::create([
-                'supervisor_id' => $supervisorId,
-                'project_id' => $request->project_id,
+                'supervisor_id' => auth()->id(),
+                'site_id' => $request->site_id,
                 'product_count' => count($request->products),
                 'status' => PENDING,
                 'remarks' => $request->remarks ?? null,
@@ -139,12 +128,20 @@ class PurchaseRequestApiController extends Controller
             }
 
             DB::commit();
-            $purchaseRequest->load('details.category', 'details.product', 'project', 'supervisor');
-            return $this->successResponse(compact('purchaseRequest'),"Purchase request created successfully!");
+            $purchaseRequest->load([
+                'details.category',
+                'details.product',
+                'site:id,site_no,project_id',
+                'site.project:id,name',
+                'supervisor:id,name',
+            ]);
+
+            return $this->successResponse(compact('purchaseRequest'), 'Purchase request created successfully!');
         } catch (Exception $e) {
             DB::rollBack();
             Log::error('Error::API@PurchaseRequestApiController@store - ' . $e->getMessage());
-            return $this->errorResponse($e->getMessage(), "Failed to create purchase request", 500);
+
+            return $this->errorResponse($e->getMessage(), 'Failed to create purchase request', 500);
         }
     }
 }

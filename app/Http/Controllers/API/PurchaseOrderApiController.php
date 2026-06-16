@@ -7,13 +7,15 @@ use App\Models\Document;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderDetail;
 use App\Models\PurchaseRequest;
-use App\Models\ProjectStock;
+use App\Models\PurchaseRequestDetail;
+use App\Models\SiteStock;
 use App\Models\StockLog;
 use App\Traits\ApiResponse;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
@@ -22,53 +24,47 @@ class PurchaseOrderApiController extends Controller
 {
     use ApiResponse;
 
-    /**
-     * Get all purchase orders
-     *
-     * @param Request $request
-     * @return JsonResponse
-     */
     public function index(Request $request): JsonResponse
     {
         try {
-            // Only select the fields we need
-            $query = PurchaseOrder::select('id', 'order_id', 'order_date', 'project_id', 'supervisor_id', 'status')
+            $query = PurchaseOrder::select('id', 'order_id', 'order_date', 'site_id', 'supervisor_id', 'status')
                 ->with([
-                    'details' => static function($query) {
+                    'site:id,site_no,project_id',
+                    'site.project:id,name',
+                    'details' => static function ($query) {
                         $query->select('id', 'purchase_order_id', 'category_id', 'product_id', 'quantity', 'status', 'remarks')
                             ->with([
                                 'category:id,name',
                                 'product:id,name',
-                                'documents'
+                                'documents',
                             ]);
-                    }
+                    },
                 ]);
 
-            if ($request->filled('project_id')) {
-                $query->where('project_id', $request->project_id);
+            if ($request->filled('site_id')) {
+                $query->where('site_id', $request->site_id);
             }
-
+            if ($request->filled('project_id')) {
+                $query->whereHas('site', static fn($q) => $q->where('project_id', $request->project_id));
+            }
             if ($request->filled('supervisor_id')) {
                 $query->where('supervisor_id', $request->supervisor_id);
             }
 
             $purchaseOrders = dataFilter($query, $request);
 
-            $purchaseOrders->getCollection()->transform(function($order) {
+            $purchaseOrders->getCollection()->transform(function ($order) {
                 $details = $order->details;
                 $totalCount = $details->count();
                 $deliveredCount = $details->where('status', 'Delivered')->count();
-                $totalProductQuantity = $details->sum('quantity');
-                $order->total_product_quantity = $totalProductQuantity;
+                $order->total_product_quantity = $details->sum('quantity');
 
-                // Modify details to only include documents for delivered items
-                $order->details->transform(static function($detail) {
+                $order->details->transform(static function ($detail) {
                     if ($detail->status !== 'Delivered') {
                         $detail->documents = [];
                         $detail->remarks = null;
                     }
 
-                    // Only keep necessary fields from details
                     $detail->setVisible([
                         'id',
                         'product_id',
@@ -78,7 +74,7 @@ class PurchaseOrderApiController extends Controller
                         'remarks',
                         'documents',
                         'product',
-                        'category'
+                        'category',
                     ]);
 
                     return $detail;
@@ -99,7 +95,7 @@ class PurchaseOrderApiController extends Controller
                     $order->delivery_percentage = $deliveryPercentage;
                 } else {
                     $order->status_display = 'No Items';
-                    $order->delivery_status = "0/0";
+                    $order->delivery_status = '0/0';
                     $order->delivery_percentage = 0;
                 }
 
@@ -108,89 +104,174 @@ class PurchaseOrderApiController extends Controller
                 return $order;
             });
 
-            return $this->successResponse(dataFormatter($purchaseOrders), "Purchase orders fetched successfully!");
+            return $this->successResponse(dataFormatter($purchaseOrders), 'Purchase orders fetched successfully!');
         } catch (Exception $e) {
             Log::error('Error::API@PurchaseOrderApiController@index - ' . $e->getMessage());
-            return $this->errorResponse($e->getMessage(), "Failed to fetch purchase orders", 500);
+
+            return $this->errorResponse($e->getMessage(), 'Failed to fetch purchase orders', 500);
         }
     }
 
-
-
-    /**
-     * Get a specific purchase order with details
-     *
-     * @param Request $request
-     * @return JsonResponse
-     */
     public function show(Request $request): JsonResponse
     {
         try {
             $validator = Validator::make($request->all(), [
-                'id' => 'required|exists:purchase_orders,id'
+                'id' => 'required|exists:purchase_orders,id',
             ]);
 
             if ($validator->fails()) {
-                return $this->errorResponse($validator->errors(), "Validation failed", 422);
+                return $this->errorResponse($validator->errors(), 'Validation failed', 422);
             }
 
             $purchaseOrder = PurchaseOrder::with([
                 'supervisor:id,name',
-                'project:id,name',
+                'site:id,site_no,project_id',
+                'site.project:id,name',
                 'details.category:id,name',
                 'details.product:id,name',
-                'details.documents'
+                'details.documents',
             ])->findOrFail($request->id);
 
-            if ($purchaseOrder) {
-                // Calculate delivery status
-                $details = $purchaseOrder->details;
-                $deliveredCount = $details->where('status', 'Delivered')->count();
-                $totalCount = $details->count();
+            $details = $purchaseOrder->details;
+            $deliveredCount = $details->where('status', 'Delivered')->count();
+            $totalCount = $details->count();
 
-                if ($totalCount > 0) {
-                    $deliveryPercentage = ($deliveredCount / $totalCount) * 100;
+            if ($totalCount > 0) {
+                $deliveryPercentage = ($deliveredCount / $totalCount) * 100;
 
-                    if ($deliveryPercentage == 0) {
-                        $purchaseOrder->status_display = 'Pending';
-                    } elseif ($deliveryPercentage == 100) {
-                        $purchaseOrder->status_display = 'Delivered';
-                    } else {
-                        $purchaseOrder->status_display = 'Partially Delivered';
-                    }
-
-                    $purchaseOrder->delivery_status = "$deliveredCount/$totalCount Delivered";
-                    $purchaseOrder->delivery_percentage = $deliveryPercentage;
+                if ($deliveryPercentage == 0) {
+                    $purchaseOrder->status_display = 'Pending';
+                } elseif ($deliveryPercentage == 100) {
+                    $purchaseOrder->status_display = 'Delivered';
                 } else {
-                    $purchaseOrder->status_display = 'No Items';
-                    $purchaseOrder->delivery_status = "0/0";
-                    $purchaseOrder->delivery_percentage = 0;
+                    $purchaseOrder->status_display = 'Partially Delivered';
                 }
 
-                // Format date
-                $purchaseOrder->formatted_order_date = Carbon::parse($purchaseOrder->order_date)->format('d-m-Y');
-
-                // Format each purchase order detail
-                $purchaseOrder->details->transform(function($detail) {
-                    $detail->formatted_delivery_date = $detail->delivery_date ?
-                        Carbon::parse($detail->delivery_date)->format('d-m-Y') : null;
-                    return $detail;
-                });
+                $purchaseOrder->delivery_status = "$deliveredCount/$totalCount Delivered";
+                $purchaseOrder->delivery_percentage = $deliveryPercentage;
+            } else {
+                $purchaseOrder->status_display = 'No Items';
+                $purchaseOrder->delivery_status = '0/0';
+                $purchaseOrder->delivery_percentage = 0;
             }
 
-            return $this->successResponse(compact('purchaseOrder'),"Purchase order fetched successfully!");
+            $purchaseOrder->formatted_order_date = Carbon::parse($purchaseOrder->order_date)->format('d-m-Y');
+
+            $purchaseOrder->details->transform(function ($detail) {
+                $detail->formatted_delivery_date = $detail->delivery_date
+                    ? Carbon::parse($detail->delivery_date)->format('d-m-Y')
+                    : null;
+
+                return $detail;
+            });
+
+            return $this->successResponse(compact('purchaseOrder'), 'Purchase order fetched successfully!');
         } catch (Exception $e) {
             Log::error('Error::API@PurchaseOrderApiController@show - ' . $e->getMessage());
-            return $this->errorResponse($e->getMessage(), "Failed to fetch purchase order", 500);
+
+            return $this->errorResponse($e->getMessage(), 'Failed to fetch purchase order', 500);
         }
     }
 
-    /**
-     * Mark a purchase order detail as delivered
-     *
-     * @param Request $request
-     * @return JsonResponse
-     */
+    public function store(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'site_id' => 'required|exists:sites,id',
+            'purchase_request_id' => 'nullable|exists:purchase_requests,id',
+            'products' => 'required|array|min:1',
+            'products.*.product_id' => 'required|exists:products,id',
+            'products.*.category_id' => 'required|exists:product_categories,id',
+            'products.*.quantity' => 'required|numeric|min:1',
+            'products.*.rate' => 'required|numeric|min:0.01',
+            'products.*.gst_applicable' => 'nullable|boolean',
+            'products.*.gst_percentage' => 'nullable|numeric|min:0',
+            'remarks' => 'nullable|string',
+        ]);
+
+        if ($validator->fails()) {
+            return $this->errorResponse($validator->errors(), 'Validation failed', 422);
+        }
+
+        DB::beginTransaction();
+        try {
+            $purchaseRequestId = $request->purchase_request_id;
+            $currentUserId = Auth::id();
+
+            if (empty($purchaseRequestId)) {
+                $purchaseRequest = PurchaseRequest::create([
+                    'supervisor_id' => $currentUserId,
+                    'site_id' => $request->site_id,
+                    'product_count' => count($request->products),
+                    'remarks' => $request->remarks,
+                    'status' => 'Approved',
+                ]);
+
+                foreach ($request->products as $product) {
+                    PurchaseRequestDetail::create([
+                        'purchase_request_id' => $purchaseRequest->id,
+                        'category_id' => $product['category_id'],
+                        'product_id' => $product['product_id'],
+                        'quantity' => $product['quantity'],
+                    ]);
+                }
+
+                $purchaseRequestId = $purchaseRequest->id;
+                $supervisorId = $currentUserId;
+            } else {
+                $purchaseRequest = PurchaseRequest::findOrFail($purchaseRequestId);
+                $supervisorId = $purchaseRequest->supervisor_id;
+                $purchaseRequest->status = 'Converted';
+                $purchaseRequest->save();
+            }
+
+            $order = PurchaseOrder::create([
+                'purchase_request_id' => $purchaseRequestId,
+                'site_id' => $request->site_id,
+                'supervisor_id' => $supervisorId,
+                'remarks' => $request->remarks,
+            ]);
+
+            foreach ($request->products as $product) {
+                $quantity = (float) $product['quantity'];
+                $rate = (float) $product['rate'];
+                $total = $quantity * $rate;
+                $gstApplicable = !empty($product['gst_applicable']);
+                $gstPercentage = $gstApplicable ? (float) ($product['gst_percentage'] ?? 0) : 0;
+                $gstValue = $gstApplicable ? ($total * $gstPercentage / 100) : 0;
+
+                PurchaseOrderDetail::create([
+                    'purchase_order_id' => $order->id,
+                    'category_id' => $product['category_id'],
+                    'product_id' => $product['product_id'],
+                    'quantity' => $quantity,
+                    'rate' => $rate,
+                    'gst_applicable' => $gstApplicable,
+                    'gst_percentage' => $gstApplicable ? $gstPercentage : null,
+                    'gst_value' => $gstValue,
+                    'total_amount' => $total,
+                    'total_amount_with_gst' => $total + $gstValue,
+                    'status' => 'Pending',
+                ]);
+            }
+
+            DB::commit();
+            $order->load([
+                'site:id,site_no,project_id',
+                'site.project:id,name',
+                'supervisor:id,name',
+                'details.category:id,name',
+                'details.product:id,name',
+            ]);
+
+            return $this->successResponse(compact('order'), 'Purchase order created successfully!');
+        } catch (Exception $e) {
+            DB::rollBack();
+            Log::error('Error::API@PurchaseOrderApiController@store - ' . $e->getMessage());
+
+            return $this->errorResponse($e->getMessage(), 'Failed to create purchase order', 500);
+        }
+    }
+
     public function markAsDelivered(Request $request): JsonResponse
     {
         try {
@@ -202,22 +283,16 @@ class PurchaseOrderApiController extends Controller
             ]);
 
             if ($validator->fails()) {
-                return $this->errorResponse($validator->errors(), "Validation failed", 422);
+                return $this->errorResponse($validator->errors(), 'Validation failed', 422);
             }
 
             DB::beginTransaction();
 
             $detail = PurchaseOrderDetail::findOrFail($request->order_detail_id);
-
-            if(!$detail) {
-                return $this->errorResponse(null, "Product not found!", 404);
-            }
-
             $detail->status = 'Delivered';
             $detail->remarks = $request->remarks ?? '';
             $detail->delivery_date = Carbon::now();
 
-            // Handle file attachments if present
             if ($request->hasFile('attachments')) {
                 foreach ($request->file('attachments') as $file) {
                     $filename = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME) .
@@ -237,12 +312,10 @@ class PurchaseOrderApiController extends Controller
                 }
             }
 
-            // Get the purchase order to access the project ID
             $purchaseOrder = $detail->purchaseOrder;
 
-            // Update project stock when item is delivered
-            $this->updateProjectStock(
-                $purchaseOrder->project_id,
+            $this->updateSiteStock(
+                $purchaseOrder->site_id,
                 $detail->product_id,
                 $detail->category_id,
                 $detail->quantity,
@@ -264,52 +337,47 @@ class PurchaseOrderApiController extends Controller
 
             DB::commit();
             $detail->load(['category', 'product', 'documents']);
-            return $this->successResponse(compact('detail'), "Item marked as delivered successfully!");
+
+            return $this->successResponse(compact('detail'), 'Item marked as delivered successfully!');
         } catch (Exception $e) {
             DB::rollBack();
             Log::error('Error::API@PurchaseOrderApiController@markAsDelivered - ' . $e->getMessage());
-            return $this->errorResponse($e->getMessage(), "Failed to mark item as delivered", 500);
+
+            return $this->errorResponse($e->getMessage(), 'Failed to mark item as delivered', 500);
         }
     }
 
-    /**
-     * Update project stock - add new stock or update existing
-     *
-     * @param int $projectId
-     * @param int $productId
-     * @param int $categoryId
-     * @param float $quantity
-     * @param int $updatedBy
-     * @param string $transactionType
-     * @param string $remarks
-     * @return void
-     */
-    private function updateProjectStock($projectId, $productId, $categoryId, $quantity, $updatedBy, $transactionType, $remarks = ""): void
-    {
-        $stock = ProjectStock::where('project_id', $projectId)->where('product_id', $productId)->first();
+    private function updateSiteStock(
+        int $siteId,
+        int $productId,
+        int $categoryId,
+        float $quantity,
+        int $updatedBy,
+        string $transactionType,
+        string $remarks = ''
+    ): void {
+        $stock = SiteStock::where('site_id', $siteId)->where('product_id', $productId)->first();
         $previousQuantity = 0;
 
         if ($stock) {
             $previousQuantity = $stock->quantity;
-            // Update existing stock
             $stock->quantity += $quantity;
             $stock->last_updated_by = $updatedBy;
             $stock->last_transaction_type = $transactionType;
             $stock->save();
         } else {
-            // Create new stock record
-            $stock = ProjectStock::create([
-                'project_id' => $projectId,
+            $stock = SiteStock::create([
+                'site_id' => $siteId,
                 'product_id' => $productId,
                 'category_id' => $categoryId,
                 'quantity' => $quantity,
                 'last_updated_by' => $updatedBy,
-                'last_transaction_type' => $transactionType
+                'last_transaction_type' => $transactionType,
             ]);
         }
 
         StockLog::create([
-            'project_id' => $projectId,
+            'site_id' => $siteId,
             'category_id' => $categoryId,
             'product_id' => $productId,
             'previous_quantity' => $previousQuantity,
