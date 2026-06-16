@@ -86,7 +86,7 @@
     <script>
         $(document).ready(function () {
             @if($lead_source && $lead_source->image)
-                $("#image-preview").removeClass("d-none").attr("src", "{{ Storage::url($lead_source->image) }}");
+                $("#image-preview").removeClass("d-none").attr("src", "{{ generate_file_url($lead_source->image) }}");
                 $("#image-dropzone i, #image-dropzone p").hide();
             @endif
         });

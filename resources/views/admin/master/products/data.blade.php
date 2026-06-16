@@ -117,7 +117,7 @@
     <script>
         $(document).ready(function () {
             @if($product && $product->image)
-                $("#image-preview").removeClass("d-none").attr("src", "{{ Storage::url($product->image) }}");
+                $("#image-preview").removeClass("d-none").attr("src", "{{ generate_file_url($product->image) }}");
                 $("#image-dropzone i, #image-dropzone p").hide();
             @endif
 

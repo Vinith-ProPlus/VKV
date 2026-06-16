@@ -1259,6 +1259,31 @@ use Random\RandomException;
         }
     }
 
+    function mime_type_from_extension(string $extension): string
+    {
+        return match (strtolower($extension)) {
+            'jpg', 'jpeg' => 'image/jpeg',
+            'png' => 'image/png',
+            'gif' => 'image/gif',
+            'webp' => 'image/webp',
+            'svg' => 'image/svg+xml',
+            'pdf' => 'application/pdf',
+            'doc' => 'application/msword',
+            'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'xls' => 'application/vnd.ms-excel',
+            'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'txt' => 'text/plain',
+            'mp4' => 'video/mp4',
+            'mp3' => 'audio/mpeg',
+            default => 'application/octet-stream',
+        };
+    }
+
+    function public_media_url(string $relativePath): string
+    {
+        return route('public.storage', ['path' => ltrim(str_replace('\\', '/', $relativePath), '/')]);
+    }
+
     /**
      * @param $file
      * @return string
@@ -1286,7 +1311,7 @@ function generate_file_url($file_path): Application|string|UrlGenerator
             $absolutePath = storage_path('app/public/' . $relativePath);
 
             if (is_file($absolutePath)) {
-                return url('storage/' . $relativePath);
+                return public_media_url($relativePath);
             }
 
             $extension = strtolower(pathinfo($relativePath, PATHINFO_EXTENSION) ?: 'png');
@@ -1311,7 +1336,7 @@ function generate_file_url($file_path): Application|string|UrlGenerator
 
         $dummyFile = $dummyFiles[$extension] ?? 'images/dummy.png';
 
-        return url('storage/' . $dummyFile);
+        return asset($dummyFile);
     }
 
     /**

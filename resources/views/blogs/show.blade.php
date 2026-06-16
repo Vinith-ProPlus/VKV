@@ -90,8 +90,8 @@
                                         @foreach($blog->documents as $document)
                                             <div class="col-3 document-box border p-2 m-1" style="min-width: 100px; text-align: center;">
                                                 <p class="text-truncate" style="max-width: 200px; margin-top: 5px; margin-bottom: 5px;">{{$document->file_name}}</p>
-                                                <a href="{{ asset('storage/' . $document->file_path) }}" target="_blank" class="btn btn-sm btn-blue">View</a>
-                                                <a href="{{ asset('storage/' . $document->file_path) }}" download class="btn btn-sm btn-green">Download</a>
+                                                <a href="{{ generate_file_url($document->file_path) }}" target="_blank" class="btn btn-sm btn-blue">View</a>
+                                                <a href="{{ generate_file_url($document->file_path) }}" download class="btn btn-sm btn-green">Download</a>
                                             </div>
                                         @endforeach
                                     @else

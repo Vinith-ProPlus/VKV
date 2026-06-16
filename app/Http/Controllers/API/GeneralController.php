@@ -518,7 +518,7 @@ class GeneralController extends Controller
                     'images' => [
                         [
                             'filename' => $document->file_name,
-                            'url' => asset("storage/$document->file_path"),
+                            'url' => generate_file_url($document->file_path),
                         ]
                     ]
                 ];

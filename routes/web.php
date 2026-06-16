@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Artisan;
 use App\Http\Controllers\GeneralController;
 use App\Http\Controllers\PayrollController;
+use App\Http\Controllers\PublicFileController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\StockLogController;
 use App\Http\Controllers\API\LaborController;
@@ -47,6 +48,10 @@ Route::get('/clear', static function() {
 Route::get('cliff-chat-notification-token', static function() {
   return generateFirebaseAccessToken(storage_path('app/firebase/rdf_firebase_credentials.json'));
 });
+
+Route::get('/media/{path}', [PublicFileController::class, 'show'])
+    ->where('path', '.*')
+    ->name('public.storage');
 
 Route::get('/', static function () {
     if(auth()->user()){

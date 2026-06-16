@@ -366,8 +366,8 @@
         // ===================== Image Preview =====================
 
         @if($lead && $lead->image)
-            console.log("{{ Storage::url($lead->image) }}");
-            $("#image-preview").removeClass("d-none").attr("src", "{{ Storage::url($lead->image) }}");
+            console.log("{{ generate_file_url($lead->image) }}");
+            $("#image-preview").removeClass("d-none").attr("src", "{{ generate_file_url($lead->image) }}");
             $("#image-dropzone i, #image-dropzone p").hide();
         @endif
 

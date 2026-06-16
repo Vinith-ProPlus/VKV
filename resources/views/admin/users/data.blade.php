@@ -196,7 +196,7 @@
     <script>
         $(document).ready(function () {
             @if($user && $user->image)
-            $("#image-preview").removeClass("d-none").attr("src", "{{ Storage::url($user->image) }}");
+            $("#image-preview").removeClass("d-none").attr("src", "{{ generate_file_url($user->image) }}");
             $("#image-dropzone i, #image-dropzone p").hide();
             @endif
 

@@ -215,7 +215,7 @@ class GeneralController extends Controller
                     'images' => [
                         [
                             'filename' => $document->file_name,
-                            'url' => asset("storage/$document->file_path"),
+                            'url' => generate_file_url($document->file_path),
                         ]
                     ]
                 ];
@@ -258,7 +258,7 @@ class GeneralController extends Controller
                     $uploadedFiles[] = [
                         'id' => $document->id,
                         'name' => $filename,
-                        'path' => asset("storage/$path"),
+                        'path' => generate_file_url($path),
                         'extension' => $file->getClientOriginalExtension()
                     ];
                 }

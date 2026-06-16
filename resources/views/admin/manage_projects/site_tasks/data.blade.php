@@ -154,7 +154,7 @@
     <script>
         $(document).ready(function () {
             @if($site_task && $site_task->image)
-                $("#image-preview").removeClass("d-none").attr("src", "{{ Storage::url($site_task->image) }}");
+                $("#image-preview").removeClass("d-none").attr("src", "{{ generate_file_url($site_task->image) }}");
                 $("#image-dropzone i, #image-dropzone p").hide();
             @endif
 
