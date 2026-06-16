@@ -19,7 +19,7 @@ use App\Http\Controllers\StockLogController;
 use App\Http\Controllers\API\LaborController;
 use App\Http\Controllers\SqlImportController;
 use App\Http\Controllers\Admin\RoleController;
-use App\Http\Controllers\ProjectStockController;
+use App\Http\Controllers\SiteStockController;
 use App\Http\Controllers\PurchaseOrderController;
 use App\Http\Controllers\Admin\CRM\LeadController;
 use App\Http\Controllers\Admin\CRM\FollowupsController;
@@ -156,14 +156,18 @@ Route::group(['prefix'=>'admin'], static function (){
         Route::resource('purchase-orders', PurchaseOrderController::class);
         Route::post('purchase-orders/mark-delivered', [PurchaseOrderController::class, 'markAsDelivered'])->name('purchase-orders.mark-delivered');
 
-        Route::resource('project-stocks', ProjectStockController::class)->except('show');
-        Route::get('project-stocks/get-categories', [ProjectStockController::class, 'getCategories'])->name('project-stocks.get-categories');
-        Route::get('project-stocks/get-products', [ProjectStockController::class, 'getProducts'])->name('project-stocks.get-products');
-        Route::get('project-stocks/get-stock', [ProjectStockController::class, 'getStock'])->name('project-stocks.get-stock');
-        Route::post('project-stocks/adjust', [ProjectStockController::class, 'adjust'])->name('project-stocks.adjust');
+        Route::resource('site-stocks', SiteStockController::class)->except('show');
+        Route::get('site-stocks/get-categories', [SiteStockController::class, 'getCategories'])->name('site-stocks.get-categories');
+        Route::get('site-stocks/get-products', [SiteStockController::class, 'getProducts'])->name('site-stocks.get-products');
+        Route::get('site-stocks/get-stock', [SiteStockController::class, 'getStock'])->name('site-stocks.get-stock');
+        Route::post('site-stocks/adjust', [SiteStockController::class, 'adjust'])->name('site-stocks.adjust');
+        Route::get('site-stocks/re-allocation', [SiteStockController::class, 'reAllocation'])->name('site-stocks.re_allocation');
+        Route::post('site-stocks/re-allocation/store', [SiteStockController::class, 'reAllocationStore'])->name('site-stocks.re_allocation.store');
 
-        Route::get('project-stocks/re-allocation', [ProjectStockController::class, 'reAllocation'])->name('project-stocks.re_allocation');
-        Route::post('project-stocks/re-allocation/store', [ProjectStockController::class, 'reAllocationStore'])->name('project-stocks.re_allocation.store');
+        Route::redirect('project-stocks', 'site-stocks');
+        Route::redirect('project-stocks/re-allocation', 'site-stocks/re-allocation');
+        Route::redirect('project_stocks', 'site-stocks');
+        Route::redirect('project_stocks/re-allocation', 'site-stocks/re-allocation');
 
         Route::resource('stock-logs', StockLogController::class)->except(['show']);
         Route::get('stock-logs/get-products-by-category', [StockLogController::class, 'getProductsByCategory'])->name('stock-logs.get-products-by-category');

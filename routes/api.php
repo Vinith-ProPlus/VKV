@@ -40,7 +40,7 @@ Route::group(['prefix' => 'master', 'middleware' => 'auth:sanctum'], static func
     Route::post('/getContents', [GeneralController::class, 'getContent'])->name('getContent');
     Route::post('/getDocuments', [GeneralController::class, 'getDocuments'])->name('getDocuments');
     Route::post('/getLaborDesignations', [GeneralController::class, 'getLaborDesignations'])->name('getLaborDesignations');
-    Route::post('/getProjectContractors', [GeneralController::class, 'getProjectContractors'])->name('getProjectContractors');
+    Route::post('/getSiteContractors', [GeneralController::class, 'getSiteContractors'])->name('getSiteContractors');
     Route::post('/mobile_version', [GeneralController::class, 'mobile_version'])->name('mobile_version');
     Route::post('getWarehouses', [GeneralController::class, 'getWarehouses'])->name('getWarehouses');
 });
@@ -54,8 +54,8 @@ Route::middleware('auth:sanctum')->group(static function () {
     Route::post('getNotifications', [GeneralController::class, 'getNotifications'])->name('getNotifications');
     Route::post('markAsReadNotification', [GeneralController::class, 'markAsReadNotification'])->name('markAsReadNotification');
 
-    // Manage Project Stocks
-    Route::post('manage-stocks/getProjectStocks', [GeneralController::class, 'getProjectStocks'])->name('getProjectStocks');
+    // Manage Site Stocks
+    Route::post('manage-stocks/getSiteStocks', [GeneralController::class, 'getSiteStocks'])->name('getSiteStocks');
     Route::post('manage-stocks/adjustProductStock', [GeneralController::class, 'adjustProductStock'])->name('adjustProductStock');
     Route::post('manage-stocks/stocksReAllocation', [GeneralController::class, 'stocksReAllocation'])->name('stocksReAllocation');
     Route::post('manage-stocks/stocksReturn', [GeneralController::class, 'stocksReturn'])->name('stocksReturn');

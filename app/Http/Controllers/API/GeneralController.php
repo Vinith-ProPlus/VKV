@@ -558,7 +558,7 @@ class GeneralController extends Controller
         return $this->successResponse(dataFormatter($query), "Labor Designation fetched successfully!");
     }
 
-    public function getProjectContractors(Request $request): JsonResponse
+    public function getSiteContractors(Request $request): JsonResponse
     {
         $request->validate(['site_id' => 'required|exists:sites,id']);
 
@@ -596,13 +596,13 @@ class GeneralController extends Controller
         return $this->errorResponse("", "Failed to mark this notification as marked!", 404);
     }
 
-    public function getProjectStocks(Request $request): JsonResponse
+    public function getSiteStocks(Request $request): JsonResponse
     {
         $request->validate(['site_id' => 'required|exists:sites,id']);
         $request->merge(['per_page' => 1000000, 'sort_order' => 'asc', 'sort_by' => 'name']);
         $siteStocks = $this->getStocksBySiteId($request->site_id);
 
-        return $this->successResponse($siteStocks, 'Product stocks fetched successfully!');
+        return $this->successResponse($siteStocks, 'Site stocks fetched successfully!');
     }
 
     public function adjustProductStock(Request $request): JsonResponse

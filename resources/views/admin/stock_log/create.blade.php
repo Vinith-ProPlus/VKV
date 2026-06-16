@@ -40,16 +40,25 @@
                             <div class="row mb-15">
                                 <div class="col-md-6">
                                     <label class="form-label">Project <span class="text-danger">*</span></label>
-                                    <select name="project_id" id="project_id" class="form-control @error('project_id') is-invalid @enderror" required>
+                                    <select id="project_id" class="form-control" required>
                                         <option value="">Select Project</option>
                                         @foreach($projects as $project)
                                             <option value="{{ $project->id }}" {{ old('project_id') == $project->id ? 'selected' : '' }}>{{ $project->name }}</option>
                                         @endforeach
                                     </select>
-                                    @error('project_id')
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Site <span class="text-danger">*</span></label>
+                                    <select name="site_id" id="site_id" class="form-control @error('site_id') is-invalid @enderror" required>
+                                        <option value="">Select Site</option>
+                                    </select>
+                                    @error('site_id')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>
+                            </div>
+
+                            <div class="row mb-15">
                                 <div class="col-md-6">
                                     <label class="form-label">Category <span class="text-danger">*</span></label>
                                     <select name="category_id" id="category_id" class="form-control @error('category_id') is-invalid @enderror" required>
@@ -139,23 +148,49 @@
 @section('script')
     <script>
         $(document).ready(function() {
-            $('#project_id, #category_id, #product_id, #user_id').select2({
+            $('#project_id, #site_id, #category_id, #product_id, #user_id').select2({
                 width: '100%',
                 placeholder: 'Select an option',
                 allowClear: true
             });
 
-            // When project or category changes, update product dropdown
-            $('#project_id, #category_id').change(function() {
-                const projectId = $('#project_id').val();
-                const categoryId = $('#category_id').val();
-                const selectedProduct = $('#project_id').attr('data-selected');
+            function loadSites(projectId, selectedSiteId) {
+                $('#site_id').empty().append('<option value="">Select Site</option>');
 
-                if (projectId && categoryId) {
+                if (!projectId) {
+                    $('#site_id').trigger('change.select2');
+                    return;
+                }
+
+                $.ajax({
+                    url: "{{ route('getSites') }}",
+                    data: { project_id: projectId },
+                    success: function(data) {
+                        $.each(data, function(key, site) {
+                            const selected = selectedSiteId && String(selectedSiteId) === String(site.id) ? ' selected' : '';
+                            $('#site_id').append('<option value="' + site.id + '"' + selected + '>' + site.site_no + '</option>');
+                        });
+                        $('#site_id').trigger('change.select2');
+                    }
+                });
+            }
+
+            $('#project_id').change(function() {
+                loadSites($(this).val(), "{{ old('site_id') }}");
+                $('#product_id').html('<option value="">Select Product</option>').prop('disabled', true);
+                $('#available_stock').val('0');
+            });
+
+            $('#site_id, #category_id').change(function() {
+                const siteId = $('#site_id').val();
+                const categoryId = $('#category_id').val();
+                const selectedProduct = $('#product_id').attr('data-selected');
+
+                if (siteId && categoryId) {
                     $.ajax({
                         url: "{{ route('stock-logs.get-products-by-category') }}",
                         data: {
-                            project_id: projectId,
+                            site_id: siteId,
                             category_id: categoryId
                         },
                         success: function(data) {
@@ -191,16 +226,15 @@
                 }
             });
 
-            // When product changes, update available stock
             $('#product_id').change(function() {
-                const projectId = $('#project_id').val();
+                const siteId = $('#site_id').val();
                 const productId = $(this).val();
 
-                if (projectId && productId) {
+                if (siteId && productId) {
                     $.ajax({
                         url: "{{ route('stock-logs.get-product-stock') }}",
                         data: {
-                            project_id: projectId,
+                            site_id: siteId,
                             product_id: productId
                         },
                         success: function(data) {

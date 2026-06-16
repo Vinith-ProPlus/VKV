@@ -3,7 +3,7 @@
 @section('content')
     @php
         $PageTitle = "Stock Re-Allocation";
-        $ActiveMenuName = 'Project-Stock-Management';
+        $ActiveMenuName = 'Site-Stock-Management';
     @endphp
 
     <div class="container-fluid">
@@ -13,7 +13,7 @@
                     <ol class="breadcrumb">
                         <li class="breadcrumb-item"><a href="{{ url('/') }}"><i class="f-16 fa fa-home"></i></a></li>
                         <li class="breadcrumb-item">Transactions</li>
-                        <li class="breadcrumb-item"><a href="{{ route('stock-logs.index') }}">Project Stock</a></li>
+                        <li class="breadcrumb-item"><a href="{{ route('site-stocks.index') }}">Site Stock</a></li>
                         <li class="breadcrumb-item">{{ $PageTitle }}</li>
                     </ol>
                 </div>
@@ -35,21 +35,30 @@
                             </div>
                         @endif
 
-                        <form method="POST" action="{{ route('project-stocks.re_allocation.store') }}">
+                        <form method="POST" action="{{ route('site-stocks.re_allocation.store') }}">
                             @csrf
                             <div class="row mb-15">
                                 <div class="col-md-6">
                                     <label class="form-label">From Project <span class="text-danger">*</span></label>
-                                    <select name="from_project_id" id="from_project_id" class="form-control @error('from_project_id') is-invalid @enderror" required>
+                                    <select id="from_project_id" class="form-control" required>
                                         <option value="">Select Project</option>
                                         @foreach($projects as $project)
-                                            <option value="{{ $project->id }}" {{ old('from_project_id') == $project->id ? 'selected' : '' }}>{{ $project->name }}</option>
+                                            <option value="{{ $project->id }}">{{ $project->name }}</option>
                                         @endforeach
                                     </select>
-                                    @error('from_project_id')
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">From Site <span class="text-danger">*</span></label>
+                                    <select name="from_site_id" id="from_site_id" class="form-control @error('from_site_id') is-invalid @enderror" required>
+                                        <option value="">Select Site</option>
+                                    </select>
+                                    @error('from_site_id')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>
+                            </div>
+
+                            <div class="row mb-15">
                                 <div class="col-md-6">
                                     <label class="form-label">Category <span class="text-danger">*</span></label>
                                     <select name="category_id" id="category_id" class="form-control @error('category_id') is-invalid @enderror" required>
@@ -62,9 +71,6 @@
                                     <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>
-                            </div>
-
-                            <div class="row mb-15">
                                 <div class="col-md-6">
                                     <label class="form-label">Product <span class="text-danger">*</span></label>
                                     <select name="product_id" id="product_id" class="form-control @error('product_id') is-invalid @enderror" data-selected="{{ old('product_id') }}" required>
@@ -74,13 +80,13 @@
                                     <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>
+                            </div>
+
+                            <div class="row mb-15">
                                 <div class="col-md-6">
                                     <label class="form-label">Available Stock</label>
                                     <input type="text" class="form-control" id="available_stock" readonly disabled value="0">
                                 </div>
-                            </div>
-
-                            <div class="row mb-15">
                                 <div class="col-md-6">
                                     <label class="form-label">Quantity <span class="text-danger">*</span></label>
                                     <input type="number" name="quantity" step="0.01" min="0.01" class="form-control @error('quantity') is-invalid @enderror" value="{{ old('quantity') }}" required>
@@ -88,15 +94,24 @@
                                     <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>
+                            </div>
+
+                            <div class="row mb-15">
                                 <div class="col-md-6">
                                     <label class="form-label">To Project <span class="text-danger">*</span></label>
-                                    <select name="to_project_id" id="to_project_id" class="form-control @error('to_project_id') is-invalid @enderror" required>
+                                    <select id="to_project_id" class="form-control" required>
                                         <option value="">Select Project</option>
                                         @foreach($projects as $project)
-                                            <option value="{{ $project->id }}" {{ old('to_project_id') == $project->id ? 'selected' : '' }}>{{ $project->name }}</option>
+                                            <option value="{{ $project->id }}">{{ $project->name }}</option>
                                         @endforeach
                                     </select>
-                                    @error('to_project_id')
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">To Site <span class="text-danger">*</span></label>
+                                    <select name="to_site_id" id="to_site_id" class="form-control @error('to_site_id') is-invalid @enderror" required>
+                                        <option value="">Select Site</option>
+                                    </select>
+                                    @error('to_site_id')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>
@@ -137,23 +152,53 @@
 @section('script')
     <script>
         $(document).ready(function() {
-            $('#from_project_id, #category_id, #product_id, #to_project_id').select2({
+            $('#from_project_id, #from_site_id, #category_id, #product_id, #to_project_id, #to_site_id').select2({
                 width: '100%',
                 placeholder: 'Select an option',
                 allowClear: true
             });
 
-            // When project or category changes, update product dropdown
-            $('#from_project_id, #category_id').change(function() {
-                const fromProjectId = $('#from_project_id').val();
+            function loadSites(projectId, $target, placeholder, selectedId) {
+                $target.empty().append('<option value="">' + placeholder + '</option>');
+
+                if (!projectId) {
+                    $target.trigger('change.select2');
+                    return;
+                }
+
+                $.ajax({
+                    url: "{{ route('getSites') }}",
+                    data: { project_id: projectId },
+                    success: function(data) {
+                        $.each(data, function(key, site) {
+                            const selected = selectedId && String(selectedId) === String(site.id) ? ' selected' : '';
+                            $target.append('<option value="' + site.id + '"' + selected + '>' + site.site_no + '</option>');
+                        });
+                        $target.trigger('change.select2');
+                    }
+                });
+            }
+
+            $('#from_project_id').change(function() {
+                loadSites($(this).val(), $('#from_site_id'), 'Select Site', "{{ old('from_site_id') }}");
+                $('#product_id').html('<option value="">Select Product</option>').prop('disabled', true);
+                $('#available_stock').val('0');
+            });
+
+            $('#to_project_id').change(function() {
+                loadSites($(this).val(), $('#to_site_id'), 'Select Site', "{{ old('to_site_id') }}");
+            });
+
+            $('#from_site_id, #category_id').change(function() {
+                const fromSiteId = $('#from_site_id').val();
                 const categoryId = $('#category_id').val();
                 const selectedProduct = $('#product_id').attr('data-selected');
 
-                if (fromProjectId && categoryId) {
+                if (fromSiteId && categoryId) {
                     $.ajax({
                         url: "{{ route('stock-logs.get-products-by-category') }}",
                         data: {
-                            project_id: fromProjectId,
+                            site_id: fromSiteId,
                             category_id: categoryId
                         },
                         success: function(data) {
@@ -161,7 +206,7 @@
 
                             if (data.length > 0) {
                                 $.each(data, function(key, product) {
-                                    if(product.id === selectedProduct){
+                                    if(String(product.id) === String(selectedProduct)){
                                         options += '<option value="' + product.id + '" selected>' + product.name + '</option>';
                                     } else {
                                         options += '<option value="' + product.id + '">' + product.name + '</option>';
@@ -176,9 +221,6 @@
                                 $('#stock_alert').hide();
                             }
                             $('#product_id').trigger('change.select2');
-                        },
-                        error: function(xhr, status, error) {
-                            console.error("Error loading products:", error);
                         }
                     });
                 } else {
@@ -189,23 +231,22 @@
                 }
             });
 
-            $('#to_project_id, #from_project_id').change(function () {
-                if ($('#to_project_id').val() && $('#to_project_id').val() === $('#from_project_id').val()) {
-                    alert('From and To Project cannot be the same.');
-                    $('#to_project_id').val(null).trigger('change');
+            $('#to_site_id, #from_site_id').change(function () {
+                if ($('#to_site_id').val() && $('#to_site_id').val() === $('#from_site_id').val()) {
+                    alert('From and To Site cannot be the same.');
+                    $('#to_site_id').val(null).trigger('change');
                 }
             });
 
-            // When product changes, update available stock
             $('#product_id').change(function() {
-                const fromProjectId = $('#from_project_id').val();
+                const fromSiteId = $('#from_site_id').val();
                 const productId = $(this).val();
 
-                if (fromProjectId && productId) {
+                if (fromSiteId && productId) {
                     $.ajax({
                         url: "{{ route('stock-logs.get-product-stock') }}",
                         data: {
-                            project_id: fromProjectId,
+                            site_id: fromSiteId,
                             product_id: productId
                         },
                         success: function(data) {
@@ -222,9 +263,6 @@
                                 $('#stock_alert').show();
                                 $('#submit_btn').prop('disabled', true);
                             }
-                        },
-                        error: function(xhr, status, error) {
-                            console.error("Error loading stock:", error);
                         }
                     });
                 } else {
@@ -233,7 +271,6 @@
                 }
             });
 
-            // Validate quantity against available stock
             $('input[name="quantity"]').on('input', function() {
                 const quantity = parseFloat($(this).val()) || 0;
                 const available = parseFloat($('#available_stock').val()) || 0;

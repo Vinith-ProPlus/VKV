@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Product;
 use App\Models\ProductCategory;
 use App\Models\Project;
-use App\Models\ProjectStock;
 use App\Models\SiteStock;
 use App\Models\StockLog;
 use Exception;
@@ -22,7 +21,7 @@ use Illuminate\Support\Facades\DB;
 use RuntimeException;
 use Yajra\DataTables\Facades\DataTables;
 
-class ProjectStockController extends Controller
+class SiteStockController extends Controller
 {
     use AuthorizesRequests;
 
@@ -31,29 +30,46 @@ class ProjectStockController extends Controller
      */
     public function index(Request $request): Application|Factory|View|JsonResponse
     {
+        $this->authorize('View Project Stocks');
         $projects = Project::all();
 
         if ($request->ajax()) {
-            $query = SiteStock::with(['project', 'product', 'category']);
+            $query = SiteStock::with(['site.project', 'product', 'category']);
 
-            if ($request->has('project_id') && !empty($request->project_id)) {
-                $query->where('project_id', $request->project_id);
+            if ($request->filled('site_id')) {
+                $query->where('site_id', $request->site_id);
+            } elseif ($request->filled('project_id')) {
+                $query->whereHas('site', static function ($q) use ($request) {
+                    $q->where('project_id', $request->project_id);
+                });
             }
 
             $data = $query->get();
 
             return DataTables::of($data)
-                ->editColumn('quantity', static function($row) {
+                ->addColumn('site_label', static function ($row) {
+                    if (!$row->site) {
+                        return 'N/A';
+                    }
+
+                    $label = $row->site->site_no;
+                    if ($row->site->project) {
+                        $label .= ' (' . $row->site->project->name . ')';
+                    }
+
+                    return $label;
+                })
+                ->editColumn('quantity', static function ($row) {
                     return number_format($row->quantity, 2);
                 })
-                ->addColumn('last_updated', static function($row) {
+                ->addColumn('last_updated', static function ($row) {
                     return $row->updated_at->format('d-m-Y H:i') .
                         ($row->last_transaction_type ? ' (' . $row->last_transaction_type . ')' : '');
                 })
                 ->make(true);
         }
 
-        return view('admin.project_stocks.index', compact('projects'));
+        return view('admin.site_stocks.index', compact('projects'));
     }
 
     /**
@@ -66,7 +82,7 @@ class ProjectStockController extends Controller
         $projects = Project::all();
         $categories = ProductCategory::all();
 
-        return view('admin.project_stocks.re_allocation', compact('projects', 'categories'));
+        return view('admin.site_stocks.re_allocation', compact('projects', 'categories'));
     }
 
     /**
@@ -79,139 +95,122 @@ class ProjectStockController extends Controller
         $this->authorize('Create Project Stocks');
 
         $request->validate([
-            'from_project_id' => 'required|exists:projects,id',
+            'from_site_id' => 'required|exists:sites,id',
             'category_id' => 'required|exists:product_categories,id',
             'product_id' => 'required|exists:products,id',
             'quantity' => 'required|numeric|min:0.01',
-            'to_project_id' => 'required|exists:projects,id',
+            'to_site_id' => 'required|exists:sites,id|different:from_site_id',
             'remarks' => 'nullable|string|max:255',
         ]);
 
         DB::beginTransaction();
 
         try {
-            // Fetch From and To project stock
-            $from_project_stock = SiteStock::with('project')->where('project_id', $request->from_project_id)
+            $fromSiteStock = SiteStock::with('site')->where('site_id', $request->from_site_id)
                 ->where('product_id', $request->product_id)
                 ->first();
 
-            $to_project_stock = SiteStock::with('project')->where('project_id', $request->to_project_id)
+            $toSiteStock = SiteStock::with('site')->where('site_id', $request->to_site_id)
                 ->where('product_id', $request->product_id)
                 ->first();
 
-            if (!$from_project_stock || $from_project_stock->quantity < $request->quantity) {
-                throw new RuntimeException("Insufficient stock available.");
+            if (!$fromSiteStock || $fromSiteStock->quantity < $request->quantity) {
+                throw new RuntimeException('Insufficient stock available.');
             }
 
-            // Reduce stock from 'from' project
-            $fromPreviousQuantity = $from_project_stock->quantity;
+            $fromPreviousQuantity = $fromSiteStock->quantity;
             $fromBalanceQuantity = $fromPreviousQuantity - $request->quantity;
+            $toSiteLabel = $toSiteStock?->site?->site_no ?? 'New Site';
 
-            $from_project_stock->quantity = $fromBalanceQuantity;
-            $from_project_stock->last_updated_by = Auth::id();
-            $from_project_stock->last_transaction_type = RE_ALLOCATION . ' to - ' . ($to_project_stock->project->name ?? 'New Project') . ' by - ' . Auth::user()->name;
-            $from_project_stock->save();
+            $fromSiteStock->quantity = $fromBalanceQuantity;
+            $fromSiteStock->last_updated_by = Auth::id();
+            $fromSiteStock->last_transaction_type = RE_ALLOCATION . ' to - ' . $toSiteLabel . ' by - ' . Auth::user()->name;
+            $fromSiteStock->save();
 
-            // Create StockLog for from project
             StockLog::create([
-                'project_id' => $request->from_project_id,
+                'site_id' => $request->from_site_id,
                 'category_id' => $request->category_id,
                 'product_id' => $request->product_id,
                 'previous_quantity' => $fromPreviousQuantity,
                 'quantity' => $request->quantity,
                 'balance_quantity' => $fromBalanceQuantity,
                 'user_id' => Auth::id(),
-                'type' => RE_ALLOCATION .' - Transfer',
+                'type' => RE_ALLOCATION . ' - Transfer',
                 'time' => now(),
-                'remarks' => 'Transferred to Project: ' . $to_project_stock->project->name . ($request->remarks ? ' | ' . $request->remarks : ''),
+                'remarks' => 'Transferred to Site: ' . $toSiteLabel . ($request->remarks ? ' | ' . $request->remarks : ''),
             ]);
 
-            // Add to 'to' project
-            if ($to_project_stock) {
-                $toPreviousQuantity = $to_project_stock->quantity;
-                $to_project_stock->quantity += $request->quantity;
+            if ($toSiteStock) {
+                $toPreviousQuantity = $toSiteStock->quantity;
+                $toSiteStock->quantity += $request->quantity;
             } else {
                 $toPreviousQuantity = 0;
-                $to_project_stock = new ProjectStock();
-                $to_project_stock->project_id = $request->to_project_id;
-                $to_project_stock->category_id = $request->category_id;
-                $to_project_stock->product_id = $request->product_id;
-                $to_project_stock->quantity = $request->quantity;
+                $toSiteStock = new SiteStock([
+                    'site_id' => $request->to_site_id,
+                    'category_id' => $request->category_id,
+                    'product_id' => $request->product_id,
+                    'quantity' => $request->quantity,
+                ]);
             }
 
-            $toBalanceQuantity = $to_project_stock->quantity;
-            $to_project_stock->last_updated_by = Auth::id();
-            $to_project_stock->last_transaction_type = RE_ALLOCATION . ' received from - ' . $from_project_stock->project->name . ' by - ' . Auth::user()->name;
-            $to_project_stock->save();
+            $fromSiteLabel = $fromSiteStock->site->site_no ?? 'Site';
+            $toBalanceQuantity = $toSiteStock->quantity;
+            $toSiteStock->last_updated_by = Auth::id();
+            $toSiteStock->last_transaction_type = RE_ALLOCATION . ' received from - ' . $fromSiteLabel . ' by - ' . Auth::user()->name;
+            $toSiteStock->save();
 
-            // Create StockLog for to project
             StockLog::create([
-                'project_id' => $request->to_project_id,
+                'site_id' => $request->to_site_id,
                 'category_id' => $request->category_id,
                 'product_id' => $request->product_id,
                 'previous_quantity' => $toPreviousQuantity,
                 'quantity' => $request->quantity,
                 'balance_quantity' => $toBalanceQuantity,
                 'user_id' => Auth::id(),
-                'type' => RE_ALLOCATION .' - Received',
+                'type' => RE_ALLOCATION . ' - Received',
                 'time' => now(),
-                'remarks' => 'Received from Project: ' . $from_project_stock->project->name . ($request->remarks ? ' | ' . $request->remarks : ''),
+                'remarks' => 'Received from Site: ' . $fromSiteLabel . ($request->remarks ? ' | ' . $request->remarks : ''),
             ]);
 
             DB::commit();
 
-            return redirect()->route('project-stocks.index')->with('success', 'Stock re-allocated successfully!');
+            return redirect()->route('site-stocks.index')->with('success', 'Stock re-allocated successfully!');
         } catch (Exception $e) {
             DB::rollBack();
+
             return redirect()->back()->with('error', $e->getMessage())->withInput();
         }
     }
 
-    /**
-     * @param Request $request
-     * @return JsonResponse
-     */
     public function getCategories(Request $request): JsonResponse
     {
-        $projectId = $request->project_id;
+        $siteId = $request->site_id;
 
-        // Get categories that have products with stock in this project
-        $categories = ProductCategory::whereHas('products.projectStocks', static function($query) use ($projectId) {
-            $query->where('project_id', $projectId);
+        $categories = ProductCategory::whereHas('products.siteStocks', static function ($query) use ($siteId) {
+            $query->where('site_id', $siteId);
         })->get();
 
         return response()->json($categories);
     }
 
-    /**
-     * @param Request $request
-     * @return JsonResponse
-     */
-    public function getProducts(Request $request)
+    public function getProducts(Request $request): JsonResponse
     {
-        $projectId = $request->project_id;
+        $siteId = $request->site_id;
         $categoryId = $request->category_id;
 
         $products = Product::where('category_id', $categoryId)
-            ->whereHas('projectStocks', static function($query) use ($projectId) {
-                $query->where('project_id', $projectId);
+            ->whereHas('siteStocks', static function ($query) use ($siteId) {
+                $query->where('site_id', $siteId);
             })
             ->get();
 
         return response()->json($products);
     }
 
-    /**
-     * @param Request $request
-     * @return JsonResponse
-     */
     public function getStock(Request $request): JsonResponse
     {
-        $projectId = $request->project_id;
-        $productId = $request->product_id;
-
-        $stock = SiteStock::where('project_id', $projectId)
-            ->where('product_id', $productId)
+        $stock = SiteStock::where('site_id', $request->site_id)
+            ->where('product_id', $request->product_id)
             ->first();
 
         $quantity = $stock ? number_format($stock->quantity, 2) : '0.00';
@@ -219,14 +218,12 @@ class ProjectStockController extends Controller
         return response()->json(compact('quantity'));
     }
 
-    /**
-     * @param Request $request
-     * @return JsonResponse
-     */
     public function adjust(Request $request): JsonResponse
     {
+        $this->authorize('Edit Project Stocks');
+
         $request->validate([
-            'project_id' => 'required|exists:projects,id',
+            'site_id' => 'required|exists:sites,id',
             'category_id' => 'required|exists:product_categories,id',
             'product_id' => 'required|exists:products,id',
             'quantity' => 'required|numeric|min:0.01',
@@ -236,33 +233,32 @@ class ProjectStockController extends Controller
 
         DB::beginTransaction();
         try {
-            $stock = SiteStock::where('project_id', $request->project_id)
+            $stock = SiteStock::where('site_id', $request->site_id)
                 ->where('product_id', $request->product_id)
                 ->first();
 
             if (!$stock && $request->adjustment_type === 'subtract') {
-                throw new RuntimeException("Cannot subtract from non-existent stock.");
+                throw new RuntimeException('Cannot subtract from non-existent stock.');
             }
 
             if (!$stock) {
-                // Create new stock if it doesn't exist
-                $stock = new ProjectStock([
-                    'project_id' => $request->project_id,
+                $stock = new SiteStock([
+                    'site_id' => $request->site_id,
                     'product_id' => $request->product_id,
                     'category_id' => $request->category_id,
                     'quantity' => 0,
                 ]);
             }
+
             $previousQuantity = $stock->quantity;
 
-            // Apply adjustment
             switch ($request->adjustment_type) {
                 case 'add':
                     $stock->quantity += $request->quantity;
                     break;
                 case 'subtract':
                     if ($stock->quantity < $request->quantity) {
-                        throw new RuntimeException("Cannot subtract more than available stock.");
+                        throw new RuntimeException('Cannot subtract more than available stock.');
                     }
                     $stock->quantity -= $request->quantity;
                     break;
@@ -276,7 +272,7 @@ class ProjectStockController extends Controller
             $stock->save();
 
             StockLog::create([
-                'project_id' => $request->project_id,
+                'site_id' => $request->site_id,
                 'category_id' => $request->category_id,
                 'product_id' => $request->product_id,
                 'previous_quantity' => $previousQuantity,
@@ -289,9 +285,11 @@ class ProjectStockController extends Controller
             ]);
 
             DB::commit();
+
             return response()->json(['success' => true]);
         } catch (Exception $e) {
             DB::rollBack();
+
             return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
         }
     }

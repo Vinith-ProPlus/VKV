@@ -42,6 +42,14 @@
                             </div>
                             <div class="col-md-3">
                                 <div class="form-group">
+                                    <label>Site</label>
+                                    <select class="form-control select2" id="site_filter">
+                                        <option value="">All Sites</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
                                     <label>Category</label>
                                     <select class="form-control select2" id="category_filter">
                                         <option value="">All Categories</option>
@@ -110,7 +118,7 @@
                             <thead>
                             <tr>
                                 <th>#</th>
-                                <th>Project</th>
+                                <th>Site</th>
                                 <th>Category</th>
                                 <th>Product</th>
                                 <th>Previous Qty</th>
@@ -135,7 +143,22 @@
 @section('script')
     <script>
         $(document).ready(function() {
-            // Initialize DataTable
+            function loadSites(projectId) {
+                $.ajax({
+                    url: "{{ route('getSites') }}",
+                    type: "GET",
+                    data: { project_id: projectId || '' },
+                    success: function(data) {
+                        $('#site_filter').empty().append('<option value="">All Sites</option>');
+                        $.each(data, function(key, site) {
+                            $('#site_filter').append('<option value="' + site.id + '">' + site.site_no + '</option>');
+                        });
+                    }
+                });
+            }
+
+            loadSites('');
+
             let table = $('#stock_log_table').DataTable({
                 "columnDefs": [{"className": "dt-center", "targets": "_all"}],
                 processing: true,
@@ -144,6 +167,7 @@
                     url: "{{ route('stock-logs.index') }}",
                     data: function (d) {
                         d.project_id = $('#project_filter').val();
+                        d.site_id = $('#site_filter').val();
                         d.category_id = $('#category_filter').val();
                         d.product_id = $('#product_filter').val();
                         d.user_id = $('#user_filter').val();
@@ -153,7 +177,7 @@
                 },
                 columns: [
                     {data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false},
-                    {data: 'project.name', name: 'project.name'},
+                    {data: 'site_label', name: 'site.site_no'},
                     {data: 'category.name', name: 'category.name'},
                     {data: 'product.name', name: 'product.name'},
                     {data: 'previous_quantity', name: 'previous_quantity'},
@@ -174,6 +198,7 @@
             // Handle reset button click
             $('#reset_btn').click(function() {
                 $('#project_filter').val('').trigger('change');
+                $('#site_filter').val('').trigger('change');
                 $('#category_filter').val('').trigger('change');
                 $('#product_filter').val('').trigger('change');
                 $('#user_filter').val('').trigger('change');
@@ -185,7 +210,7 @@
             // Load products when category changes
             $('#category_filter').change(function() {
                 let categoryId = $(this).val();
-                let projectId = $('#project_filter').val();
+                let siteId = $('#site_filter').val();
 
                 if (categoryId) {
                     $.ajax({
@@ -193,7 +218,7 @@
                         type: "GET",
                         data: {
                             category_id: categoryId,
-                            project_id: projectId
+                            site_id: siteId
                         },
                         success: function(data) {
                             $('#product_filter').empty();
@@ -210,12 +235,20 @@
                 }
             });
 
-            // Refresh product list when project changes
             $('#project_filter').change(function() {
+                loadSites($(this).val());
                 let categoryId = $('#category_filter').val();
                 if (categoryId) {
                     $('#category_filter').trigger('change');
                 }
+            });
+
+            $('#site_filter').change(function() {
+                let categoryId = $('#category_filter').val();
+                if (categoryId) {
+                    $('#category_filter').trigger('change');
+                }
+                table.draw();
             });
         });
     </script>

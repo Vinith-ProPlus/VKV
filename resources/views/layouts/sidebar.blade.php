@@ -254,7 +254,7 @@
                             @endcan
                             @can('View Project Stocks')
                                 <li class="">
-                                    <a href="{{ route('project-stocks.index') }}" data-active-name="Project-Stock-Management" data-original-title="" title="">Project Stock</a>
+                                    <a href="{{ route('site-stocks.index') }}" data-active-name="Site-Stock-Management" data-original-title="" title="">Site Stock</a>
                                 </li>
                                 <li class="">
                                     <a href="{{ route('stock-logs.index') }}" data-active-name="Stock-Log" data-original-title="" title="">Stock Log</a>

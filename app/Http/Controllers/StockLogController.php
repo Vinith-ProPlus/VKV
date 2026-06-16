@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Project;
-use App\Models\ProjectStock;
 use App\Models\Product;
 use App\Models\ProductCategory;
+use App\Models\Project;
+use App\Models\SiteStock;
 use App\Models\StockLog;
 use App\Models\User;
 use Exception;
@@ -25,6 +25,7 @@ use Yajra\DataTables\Facades\DataTables;
 class StockLogController extends Controller
 {
     use AuthorizesRequests;
+
     /**
      * @param Request $request
      * @return Factory|View|Application|JsonResponse
@@ -38,10 +39,14 @@ class StockLogController extends Controller
         $users = User::all();
 
         if ($request->ajax()) {
-            $query = StockLog::with(['project', 'product', 'category', 'user'])->latest();
+            $query = StockLog::with(['site.project', 'product', 'category', 'user'])->latest();
 
-            if ($request->has('project_id') && !empty($request->project_id)) {
-                $query->where('project_id', $request->project_id);
+            if ($request->filled('site_id')) {
+                $query->where('site_id', $request->site_id);
+            } elseif ($request->filled('project_id')) {
+                $query->whereHas('site', static function ($q) use ($request) {
+                    $q->where('project_id', $request->project_id);
+                });
             }
 
             if ($request->has('category_id') && !empty($request->category_id)) {
@@ -68,22 +73,31 @@ class StockLogController extends Controller
 
             return DataTables::of($data)
                 ->addIndexColumn()
-                ->addColumn('user_id_name', static function($row) {
-                    if ($row->user) {
-                        return $row->user->name;
+                ->addColumn('site_label', static function ($row) {
+                    if (!$row->site) {
+                        return 'N/A';
                     }
-                    return 'N/A';
+
+                    $label = $row->site->site_no;
+                    if ($row->site->project) {
+                        $label .= ' (' . $row->site->project->name . ')';
+                    }
+
+                    return $label;
                 })
-                ->editColumn('quantity', static function($row) {
+                ->addColumn('user_id_name', static function ($row) {
+                    return $row->user ? $row->user->name : 'N/A';
+                })
+                ->editColumn('quantity', static function ($row) {
                     return number_format($row->quantity, 2);
                 })
-                ->editColumn('previous_quantity', static function($row) {
+                ->editColumn('previous_quantity', static function ($row) {
                     return number_format($row->previous_quantity, 2);
                 })
-                ->editColumn('balance_quantity', static function($row) {
+                ->editColumn('balance_quantity', static function ($row) {
                     return number_format($row->balance_quantity, 2);
                 })
-                ->editColumn('time', static function($row) {
+                ->editColumn('time', static function ($row) {
                     return $row->time->format('d-m-Y H:i');
                 })
                 ->make(true);
@@ -114,7 +128,7 @@ class StockLogController extends Controller
     {
         $this->authorize('Create Project Stocks');
         $request->validate([
-            'project_id' => 'required|exists:projects,id',
+            'site_id' => 'required|exists:sites,id',
             'category_id' => 'required|exists:product_categories,id',
             'product_id' => 'required|exists:products,id',
             'quantity' => 'required|numeric|min:0.01',
@@ -124,24 +138,19 @@ class StockLogController extends Controller
 
         DB::beginTransaction();
         try {
-            // Check if we have enough stock
-            $stock = ProjectStock::where('project_id', $request->project_id)
+            $stock = SiteStock::where('site_id', $request->site_id)
                 ->where('product_id', $request->product_id)
                 ->first();
 
             if (!$stock || $stock->quantity < $request->quantity) {
-                throw new RuntimeException("Insufficient stock available.");
+                throw new RuntimeException('Insufficient stock available.');
             }
 
-            // Get previous quantity before updating
             $previousQuantity = $stock->quantity;
-
-            // Calculate balance quantity
             $balanceQuantity = $previousQuantity - $request->quantity;
 
-            // Create stock log
             StockLog::create([
-                'project_id' => $request->project_id,
+                'site_id' => $request->site_id,
                 'category_id' => $request->category_id,
                 'product_id' => $request->product_id,
                 'previous_quantity' => $previousQuantity,
@@ -153,54 +162,41 @@ class StockLogController extends Controller
                 'remarks' => $request->remarks,
             ]);
 
-            // Update project stock
             $stock->quantity = $balanceQuantity;
             $stock->last_updated_by = Auth::id();
-            $stock->last_transaction_type = TAKEN_FOR_CONSTRUCTION.' by : ' . $request->user_id;
+            $stock->last_transaction_type = TAKEN_FOR_CONSTRUCTION . ' by : ' . $request->user_id;
             $stock->save();
 
             DB::commit();
+
             return redirect()->route('stock-logs.index')->with('success', 'Stock logged successfully!');
         } catch (Exception $e) {
             DB::rollBack();
+
             return redirect()->back()->with('error', $e->getMessage())->withInput();
         }
     }
 
-    /**
-     * @param Request $request
-     * @return JsonResponse
-     */
     public function getProductsByCategory(Request $request): JsonResponse
     {
         $categoryId = $request->category_id;
-        $projectId = $request->project_id;
+        $siteId = $request->site_id;
 
         $query = Product::where('category_id', $categoryId);
 
-        // If project ID is provided, only show products that have stock in that project
-        if ($projectId) {
-            $query->whereHas('projectStocks', static function($q) use ($projectId) {
-                $q->where('project_id', $projectId)->where('quantity', '>', 0);
+        if ($siteId) {
+            $query->whereHas('siteStocks', static function ($q) use ($siteId) {
+                $q->where('site_id', $siteId)->where('quantity', '>', 0);
             });
         }
 
-        $products = $query->get();
-
-        return response()->json($products);
+        return response()->json($query->get());
     }
 
-    /**
-     * @param Request $request
-     * @return JsonResponse
-     */
     public function getProductStock(Request $request): JsonResponse
     {
-        $projectId = $request->project_id;
-        $productId = $request->product_id;
-
-        $stock = ProjectStock::where('project_id', $projectId)
-            ->where('product_id', $productId)
+        $stock = SiteStock::where('site_id', $request->site_id)
+            ->where('product_id', $request->product_id)
             ->first();
 
         $availableStock = $stock ? $stock->quantity : 0;
