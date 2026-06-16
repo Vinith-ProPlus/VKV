@@ -2,7 +2,7 @@
 
 @section('content')
     @php
-        $PageTitle = "Stock Log";
+        $PageTitle = "New Stock Log";
         $ActiveMenuName = 'Stock-Log';
     @endphp
 
@@ -12,8 +12,9 @@
                 <div class="col-sm-12">
                     <ol class="breadcrumb">
                         <li class="breadcrumb-item"><a href="{{ url('/') }}"><i class="f-16 fa fa-home"></i></a></li>
-                        <li class="breadcrumb-item">Manage Stock</li>
-                        <li class="breadcrumb-item"><a href="{{ route('stock-logs.index') }}">Stock Logs</a></li>
+                        <li class="breadcrumb-item">Transactions</li>
+                        <li class="breadcrumb-item"><a href="{{ route('site-stocks.index') }}">Site Stock</a></li>
+                        <li class="breadcrumb-item"><a href="{{ route('stock-logs.index') }}">Stock Log</a></li>
                         <li class="breadcrumb-item">{{ $PageTitle }}</li>
                     </ol>
                 </div>
@@ -40,7 +41,7 @@
                             <div class="row mb-15">
                                 <div class="col-md-6">
                                     <label class="form-label">Project <span class="text-danger">*</span></label>
-                                    <select id="project_id" class="form-control" required>
+                                    <select name="project_id" id="project_id" class="form-control" required>
                                         <option value="">Select Project</option>
                                         @foreach($projects as $project)
                                             <option value="{{ $project->id }}" {{ old('project_id') == $project->id ? 'selected' : '' }}>{{ $project->name }}</option>
@@ -175,6 +176,14 @@
                 });
             }
 
+            const oldProjectId = "{{ old('project_id') }}";
+            const oldSiteId = "{{ old('site_id') }}";
+
+            if (oldProjectId) {
+                $('#project_id').val(oldProjectId).trigger('change.select2');
+                loadSites(oldProjectId, oldSiteId);
+            }
+
             $('#project_id').change(function() {
                 loadSites($(this).val(), "{{ old('site_id') }}");
                 $('#product_id').html('<option value="">Select Product</option>').prop('disabled', true);
@@ -198,7 +207,7 @@
 
                             if (data.length > 0) {
                                 $.each(data, function(key, product) {
-                                    if(product.id === selectedProduct){
+                                    if(String(product.id) === String(selectedProduct)){
                                         options += '<option value="' + product.id + '" selected>' + product.name + '</option>';
                                     } else {
                                         options += '<option value="' + product.id + '">' + product.name + '</option>';

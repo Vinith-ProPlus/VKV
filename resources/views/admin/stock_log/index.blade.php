@@ -2,7 +2,7 @@
 
 @section('content')
     @php
-        $PageTitle = "Stock Logs";
+        $PageTitle = "Stock Log Management";
         $ActiveMenuName = 'Stock-Log';
     @endphp
 
@@ -12,7 +12,8 @@
                 <div class="col-sm-12">
                     <ol class="breadcrumb">
                         <li class="breadcrumb-item"><a href="{{ url('/') }}"><i class="f-16 fa fa-home"></i></a></li>
-                        <li class="breadcrumb-item">Manage Stock</li>
+                        <li class="breadcrumb-item">Transactions</li>
+                        <li class="breadcrumb-item"><a href="{{ route('site-stocks.index') }}">Site Stock</a></li>
                         <li class="breadcrumb-item">{{ $PageTitle }}</li>
                     </ol>
                 </div>
@@ -97,9 +98,11 @@
                                 <button id="reset_btn" class="btn btn-secondary">Reset</button>
                             </div>
                             <div class="col-md-3 text-end align-self-end">
-                                <a href="{{ route('stock-logs.create') }}" class="btn btn-primary">
-                                    <i class="fa fa-plus"></i> New Stock Log
-                                </a>
+                                @can('Create Project Stocks')
+                                    <a href="{{ route('stock-logs.create') }}" class="btn btn-primary">
+                                        <i class="fa fa-plus"></i> New Stock Log
+                                    </a>
+                                @endcan
                             </div>
                         </div>
                     </div>
@@ -111,7 +114,7 @@
             <div class="col-12">
                 <div class="card">
                     <div class="card-header">
-                        <h5>Stock Logs</h5>
+                        <h5>Stock Log Management</h5>
                     </div>
                     <div class="card-body">
                         <table class="table table-bordered table-striped" id="stock_log_table">
@@ -204,6 +207,7 @@
                 $('#user_filter').val('').trigger('change');
                 $('#date_from').val('');
                 $('#date_to').val('');
+                loadSites('');
                 table.draw();
             });
 
