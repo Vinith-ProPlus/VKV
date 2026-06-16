@@ -53,7 +53,7 @@ class MobileVersionController extends Controller
                 }
 
                 // Store new file
-                $data['logo'] = $request->file('logo')?->store('uploads/mobile_version', 'public');
+                $data['logo'] = store_public_upload($request->file('logo'), 'uploads/mobile_version', ['jpg', 'jpeg', 'png', 'gif']);
             }
 
             $version->fill($data);

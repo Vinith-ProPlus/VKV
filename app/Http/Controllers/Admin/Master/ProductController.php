@@ -70,7 +70,7 @@ class ProductController extends Controller
         try {
             $data = $request->validated();
             if ($request->hasFile('image')) {
-                $data['image'] = $request->file('image')?->store('products', 'public');
+                $data['image'] = store_public_upload($request->file('image'), 'products');
             }
             Product::create($data);
             return redirect()->route('products.index')->with('success', 'Product added successfully!');
@@ -101,7 +101,7 @@ class ProductController extends Controller
                 if ($product->image) {
                     Storage::disk('public')->delete($product->image);
                 }
-                $data['image'] = $request->file('image')?->store('products', 'public');
+                $data['image'] = store_public_upload($request->file('image'), 'products');
             }
             $product->update($data);
             return redirect()->route('products.index')->with('success', 'Product updated successfully.');

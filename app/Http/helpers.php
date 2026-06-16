@@ -1,5 +1,6 @@
 <?php
 
+use App\Rules\AllowedUpload;
 use Carbon\Carbon;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
@@ -8,10 +9,12 @@ use Illuminate\Foundation\Application;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Random\RandomException;
 
     /**
@@ -1148,6 +1151,47 @@ use Random\RandomException;
         if (trim($result[0]) != "") return $result[0] . "RUPEES ";
         if ($result[1] != "") return $result[1] . "PAISE";
         return " ONLY";
+    }
+
+    /**
+     * Validation rules for image uploads (does not require PHP fileinfo).
+     *
+     * @return array<int, AllowedUpload|string>
+     */
+    function allowed_image_validation(bool $nullable = true): array
+    {
+        $rules = ['file', 'max:2048', new AllowedUpload(['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp'])];
+
+        return $nullable ? array_merge(['nullable'], $rules) : array_merge(['required'], $rules);
+    }
+
+    /**
+     * Store an uploaded file on the public disk without MIME detection.
+     */
+    function store_public_upload(UploadedFile $file, string $directory, ?array $extensions = null): string
+    {
+        $extensions ??= ['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp'];
+        $extension = strtolower($file->getClientOriginalExtension() ?: '');
+
+        if (!in_array($extension, $extensions, true)) {
+            throw new InvalidArgumentException('Invalid upload file type.');
+        }
+
+        $path = trim($directory, '/') . '/' . Str::uuid()->toString() . '.' . $extension;
+        Storage::disk('public')->put($path, file_get_contents($file->getRealPath()));
+
+        return $path;
+    }
+
+    /**
+     * Store an uploaded file using a fixed filename on the public disk.
+     */
+    function store_public_upload_as(UploadedFile $file, string $directory, string $filename): string
+    {
+        $path = trim($directory, '/') . '/' . ltrim($filename, '/');
+        Storage::disk('public')->put($path, file_get_contents($file->getRealPath()));
+
+        return $path;
     }
 
     /**

@@ -57,7 +57,7 @@ class LeadSourceController extends Controller
         try {
             $data = $request->validated();
             if ($request->hasFile('image')) {
-                $data['image'] = $request->file('image')->store('lead_sources', 'public');
+                $data['image'] = store_public_upload($request->file('image'), 'lead_sources');
             }
 
             LeadSource::create($data);
@@ -88,7 +88,7 @@ class LeadSourceController extends Controller
             $data = $request->validated();
             if ($request->hasFile('image')) {
                 $oldImage = $lead_source->image;
-                $newImage = $data['image'] = $request->file('image')->store('lead_sources', 'public');
+                $newImage = $data['image'] = store_public_upload($request->file('image'), 'lead_sources');
             }
 
             $lead_source->update($data);

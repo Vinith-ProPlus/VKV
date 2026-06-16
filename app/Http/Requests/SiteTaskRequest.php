@@ -32,7 +32,7 @@ class SiteTaskRequest extends FormRequest
                 'required', 'string',
                 Rule::in(['Created', 'In-progress', 'On-hold', 'Completed', 'Deleted']),
             ],
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'image' => allowed_image_validation(),
         ];
     }
 }

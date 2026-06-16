@@ -25,7 +25,7 @@ class LeadRequest extends FormRequest
     public function rules()
     {
         return [
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'image' => allowed_image_validation(),
             'name' => 'required|string|max:100',
             'address' => 'nullable|string|max:255',
             'state_id' => 'nullable|exists:states,id',

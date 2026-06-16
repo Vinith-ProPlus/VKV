@@ -33,7 +33,7 @@ class MobileVersionRequest extends FormRequest
             'ignore_text' => 'required|string|max:255',
             'update_type' => 'required|string|in:force,optional',
             'update_to' => 'required|string|in:android,ios,both',
-            'logo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'logo' => ['nullable', 'file', 'max:2048', new \App\Rules\AllowedUpload(['jpg', 'jpeg', 'png', 'gif'])],
         ];
     }
 

@@ -97,7 +97,7 @@ class SiteTaskController extends Controller{
                 $data['completed_at'] = now();
             }
             if ($request->hasFile('image')) {
-                $data['image'] = $request->file('image')?->store('site_tasks', 'public');
+                $data['image'] = store_public_upload($request->file('image'), 'site_tasks');
             }
             $data['created_by_id'] = auth()->id();
             SiteTask::create($data);
@@ -135,7 +135,7 @@ class SiteTaskController extends Controller{
             }
             if ($request->hasFile('image')) {
                 $oldImage = $site_task->image;
-                $newImage = $data['image'] = $request->file('image')?->store('site_tasks', 'public');
+                $newImage = $data['image'] = store_public_upload($request->file('image'), 'site_tasks');
             }
             $site_task->update($data);
             DB::commit();

@@ -40,7 +40,7 @@ class UserRequest extends FormRequest
             'role_id' => 'required|exists:roles,id',
             'password' => 'nullable|string|min:6',
             'active_status' => 'required|boolean',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'image' => allowed_image_validation(),
         ];
     }
 }

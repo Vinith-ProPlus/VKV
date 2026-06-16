@@ -87,7 +87,7 @@ class LeadController extends Controller
                 $data['lead_owner_id'] = auth()->id();
             }
             if ($request->hasFile('image')) {
-                $newImage = $data['image'] = $request->file('image')->store('leads', 'public');
+                $newImage = $data['image'] = store_public_upload($request->file('image'), 'leads');
             }
             Lead::create($data);
             DB::commit();
@@ -128,7 +128,7 @@ class LeadController extends Controller
             $oldImage = null;
             if ($request->hasFile('image')) {
                 $oldImage = $lead->image;
-                $newImage = $data['image'] = $request->file('image')->store('leads', 'public');
+                $newImage = $data['image'] = store_public_upload($request->file('image'), 'leads');
 
                 info("Saved new image");
             }

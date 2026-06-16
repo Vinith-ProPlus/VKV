@@ -27,7 +27,7 @@ class LeadSourceRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:100', Rule::unique('lead_sources')->ignore($this->route('lead_source'))],
             'is_active' => 'required|boolean',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'image' => allowed_image_validation(),
         ];
     }
 }

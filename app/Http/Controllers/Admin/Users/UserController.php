@@ -80,7 +80,7 @@ class UserController extends Controller
             $plainPassword = $data['password'];
             $data['password'] = Hash::make($data['password']);
             if ($request->hasFile('image')) {
-                $data['image'] = $request->file('image')?->store('users', 'public');
+                $data['image'] = store_public_upload($request->file('image'), 'users');
             }
             $user = User::create($data);
             $role = Role::findOrFail($data['role_id']);
@@ -123,7 +123,7 @@ class UserController extends Controller
             }
             if ($request->hasFile('image')) {
                 $oldImage = $user->image;
-                $newImage = $data['image'] = $request->file('image')?->store('users', 'public');
+                $newImage = $data['image'] = store_public_upload($request->file('image'), 'users');
             }
 
             $user->update($data);

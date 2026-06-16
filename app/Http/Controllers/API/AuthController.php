@@ -113,11 +113,11 @@ class AuthController extends Controller
             $validatedData = $request->validate([
                 'name' => 'required|string|max:255',
                 'alternate_mobile' => ['nullable', 'digits_between:7,12', Rule::unique('users')->ignore($user->id)],
-                'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+                'image' => allowed_image_validation(),
             ]);
             if ($request->hasFile('image')) {
                 $oldImage = $user->image;
-                $newImage = $validatedData['image'] = $request->file('image')?->store('users', 'public');
+                $newImage = $validatedData['image'] = store_public_upload($request->file('image'), 'users');
             }
             $user->update($validatedData);
             DB::commit();

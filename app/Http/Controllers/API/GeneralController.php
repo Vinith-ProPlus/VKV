@@ -294,7 +294,7 @@ class GeneralController extends Controller
         try {
             $data = $request->validated();
             if ($request->hasFile('image')) {
-                $data['image'] = $request->file('image')?->store('project_tasks', 'public');
+                $data['image'] = store_public_upload($request->file('image'), 'project_tasks');
             }
             $data['created_by_id'] = auth()->id();
             $task = ProjectTask::create($data);

@@ -30,7 +30,7 @@ class ProductRequest extends FormRequest
                 Rule::unique('products')->ignore($this->route('product'))
             ],
             'is_active' => 'required|boolean',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'image' => allowed_image_validation(),
             'category_id' => 'required|exists:product_categories,id',
 //            'tax_id' => 'required|exists:taxes,id',
             'uom_id' => 'required|exists:unit_of_measurements,id',
