@@ -1166,7 +1166,42 @@ use Random\RandomException;
     }
 
     /**
-     * Store an uploaded file on the public disk without MIME detection.
+     * Validation rules for document uploads (does not require PHP fileinfo).
+     *
+     * @return array<int, AllowedUpload|string>
+     */
+    function allowed_document_validation(bool $nullable = true, int $maxKilobytes = 10240): array
+    {
+        $rules = [
+            'file',
+            'max:' . $maxKilobytes,
+            new AllowedUpload(['jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf', 'doc', 'docx', 'xls', 'xlsx'], $maxKilobytes),
+        ];
+
+        return $nullable ? array_merge(['nullable'], $rules) : array_merge(['required'], $rules);
+    }
+
+    function public_storage_root(): string
+    {
+        return storage_path('app/public');
+    }
+
+    function public_storage_path(string $relativePath): string
+    {
+        return public_storage_root() . '/' . ltrim(str_replace('\\', '/', $relativePath), '/');
+    }
+
+    function ensure_public_storage_directory(string $relativePath): void
+    {
+        $directory = dirname(public_storage_path($relativePath));
+
+        if (!is_dir($directory)) {
+            mkdir($directory, 0755, true);
+        }
+    }
+
+    /**
+     * Store an uploaded file on the public disk without MIME detection or Storage bootstrap.
      */
     function store_public_upload(UploadedFile $file, string $directory, ?array $extensions = null): string
     {
@@ -1177,21 +1212,51 @@ use Random\RandomException;
             throw new InvalidArgumentException('Invalid upload file type.');
         }
 
-        $path = trim($directory, '/') . '/' . Str::uuid()->toString() . '.' . $extension;
-        Storage::disk('public')->put($path, file_get_contents($file->getRealPath()));
+        $relativePath = trim($directory, '/') . '/' . Str::uuid()->toString() . '.' . $extension;
+        write_public_upload($file, $relativePath);
 
-        return $path;
+        return $relativePath;
     }
 
     /**
      * Store an uploaded file using a fixed filename on the public disk.
      */
-    function store_public_upload_as(UploadedFile $file, string $directory, string $filename): string
+    function store_public_upload_as(UploadedFile $file, string $directory, string $filename, ?array $extensions = null): string
     {
-        $path = trim($directory, '/') . '/' . ltrim($filename, '/');
-        Storage::disk('public')->put($path, file_get_contents($file->getRealPath()));
+        if ($extensions !== null) {
+            $extension = strtolower($file->getClientOriginalExtension() ?: '');
 
-        return $path;
+            if (!in_array($extension, $extensions, true)) {
+                throw new InvalidArgumentException('Invalid upload file type.');
+            }
+        }
+
+        $relativePath = trim($directory, '/') . '/' . ltrim(str_replace('\\', '/', $filename), '/');
+        write_public_upload($file, $relativePath);
+
+        return $relativePath;
+    }
+
+    function write_public_upload(UploadedFile $file, string $relativePath): void
+    {
+        ensure_public_storage_directory($relativePath);
+
+        if (!@copy($file->getRealPath(), public_storage_path($relativePath))) {
+            throw new RuntimeException('Failed to store uploaded file.');
+        }
+    }
+
+    function delete_public_upload(?string $relativePath): void
+    {
+        if (!$relativePath) {
+            return;
+        }
+
+        $fullPath = public_storage_path($relativePath);
+
+        if (is_file($fullPath)) {
+            @unlink($fullPath);
+        }
     }
 
     /**

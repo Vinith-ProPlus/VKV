@@ -198,7 +198,7 @@ class PurchaseOrderApiController extends Controller
                 'order_detail_id' => 'required|exists:purchase_order_details,id',
                 'remarks' => 'nullable|string',
                 'attachments' => 'nullable|array',
-                'attachments.*' => 'file|mimes:jpeg,png,jpg,pdf,doc,docx|max:10240',
+                'attachments.*' => allowed_document_validation(),
             ]);
 
             if ($validator->fails()) {
@@ -223,7 +223,7 @@ class PurchaseOrderApiController extends Controller
                     $filename = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME) .
                         '_' . now()->timestamp . '_' . random_int(1000, 9999) .
                         '.' . $file->getClientOriginalExtension();
-                    $path = $file->storeAs('documents', $filename, 'public');
+                    $path = store_public_upload_as($file, 'documents', $filename);
 
                     Document::create([
                         'title' => 'Purchase Order Detail Attachment',

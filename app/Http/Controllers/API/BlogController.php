@@ -37,7 +37,7 @@ class BlogController extends Controller
                 $files = is_array($request->file('attachments')) ? $request->file('attachments') : [$request->file('attachments')];
                 foreach ($files as $file) {
                     $filename = generateUniqueFileName($file);
-                    $path = $file->storeAs('documents', $filename, 'public');
+                    $path = store_public_upload_as($file, 'documents', $filename);
                     $attachments[] = [
                         'title'       => 'Blog Attachment',
                         'description' => '',

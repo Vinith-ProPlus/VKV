@@ -36,7 +36,7 @@ class SupportTicketMessageController extends Controller
                 $filename = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME) .
                     '_' . now()->timestamp . '_' . random_int(1000, 9999) .
                     '.' . $file->getClientOriginalExtension();
-                $path = $file->storeAs('documents', $filename, 'public');
+                $path = store_public_upload_as($file, 'documents', $filename);
 
                 $documents[] = Document::create([
                     'title' => 'Support Ticket Attachment',

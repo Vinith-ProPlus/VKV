@@ -55,7 +55,7 @@ class SupportTicketController extends Controller
 
                 foreach ($files as $file) {
                     $filename = $this->generateUniqueFileName($file);
-                    $path = $file->storeAs('documents', $filename, 'public');
+                    $path = store_public_upload_as($file, 'documents', $filename);
                     $documents[] = Document::create([
                         'title'        => 'Support Ticket Attachment',
                         'description'  => '',
@@ -113,7 +113,7 @@ class SupportTicketController extends Controller
                 $files = is_array($request->file('attachments')) ? $request->file('attachments') : [$request->file('attachments')];
                 foreach ($files as $file) {
                     $filename = $this->generateUniqueFileName($file);
-                    $path = $file->storeAs('documents', $filename, 'public');
+                    $path = store_public_upload_as($file, 'documents', $filename);
                     $documents[] = Document::create([
                         'title'       => 'Support Ticket Attachment',
                         'description' => '',
