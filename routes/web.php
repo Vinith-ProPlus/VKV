@@ -250,7 +250,7 @@ Route::controller(SocialLoginController::class)->group(function () {
     Route::post('/apple-login-callback', 'loginWithAppleCallback')->name('apple-login-callback');
 });
 
-Route::group(['prefix' => 'project_reports', 'middleware' => ['auth', 'can:View Project Reports']], static function () {
+Route::group(['prefix' => 'project_reports', 'middleware' => ['auth']], static function () {
     Route::get('/', [ProjectReportsController::class, 'index'])->name('project_reports.index');
     Route::get('/create', [ProjectReportsController::class, 'create'])->name('project_reports.create');
     Route::get('/getProjectTasks', [ProjectReportsController::class, 'getProjectTasks'])->name('getProjectTasks');

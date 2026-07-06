@@ -356,7 +356,7 @@
 
                                               <div>
                                                 <p class="text-sm text-gray-500">Area</p>
-                                                <p class="font-medium">{{ number_format($site?->area_sqft) }} sqft</p>
+                                                <p class="font-medium">{{ number_format((float) ($site?->area_sqft ?? 0)) }} sqft</p>
                                               </div>
 
                                               @php
@@ -402,7 +402,7 @@
                                               <div>
                                                 <div class="flex justify-between mb-1">
                                                   <p class="text-sm text-gray-500">Investment Amount</p>
-                                                  <p class="text-sm font-medium">₹{{ number_format($site->investment_amount) }}</p>
+                                                  <p class="text-sm font-medium">₹{{ number_format((float) ($site->investment_amount ?? 0)) }}</p>
                                                 </div>
                                                 <div class="progress-bar">
                                                   <div class="progress-value" style="width: 100%"></div>
@@ -412,10 +412,10 @@
                                               <div>
                                                 <div class="flex justify-between mb-1">
                                                   <p class="text-sm text-gray-500">Sold Amount</p>
-                                                  <p class="text-sm font-medium">₹{{ number_format($site->sold_amount) }}</p>
+                                                  <p class="text-sm font-medium">₹{{ number_format((float) ($site->sold_amount ?? 0)) }}</p>
                                                 </div>
                                                 <div class="progress-bar">
-                                                  <div class="progress-value" style="width: {{ ($site->sold_amount / ($site->investment_amount ?? 1)) * 100 }}%"></div>
+                                                  <div class="progress-value" style="width: {{ min(100, max(0, (($site->sold_amount ?? 0) / max($site->investment_amount ?? 1, 1)) * 100)) }}%"></div>
                                                 </div>
                                               </div>
 

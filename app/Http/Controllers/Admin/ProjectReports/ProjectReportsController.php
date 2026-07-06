@@ -19,6 +19,7 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\View\View;
 use Yajra\DataTables\Facades\DataTables;
@@ -47,9 +48,22 @@ class ProjectReportsController extends Controller
             'site' => 'required|exists:sites,id',
         ]);
 
+        $with = ['engineer'];
+        if (Schema::hasTable('site_stages')) {
+            $with[] = 'stages';
+        }
+        if (Schema::hasTable('project_amenities')) {
+            $with[] = 'project.amenities.amenity';
+        } else {
+            $with[] = 'project';
+        }
+        if (Schema::hasTable('site_lead_mappings')) {
+            $with[] = 'siteLeadMapping.lead';
+        }
+
         $site = Site::withoutTrashed()
             ->where('id', $request->input('site'))
-            ->with(['project.amenities.amenity', 'stages', 'engineer', 'siteLeadMapping.lead'])
+            ->with($with)
             ->firstOrFail();
 
         $project = $site->project;
@@ -57,7 +71,7 @@ class ProjectReportsController extends Controller
             abort(404, 'Project not found for the selected site.');
         }
 
-        $stages = $site->stages ?? collect();
+        $stages = Schema::hasTable('site_stages') ? ($site->stages ?? collect()) : collect();
         $summary = $this->buildSiteSummary($site);
 
         return view('report', compact('site', 'project', 'stages', 'summary'));
@@ -261,56 +275,127 @@ class ProjectReportsController extends Controller
 
     private function buildSiteSummary(Site $site): array
     {
-        $siteId = $site->id;
-        $purchaseOrderIds = PurchaseOrder::where('site_id', $siteId)->pluck('id');
-
-        $tasksQuery = SiteTask::where('site_id', $siteId);
-        $totalTasks = (clone $tasksQuery)->count();
-        $completedTasks = (clone $tasksQuery)->where('status', 'Completed')->count();
-        $inProgressTasks = (clone $tasksQuery)->where('status', 'In-progress')->count();
-
-        $laborSalaryTotal = Labor::whereHas('siteLaborDate', static fn ($q) => $q->where('site_id', $siteId))->sum('salary');
-        $contractLaborCount = ContractLabor::whereHas('siteLaborDate', static fn ($q) => $q->where('site_id', $siteId))->sum('count');
-        $contractValue = SiteContract::where('site_id', $siteId)->sum('amount');
-
-        $stockItems = SiteStock::where('site_id', $siteId)->count();
-        $stockQuantity = SiteStock::where('site_id', $siteId)->sum('quantity');
-        $stockLogCount = $this->countStockLogsForSite($site);
-
-        $poCount = $purchaseOrderIds->count();
-        $poProductCount = $purchaseOrderIds->isEmpty()
-            ? 0
-            : PurchaseOrderDetail::whereIn('purchase_order_id', $purchaseOrderIds)->count();
-        $poDeliveredCount = $purchaseOrderIds->isEmpty()
-            ? 0
-            : PurchaseOrderDetail::whereIn('purchase_order_id', $purchaseOrderIds)->where('status', 'Delivered')->count();
-
         $investment = (float) ($site->investment_amount ?? 0);
         $sold = (float) ($site->sold_amount ?? 0);
 
-        return [
-            'completion_percentage' => $site->completion_percentage,
-            'total_tasks' => $totalTasks,
-            'completed_tasks' => $completedTasks,
-            'in_progress_tasks' => $inProgressTasks,
-            'pending_tasks' => max($totalTasks - $completedTasks - $inProgressTasks, 0),
-            'stage_count' => $site->stages()->count(),
-            'contractor_count' => SiteContract::where('site_id', $siteId)->count(),
-            'contract_value' => $contractValue,
-            'labor_days' => SiteLaborDate::where('site_id', $siteId)->count(),
-            'labor_headcount' => Labor::whereHas('siteLaborDate', static fn ($q) => $q->where('site_id', $siteId))->count(),
-            'contract_labor_count' => $contractLaborCount,
-            'labor_salary_total' => $laborSalaryTotal,
-            'purchase_orders' => $poCount,
-            'purchase_products' => $poProductCount,
-            'purchase_delivered' => $poDeliveredCount,
-            'stock_items' => $stockItems,
-            'stock_quantity' => $stockQuantity,
-            'stock_log_count' => $stockLogCount,
+        $defaults = [
+            'completion_percentage' => $this->safeCompletionPercentage($site),
+            'total_tasks' => 0,
+            'completed_tasks' => 0,
+            'in_progress_tasks' => 0,
+            'pending_tasks' => 0,
+            'stage_count' => $site->relationLoaded('stages') ? $site->stages->count() : 0,
+            'contractor_count' => 0,
+            'contract_value' => 0,
+            'labor_days' => 0,
+            'labor_headcount' => 0,
+            'contract_labor_count' => 0,
+            'labor_salary_total' => 0,
+            'purchase_orders' => 0,
+            'purchase_products' => 0,
+            'purchase_delivered' => 0,
+            'stock_items' => 0,
+            'stock_quantity' => 0,
+            'stock_log_count' => 0,
             'investment_amount' => $investment,
             'sold_amount' => $sold,
             'net_gain' => $sold - $investment,
         ];
+
+        try {
+            $siteId = $site->id;
+            $purchaseOrderIds = $this->purchaseOrderIdsForSite($site);
+
+            if (Schema::hasTable('site_tasks')) {
+                $tasksQuery = SiteTask::where('site_id', $siteId);
+                $defaults['total_tasks'] = (clone $tasksQuery)->count();
+                $defaults['completed_tasks'] = (clone $tasksQuery)->where('status', 'Completed')->count();
+                $defaults['in_progress_tasks'] = (clone $tasksQuery)->where('status', 'In-progress')->count();
+                $defaults['pending_tasks'] = max(
+                    $defaults['total_tasks'] - $defaults['completed_tasks'] - $defaults['in_progress_tasks'],
+                    0
+                );
+            }
+
+            if (Schema::hasTable('site_labor_dates') && Schema::hasColumn('site_labor_dates', 'site_id')) {
+                $defaults['labor_days'] = SiteLaborDate::where('site_id', $siteId)->count();
+            }
+
+            if (Schema::hasTable('labors') && Schema::hasTable('site_labor_dates')) {
+                $defaults['labor_headcount'] = Labor::whereHas(
+                    'siteLaborDate',
+                    static fn ($q) => $q->where('site_id', $siteId)
+                )->count();
+                $defaults['labor_salary_total'] = (float) Labor::whereHas(
+                    'siteLaborDate',
+                    static fn ($q) => $q->where('site_id', $siteId)
+                )->sum('salary');
+            }
+
+            if (Schema::hasTable('contract_labors') && Schema::hasTable('site_labor_dates')) {
+                $defaults['contract_labor_count'] = (int) ContractLabor::whereHas(
+                    'siteLaborDate',
+                    static fn ($q) => $q->where('site_id', $siteId)
+                )->sum('count');
+            }
+
+            if (Schema::hasTable('site_contracts')) {
+                $defaults['contractor_count'] = SiteContract::where('site_id', $siteId)->count();
+                $defaults['contract_value'] = (float) SiteContract::where('site_id', $siteId)->sum('amount');
+            }
+
+            if (Schema::hasTable('site_stocks') && Schema::hasColumn('site_stocks', 'site_id')) {
+                $defaults['stock_items'] = SiteStock::where('site_id', $siteId)->count();
+                $defaults['stock_quantity'] = (float) SiteStock::where('site_id', $siteId)->sum('quantity');
+            }
+
+            $defaults['stock_log_count'] = $this->countStockLogsForSite($site);
+
+            $defaults['purchase_orders'] = $purchaseOrderIds->count();
+            if (Schema::hasTable('purchase_order_details') && $purchaseOrderIds->isNotEmpty()) {
+                $defaults['purchase_products'] = PurchaseOrderDetail::whereIn('purchase_order_id', $purchaseOrderIds)->count();
+                $defaults['purchase_delivered'] = PurchaseOrderDetail::whereIn('purchase_order_id', $purchaseOrderIds)
+                    ->where('status', 'Delivered')
+                    ->count();
+            }
+
+            if (Schema::hasTable('site_stages')) {
+                $defaults['stage_count'] = $site->stages()->count();
+            }
+        } catch (\Throwable $e) {
+            Log::error('Site report summary failed', [
+                'site_id' => $site->id,
+                'message' => $e->getMessage(),
+            ]);
+        }
+
+        return $defaults;
+    }
+
+    private function safeCompletionPercentage(Site $site): string
+    {
+        try {
+            return $site->completion_percentage;
+        } catch (\Throwable) {
+            return '0%';
+        }
+    }
+
+    private function purchaseOrderIdsForSite(Site $site)
+    {
+        if (!Schema::hasTable('purchase_orders')) {
+            return collect();
+        }
+
+        if (Schema::hasColumn('purchase_orders', 'site_id')) {
+            return PurchaseOrder::where('site_id', $site->id)->pluck('id');
+        }
+
+        if (Schema::hasColumn('purchase_orders', 'project_id') && $site->project_id) {
+            return PurchaseOrder::where('project_id', $site->project_id)->pluck('id');
+        }
+
+        return collect();
     }
 
     private function countStockLogsForSite(Site $site): int
