@@ -46,25 +46,14 @@ class ProjectReportsController extends Controller
 
         $request->validate([
             'site' => 'required|exists:sites,id',
+            'project' => 'nullable|exists:projects,id',
         ]);
 
-        $with = ['engineer'];
-        if (Schema::hasTable('site_stages')) {
-            $with[] = 'stages';
-        }
-        if (Schema::hasTable('project_amenities')) {
-            $with[] = 'project.amenities.amenity';
-        } else {
-            $with[] = 'project';
-        }
-        if (Schema::hasTable('site_lead_mappings')) {
-            $with[] = 'siteLeadMapping.lead';
-        }
+        $site = $this->resolveSiteForReport((int) $request->input('site'));
 
-        $site = Site::withoutTrashed()
-            ->where('id', $request->input('site'))
-            ->with($with)
-            ->firstOrFail();
+        if ($request->filled('project') && (int) $site->project_id !== (int) $request->input('project')) {
+            abort(404, 'The selected site does not belong to the chosen project.');
+        }
 
         $project = $site->project;
         if (!$project) {
@@ -75,6 +64,33 @@ class ProjectReportsController extends Controller
         $summary = $this->buildSiteSummary($site);
 
         return view('report', compact('site', 'project', 'stages', 'summary'));
+    }
+
+    private function resolveSiteForReport(int $siteId): Site
+    {
+        $query = Site::withoutTrashed()->where('id', $siteId);
+
+        $with = ['engineer', 'project'];
+        if (Schema::hasTable('site_stages')) {
+            $with[] = 'stages';
+        }
+        if (Schema::hasTable('project_amenities')) {
+            $with[] = 'project.amenities.amenity';
+        }
+        if (Schema::hasTable('site_lead_mappings')) {
+            $with[] = 'siteLeadMapping.lead';
+        }
+
+        try {
+            return (clone $query)->with($with)->firstOrFail();
+        } catch (\Throwable $e) {
+            Log::warning('Site report relation load failed; using minimal site load', [
+                'site_id' => $siteId,
+                'message' => $e->getMessage(),
+            ]);
+
+            return $query->with(['project', 'engineer'])->firstOrFail();
+        }
     }
 
     public function getProjectTasks(Request $request): JsonResponse
@@ -400,6 +416,10 @@ class ProjectReportsController extends Controller
 
     private function countStockLogsForSite(Site $site): int
     {
+        if (!Schema::hasTable('stock_logs')) {
+            return 0;
+        }
+
         if (Schema::hasColumn('stock_logs', 'site_id')) {
             return StockLog::where('site_id', $site->id)->count();
         }

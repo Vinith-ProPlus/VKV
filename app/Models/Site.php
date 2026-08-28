@@ -61,7 +61,7 @@ class Site extends Model
      */
     public function engineer(): BelongsToAlias
     {
-        return $this->BelongsTo(User::class);
+        return $this->belongsTo(User::class, 'engineer_id');
     }
     public function getCompletionPercentageAttribute(): string
     {
