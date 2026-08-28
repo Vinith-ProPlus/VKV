@@ -761,6 +761,8 @@
     <script>
 
         let stage_id =  $('.stage-box').attr('id');
+        let project_id = "{{ $project?->id ?? '' }}";
+        let site_id = "{{ $site->id }}";
         $('.stage-box:first').addClass('active');
 
         $(document).ready(function(){
@@ -942,9 +944,6 @@
             });
 
           // Contracts DataTable
-          let project_id = "{{ $project?->id ?? '' }}";
-          let site_id = "{{ $site->id }}";
-
           $('#contractsTable').DataTable({
                 "columnDefs": [{"className": "dt-center", "targets": "_all"}],
                 serverSide: true,
